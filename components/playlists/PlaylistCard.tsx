@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { PlayCircle, Heart } from "lucide-react";
+import { PlayCircle } from "lucide-react";
 import Link from "next/link";
 
 interface PlaylistCardProps {
@@ -10,7 +10,7 @@ interface PlaylistCardProps {
   title: string;
   cover: string;
   creator: string;
-  songs: number;
+  tracks: number;
   likes: number;
 }
 
@@ -19,8 +19,7 @@ export function PlaylistCard({
   title,
   cover,
   creator,
-  songs,
-  likes,
+  tracks,
 }: PlaylistCardProps) {
   return (
     <motion.div
@@ -58,7 +57,7 @@ export function PlaylistCard({
         </h3>
         <p className="text-sm text-gray-200 capitalize">By {creator}</p>
         <div className="flex justify-between items-center mt-2 text-sm text-gray-300">
-          <span>{songs} songs</span>
+          <span>{tracks} songs</span>
         </div>
       </div>
       </Link>

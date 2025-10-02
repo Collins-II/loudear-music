@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { useSession } from "next-auth/react";
 import Image, { ImageLoaderProps } from "next/image";
 import {
@@ -19,7 +18,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import ShareModal from "@/components/modals/ShareModal";
 import Comments from "@/components/comments/Comments";
-import { timeAgo, downloadZip, formatDate } from "@/lib/utils";
+import { timeAgo, formatDate } from "@/lib/utils";
 import HorizontalSlider from "@/components/sliders/HorizontalSlider";
 import { SliderCard } from "@/components/sliders/SliderCard";
 import { Separator } from "@/components/ui/separator";
@@ -40,7 +39,7 @@ export default function AlbumPage({ data, relatedSongs }: AlbumPageProps) {
   const [downloadCount, setDownloadCount] = useState<number>(data.downloadCount ?? 0);
 
   const [shareOpen, setShareOpen] = useState(false);
-  const [downloadOpen, setDownloadOpen] = useState(false);
+  //const [downloadOpen, setDownloadOpen] = useState(false);
 
   const [isTrending] = useState(true);
   const chartRank = 12;
@@ -75,15 +74,6 @@ export default function AlbumPage({ data, relatedSongs }: AlbumPageProps) {
     } catch (err) {
       console.error("Fetch error:", err);
     }
-  };
-
-  const handleDownloadAll = async () => {
-    if (!data.songs?.length) return;
-    await downloadZip(
-      data.songs.map((s) => ({ url: s.fileUrl, name: `${s.title}.mp3` })),
-      `${data.title}-album.zip`
-    );
-    handleInteraction("download");
   };
 
   const customImageLoader = ({ src, width, quality }: ImageLoaderProps) => {
@@ -179,7 +169,7 @@ export default function AlbumPage({ data, relatedSongs }: AlbumPageProps) {
                 </button>
                 <button
                   className="flex items-center gap-2 hover:text-green-600 transition"
-                  onClick={() => setDownloadOpen(true)}
+                 // onClick={() => setDownloadOpen(true)}
                 >
                   <DownloadCloud className="w-5 h-5" /> {downloadCount}
                 </button>

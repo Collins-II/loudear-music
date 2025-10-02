@@ -53,15 +53,16 @@ export default function Hero() {
         <AnimatePresence mode="wait">
           <motion.div
             key={slides[index].id}
-            className="absolute inset-0"
+            className="absolute relative inset-0"
             initial={{ opacity: 0, scale: 1.05 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.8 }}
           >
-            <img
+            <Image
               src={slides[index].image}
               alt={slides[index].title}
+              fill
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />

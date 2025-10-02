@@ -23,7 +23,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "LoudEar | Music & Video Streaming",
   description:
-    "LoudEar — Stream, download, and discover music and YouTube videos. A modern Artist-inspired platform for music lovers.",
+    "LoudEar — Stream, download, and discover music and videos. A modern Artist-inspired platform for music lovers.",
   manifest: "/manifest.json", // ✅ PWA support
   themeColor: "#ff0050",
   icons: {

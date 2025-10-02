@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCharts, getTopVideos } from "@/actions/getCharts";
+import { getCharts, getTrending } from "@/actions/getCharts";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
@@ -22,7 +22,13 @@ export async function GET(req: Request) {
     // if category is videos, also send top 10
     let topVideos: any = [];
     if (category === "videos") {
-      topVideos = await getTopVideos(10);
+      topVideos = await getTrending(
+        {
+          model:"Video",
+          limit: 10,
+          sinceDays: 30
+        }
+      );
     }
 
     return NextResponse.json({

@@ -1,5 +1,5 @@
 import { connectToDatabase } from "@/lib/database";
-import Song from "@/lib/database/models/song";
+import {Song} from "@/lib/database/models/song";
 import { NextResponse } from "next/server";
 
 export async function GET() {

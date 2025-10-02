@@ -14,7 +14,7 @@ declare global {
 }
 
 // Use global cache to prevent multiple connections in dev
-let cached = global.mongoose || { conn: null, promise: null };
+const cached = global.mongoose || { conn: null, promise: null };
 global.mongoose = cached;
 
 export const connectToDatabase = async () => {

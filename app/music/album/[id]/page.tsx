@@ -29,7 +29,8 @@ export async function generateMetadata(
         images: album.coverUrl ? [{ url: album.coverUrl }] : undefined,
       },
     };
-  } catch (error) {
+  } catch (error:any) {
+    console.log("ALBUM_ERROR",error)
     return { title: "Song details" };
   }
 }

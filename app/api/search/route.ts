@@ -1,96 +1,103 @@
-import { getAllAlbums } from "@/actions/getAlbums";
-import { getSongs } from "@/actions/getSongs";
-import { getVideos } from "@/actions/getVideos";
-import { NextRequest, NextResponse } from "next/server";;
-
-type ContentType = "Music" | "Video" | "Album";
-
-export interface SearchItem {
-  id: string;
-  title: string;
-  artist?: string;
-  thumbnail: string;
-  type: ContentType;
-  downloads?: number;
-  description?: string;
-  tracks?: number;
-}
+// app/api/search/route.ts
+import { NextRequest, NextResponse } from "next/server";
+import { connectToDatabase } from "@/lib/database";
+import { Song } from "@/lib/database/models/song";
+import { Album } from "@/lib/database/models/album";
+import { Video } from "@/lib/database/models/video";
 
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const q = searchParams.get("q") || "";
-  const type = (searchParams.get("type") || "All") as ContentType | "All";
-  const page = parseInt(searchParams.get("page") || "1");
-  const limit = parseInt(searchParams.get("limit") || "12");
-
   try {
-    // Fetch all data (could optimize by filtering in MongoDB)
-    const [songs, videos, albums] = await Promise.all([
-      getSongs(),
-      getVideos(),
-      getAllAlbums(),
-    ]);
+    await connectToDatabase();
 
-    // Transform API data to unified SearchItem type
-    let items: SearchItem[] = [
-      ...songs.map((s) => ({
-        id: s.id,
-        title: s.title,
-        artist: s.artist,
-        thumbnail: s.coverUrl,
-        type: "Music" as const,
-        downloads: s.downloads,
-        description: s.description || undefined,
-      })),
-      ...videos.map((v) => ({
-        id: v.id,
-        title: v.title,
-        artist: v.artist,
-        thumbnail: v.thumbnailUrl,
-        type: "Video" as const,
-        downloads: v.downloads,
-        description: v.description || undefined,
-      })),
-      ...albums.map((a) => ({
-        id: a.id,
-        title: a.title,
-        artist: a.artist,
-        thumbnail: a.coverUrl,
-        type: "Album" as const,
-        tracks: a.songs.length,
-        description: a.description || undefined,
-      })),
-    ];
+    const { searchParams } = new URL(req.url);
+    const query = searchParams.get("q")?.trim();
+    const type = searchParams.get("type"); // songs, albums, videos, artists, or "all"
+    const limit = parseInt(searchParams.get("limit") || "20");
 
-    // Apply type filter
-    if (type !== "All") {
-      items = items.filter((i) => i.type === type);
-    }
-
-    // Apply text search
-    if (q) {
-      const queryLower = q.toLowerCase();
-      items = items.filter(
-        (i) =>
-          i.title.toLowerCase().includes(queryLower) ||
-          i.artist?.toLowerCase().includes(queryLower) ||
-          i.description?.toLowerCase().includes(queryLower)
+    if (!query) {
+      return NextResponse.json(
+        { error: "Missing search query (q)" },
+        { status: 400 }
       );
     }
 
-    // Pagination
-    const start = (page - 1) * limit;
-    const end = start + limit;
-    const paginated = items.slice(start, end);
+    const regex = new RegExp(query, "i"); // case-insensitive search
+
+    const normalize = (doc: any, category: string) => ({
+      id: String(doc._id),
+      title: doc.title || doc.name,
+      artist: doc.artist || doc.curator || doc.name || "",
+      image:
+        doc.coverUrl ||
+        doc.thumbnailUrl ||
+        doc.profilePic ||
+        "/assets/images/placeholder_cover.jpg",
+      category,
+    });
+
+    const results: any[] = [];
+
+    // SONGS
+    if (!type || type === "all" || type === "songs") {
+      const songs = await Song.find({
+        $or: [{ title: regex }, { artist: regex }],
+      })
+        .limit(limit)
+        .lean();
+      results.push(...songs.map((s) => normalize(s, "song")));
+    }
+
+    // ALBUMS
+    if (!type || type === "all" || type === "albums") {
+      const albums = await Album.find({
+        $or: [{ title: regex }, { curator: regex }],
+      })
+        .limit(limit)
+        .lean();
+      results.push(...albums.map((a) => normalize(a, "album")));
+    }
+
+    // VIDEOS
+    if (!type || type === "all" || type === "videos") {
+      const videos = await Video.find({
+        $or: [{ title: regex }, { artist: regex }],
+      })
+        .limit(limit)
+        .lean();
+      results.push(...videos.map((v) => normalize(v, "video")));
+    }
+
+    // ARTISTS (from Song.artist, Album.curator, Video.artist)
+    if (!type || type === "all" || type === "artists") {
+      const [songArtists, albumArtists, videoArtists] = await Promise.all([
+        Song.find({ artist: regex }).distinct("artist"),
+        Album.find({ curator: regex }).distinct("curator"),
+        Video.find({ artist: regex }).distinct("artist"),
+      ]);
+
+      const uniqueArtists = Array.from(
+        new Set([...songArtists, ...albumArtists, ...videoArtists])
+      ).slice(0, limit);
+
+      results.push(
+        ...uniqueArtists.map((name) => ({
+          id: name,
+          title: name,
+          artist: name,
+          image: "/assets/images/placeholder_artist.jpg",
+          category: "artist",
+        }))
+      );
+    }
 
     return NextResponse.json({
-      data: paginated,
-      total: items.length,
-      page,
-      limit,
+      query,
+      type: type || "all",
+      count: results.length,
+      results,
     });
-  } catch (err) {
-    console.error("Search API error:", err);
-    return NextResponse.json({ error: "Failed to fetch search results" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Search API Error:", error);
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

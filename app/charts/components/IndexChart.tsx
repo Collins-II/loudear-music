@@ -13,7 +13,6 @@ import {
 
 import { ChartRow } from "@/components/music/ChartRow";
 import { DropdownRadio } from "@/components/DropdownRadio";
-import { TopSongCard } from "@/components/artists/TopArtists";
 import { getCharts, ChartItem, getTrending } from "@/actions/getCharts";
 import { ChartCard } from "@/components/music/ChartCard";
 import { getSocket } from "@/lib/socketClient";
@@ -207,20 +206,28 @@ const filteredCharts = useMemo(() => {
 
   useEffect(() => setVisibleItems(itemsPerPage), [filters]);
 
-  useEffect(() => {
-    if (filters.view === "grid") return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setVisibleItems((prev) => Math.min(prev + itemsPerPage, filteredCharts.length));
-        }
-      },
-      { threshold: 1 }
-    );
-    const current = loaderRef.current;
-    if (current) observer.observe(current);
-    return () => current && observer.unobserve(current);
-  }, [filteredCharts, filters.view]);
+useEffect(() => {
+  if (filters.view === "grid") return;
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) {
+        setVisibleItems((prev) =>
+          Math.min(prev + itemsPerPage, filteredCharts.length)
+        );
+      }
+    },
+    { threshold: 1 }
+  );
+
+  const current = loaderRef.current;
+  if (current) observer.observe(current);
+
+  return () => {
+    if (current) observer.unobserve(current);
+  };
+}, [filteredCharts, filters.view]);
+
 
   const cardUrl = filters.category === "songs"? "song" : "album" 
 
@@ -363,7 +370,7 @@ const filteredCharts = useMemo(() => {
               </h3>
 
               <div className="divide-y">
-                {filteredCharts.map((item) => (
+                {charts.map((item) => (
                   <ChartRow
                     key={item.id}
                     idx={item.position}
@@ -388,7 +395,7 @@ const filteredCharts = useMemo(() => {
                 <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pb-12">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {filteredCharts.slice(0, visibleItems).map((item, idx) => (
                   <ChartCard
                     key={idx}

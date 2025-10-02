@@ -4,7 +4,9 @@ const withPWA = withPWAInit({
   dest: "public",
   register: true,
   skipWaiting: true,
+  // Disable only during dev (important for Windows builds)
   disable: process.env.NODE_ENV === "development",
+  buildExcludes: [/middleware-manifest.json$/], // prevents trace file lock issues
 });
 
 const nextConfig = {
@@ -22,8 +24,12 @@ const nextConfig = {
       "image-cdn-fa.spotifycdn.com",
       "mosaic.scdn.co",
       "image-cdn-ak.spotifycdn.com",
-      "i.scdn.co"
+      "i.scdn.co",
     ],
+  },
+  // ✅ This ensures .next/trace is not locked during build
+  experimental: {
+    outputFileTracingRoot: process.cwd(),
   },
 };
 

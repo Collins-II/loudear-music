@@ -2,9 +2,8 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Card, CardContent } from "@/components/ui/card";
-import { Download, DownloadCloud, DownloadIcon, Group, GroupIcon, Play, UserPlus2Icon } from "lucide-react";
-import { timeAgo } from "@/lib/utils";
+import {  CardContent } from "@/components/ui/card";
+import {  Play } from "lucide-react";
 import Link from "next/link";
 
 interface ArtistCardProps {
@@ -17,7 +16,7 @@ interface ArtistCardProps {
   region: string;
 }
 
-export function ArtistCard({ id, name, topSongs, totalSongs, image, followers, region }: ArtistCardProps) {
+export function ArtistCard({ name, totalSongs, image, followers }: ArtistCardProps) {
   return (
     <motion.div
       whileHover={{ scale: 1.05 }}

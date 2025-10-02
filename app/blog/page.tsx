@@ -3,8 +3,6 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { CardContent } from "@/components/ui/card";
-import { timeAgo } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { DropdownRadio } from "@/components/DropdownRadio";

@@ -1,8 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Play, Calendar, Youtube } from "lucide-react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 

@@ -2,7 +2,6 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/database";
 import { Video } from "@/lib/database/models/video";
-import cloudinary from "@/lib/cloudinary";
 import { getCurrentUser } from "@/actions/getCurrentUser";
 
 // Utility to add CORS headers

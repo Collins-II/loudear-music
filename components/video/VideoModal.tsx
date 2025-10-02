@@ -9,7 +9,7 @@ interface VideoModalProps {
   videoUrl?: string;
 }
 
-export function VideoModal({ open, onOpenChange, videoId, videoUrl }: VideoModalProps) {
+export function VideoModal({ open, onOpenChange, videoId }: VideoModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl p-0 overflow-hidden">

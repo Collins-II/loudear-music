@@ -1,4 +1,4 @@
-import { getVideoById } from "@/actions/getVideosById";
+
 import ClientPage from "./components/ClientPage";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
@@ -31,6 +31,7 @@ export async function generateMetadata(
       },
     };
   } catch (error) {
+    console.log("VIDEO_ERR",error)
     return { title: "Video details" };
   }
 }

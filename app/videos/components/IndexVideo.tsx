@@ -89,21 +89,27 @@ export default function IndexVideo({ videos }: IndexVideoProps) {
   useEffect(() => setVisibleItems(itemsPerPage), [filters]);
 
   useEffect(() => {
-    if (filters.view === "grid") return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setVisibleItems((prev) =>
-            Math.min(prev + itemsPerPage, filteredVideos.length)
-          );
-        }
-      },
-      { threshold: 1 }
-    );
-    const current = loaderRef.current;
-    if (current) observer.observe(current);
-    return () => current && observer.unobserve(current);
-  }, [filteredVideos, filters.view]);
+  if (filters.view === "grid") return;
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) {
+        setVisibleItems((prev) =>
+          Math.min(prev + itemsPerPage, filteredVideos.length)
+        );
+      }
+    },
+    { threshold: 1 }
+  );
+
+  const current = loaderRef.current;
+  if (current) observer.observe(current);
+
+  return () => {
+    if (current) observer.unobserve(current);
+  };
+}, [filteredVideos, filters.view]);
+
 
   // --- Clear Filters ---
   const clearFilters = () =>
@@ -121,7 +127,7 @@ export default function IndexVideo({ videos }: IndexVideoProps) {
               transition={{ duration: 0.6 }}
               className="text-blue-400 text-4xl md:text-6xl font-extrabold tracking-tight"
             >
-              Videos
+              Explore Videos
             </motion.h1>
 
             <div className="mt-6 flex gap-3">
@@ -209,7 +215,7 @@ export default function IndexVideo({ videos }: IndexVideoProps) {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pb-12">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {filteredVideos.slice(0, visibleItems).map((item) => (
                   <ChartCard
                     key={item.id}

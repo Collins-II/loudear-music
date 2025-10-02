@@ -93,7 +93,7 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-2">
+        <nav className="hidden md:flex items-center gap-4">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (

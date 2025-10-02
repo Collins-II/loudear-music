@@ -12,7 +12,7 @@ export default async function PlaylistPage({ params }: Props) {
 
   // preload related playlists on the server if you want
   const related = playlist.genre
-    ? await fetchPlaylists(playlist.genre, 10)
+    ? await fetchPlaylists(playlist.genre, "10")
     : [];
 
   return (

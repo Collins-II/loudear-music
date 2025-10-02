@@ -4,7 +4,6 @@ import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { CardContent } from "@/components/ui/card";
 import { timeAgo } from "@/lib/utils";
 import { blogPosts } from "../page";
 
@@ -73,7 +72,7 @@ export default function BlogPostPage() {
     );
   }
 
-  const relatedPosts = blogPostsData.filter((p) => p.id !== post.id).slice(0, 2);
+  //const relatedPosts = blogPostsData.filter((p) => p.id !== post.id).slice(0, 2);
   const trendingPosts = blogPostsData.slice(0, 3);
 
   return (

@@ -14,12 +14,13 @@ import {
 import { Label } from "@/components/ui/label";
 import { Loader2, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
+import Image from "next/image";
 
 interface UploadProps {
   onSuccess: () => void;
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+//const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
 export default function SingleUploadForm({ onSuccess }: UploadProps) {
   const [file, setFile] = useState<File | null>(null);
@@ -197,7 +198,7 @@ export default function SingleUploadForm({ onSuccess }: UploadProps) {
           >
             <input {...getCoverInput()} />
             {coverPreview ? (
-              <img src={coverPreview} alt="Cover preview" className="mx-auto max-h-40 rounded-lg shadow-md" />
+              <Image src={coverPreview} width={40} height={40} alt="Cover preview" className="mx-auto max-h-40 rounded-lg shadow-md" />
             ) : (
               <div className="flex flex-col items-center text-neutral-400">
                 <UploadCloud className="w-8 h-8 mb-2" />

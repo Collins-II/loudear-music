@@ -90,7 +90,7 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    let updateData: any = { title, description };
+    const updateData: any = { title, description };
 
     // If new image is provided, upload and replace old one
     if (imageFile) {

@@ -6,7 +6,7 @@ import { Album } from "@/lib/database/models/album";
 import { Video } from "@/lib/database/models/video";
 
 export type ItemType = "Song" | "Album" | "Video";
-type InteractionType = "view" | "like" | "download" | "share";
+type InteractionType = "view" | "like" | "download" | "share" | "unlike";
 
 // Reaction types
 export type ReactionType = "heart" | "fire" | "laugh" | "up" | "down";

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Edit2, Trash2, Flag, User, CornerUpRight, ChevronDown, ChevronUp } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { ReactionBar } from "./ReactionBar";
+//import { ReactionBar } from "./ReactionBar";
 import { motion, AnimatePresence } from "framer-motion";
 import { CommentSerialized } from "@/actions/getSongById";
 import Image from "next/image";

@@ -1,11 +1,9 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { CalendarDays, MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { timeAgo } from "@/lib/utils"; // relative date utility
-import { Event } from "@/app/events/page";
 
-export default function EventCard({ event }: { event: Event }) {
+export default function EventCard({ event }: { event: any }) {
   return (
     <motion.div
       key={event.id}

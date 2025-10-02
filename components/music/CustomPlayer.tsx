@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, Volume2, Download, DownloadCloud } from "lucide-react";
+import { Play, Pause, Volume2, DownloadCloud } from "lucide-react";
 import Image from "next/image";
 
 interface CustomPlayerProps {

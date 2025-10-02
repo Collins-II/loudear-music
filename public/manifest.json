@@ -1,7 +1,7 @@
 {
   "name": "LoudEar Music",
   "short_name": "LoudEar",
-  "description": "Stream, download, and discover music and YouTube videos with LoudEar.",
+  "description": "Stream, download, and discover music and videos with LoudEar.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#000000",

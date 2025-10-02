@@ -6,11 +6,8 @@ import { VideoModal } from "@/components/video/VideoModal";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
-import Image from "next/image";
 import Link from "next/link";;
 import HorizontalSlider from "./sliders/HorizontalSlider";
-import { SliderCard } from "./sliders/SliderCard";
-import { SongSerialized, VideoSerialized } from "@/actions/getSongById";
 import { ChartItem } from "@/actions/getCharts";
 
 interface SectionProps {
@@ -20,7 +17,7 @@ interface SectionProps {
 
 export default function LatestSection({ songs, videos}: SectionProps) {
   const [open, setOpen] = useState(false);
-  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  const [selectedVideo] = useState<string | null>(null);
 
   return (
     <section className="py-16  bg-background">
@@ -29,11 +26,8 @@ export default function LatestSection({ songs, videos}: SectionProps) {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-3 space-y-12">
-          {/* Example Ad Section */}
-        <div className="bg-blue-200 rounded-xl p-6 text-center shadow-md">
-          <p className="text-gray-700 font-semibold">Ad Space</p>
-          <p className="text-sm text-gray-600">Promote your brand</p>
-        </div>
+          {/* Example Ad Section 
+        */}
           {/* Latest Music */}
           <div className="px-6 md:px-0 ">
             <h3 className="relative text-slate-900 text-2xl md:text-3xl font-extrabold mb-6 tracking-tight">
@@ -70,12 +64,10 @@ export default function LatestSection({ songs, videos}: SectionProps) {
           </div>
 
           {/* Banner Ad Space */}
-          <Card className="h-32 flex items-center justify-center bg-muted/40">
-            {/* Google AdSense Banner Slot */}
-            <span className="text-muted-foreground text-sm">
-              [728x90 Banner Ad]
-            </span>
-          </Card>
+        <div className="bg-blue-200 rounded-xl p-6 text-center shadow-md">
+          <p className="text-gray-700 font-semibold">Ad Space</p>
+          <p className="text-sm text-gray-600">Promote your brand</p>
+        </div>
 
           {/* Latest Videos */}
           <div className="">

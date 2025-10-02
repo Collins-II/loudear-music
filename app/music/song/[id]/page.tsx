@@ -30,6 +30,7 @@ export async function generateMetadata(
       },
     };
   } catch (error) {
+    console.log("SONG_ERROR",error)
     return { title: "Song details" };
   }
 }

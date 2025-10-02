@@ -36,12 +36,12 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
   const userId = session?.user?.id;
 
   const [liked, setLiked] = useState(
-    data.likes ? data.likes.includes(userId || "") : false
+    false
   );
   const [likeCount, setLikeCount] = useState(data.likeCount);
   const [shareCount, setShareCount] = useState(data.shareCount);
   const [downloadCount, setDownloadCount] = useState(data.downloadCount);
-  const [related, setRelated] = useState<VideoSerialized[]>(relatedVideos);
+  const [related] = useState<VideoSerialized[]>(relatedVideos);
   const [downloading, setDownloading] = useState(false);
 
   const chartRank = 12;
@@ -66,7 +66,7 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
     };
   }, [data._id]);
 
-const handleInteraction = async (type: "like" | "share" | "download") => {
+const handleInteraction = async (type: "like" | "share" | "download" | "unlike") => {
   if (!userId) return alert("Please sign in to interact.");
 
   try {

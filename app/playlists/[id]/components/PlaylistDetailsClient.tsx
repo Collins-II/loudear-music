@@ -1,12 +1,11 @@
 // app/playlists/[id]/PlaylistDetailsClient.tsx
 "use client";
 
-import { useState } from "react";
 import { motion } from "framer-motion";
-import Link from "next/link";
 import { TopPlaylist } from "@/components/playlists/TopPlaylist";
 import { Playlist } from "../../page";
 import Image from "next/image";
+import { LazySpotifyIframe } from "./LazySpotifyIframe";
 
 interface Track {
   id: string;
@@ -87,15 +86,10 @@ export default function PlaylistDetailsClient({
             transition={{ delay: 0.3, duration: 0.8 }}
             className="mt-8"
           >
-            <iframe
-              src={`https://open.spotify.com/embed/playlist/${playlist.id}`}
-              width="100%"
-              height="620"
-              frameBorder="0"
-              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-              loading="lazy"
-              className="rounded-xl shadow-lg"
-            />
+            <LazySpotifyIframe 
+               playlistId={playlist.id}
+               title={`${playlist.curator} - ${playlist.title}`}
+             />
           </motion.div>
         </div>
 

@@ -43,7 +43,7 @@ export default function AlbumPlayer({
 
   // queues
   const [queue, setQueue] = useState<SongSerialized[]>(tracks);
-  const [shuffledQueue, setShuffledQueue] = useState<SongSerialized[] | null>(null);
+  const [shuffledQueue] = useState<SongSerialized[] | null>(null);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const activeQueue = shuffledQueue ?? queue;
   const currentTrack = activeQueue[currentIndex] || null;
@@ -67,7 +67,7 @@ export default function AlbumPlayer({
     return false;
   });
 
-  const [shuffle, setShuffle] = useState(false);
+  const [shuffle] = useState(false);
   const [repeatMode, setRepeatMode] = useState<RepeatMode>("off");
 
   // likes state
@@ -98,7 +98,39 @@ export default function AlbumPlayer({
     localStorage.setItem("player_muted", String(muted));
   }, [volume, muted, applyVolumeToAudio]);
 
-  // audio listeners
+  const nextTrack = useCallback(() => {
+  if (!currentTrack) return;
+
+  if (repeatMode === "one" && audioRef.current) {
+    // restart same track
+    audioRef.current.currentTime = 0;
+    audioRef.current.play();
+    return;
+  }
+
+  const nextIdx = currentIndex + 1;
+
+  if (nextIdx < activeQueue.length) {
+    setCurrentIndex(nextIdx);
+  } else {
+    // ✅ Always loop back to first track (infinite)
+    setCurrentIndex(0);
+
+    if (repeatMode === "off") {
+      // autoplay only if repeat is not "off"
+      if (audioRef.current) {
+        audioRef.current.currentTime = 0;
+        audioRef.current.play().catch(() => setIsPlaying(false));
+      }
+    }
+  }
+}, [currentIndex, activeQueue, repeatMode, currentTrack]);
+
+// Wrap handleTrackEnd in useCallback
+const handleTrackEnd = useCallback(() => {
+  nextTrack();
+}, [nextTrack]);
+
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -120,7 +152,7 @@ export default function AlbumPlayer({
       audio.removeEventListener("loadedmetadata", onLoaded);
       audio.removeEventListener("ended", onEnded);
     };
-  }, [currentIndex, activeQueue, repeatMode]);
+  }, [currentIndex, activeQueue, repeatMode,handleTrackEnd]);
 
   // load currentTrack
   useEffect(() => {
@@ -160,33 +192,8 @@ export default function AlbumPlayer({
     setProgress(pct);
   };
 
-const nextTrack = () => {
-  if (!currentTrack) return;
-
-  if (repeatMode === "one" && audioRef.current) {
-    // restart same track
-    audioRef.current.currentTime = 0;
-    audioRef.current.play();
-    return;
-  }
-
-  const nextIdx = currentIndex + 1;
-
-  if (nextIdx < activeQueue.length) {
-    setCurrentIndex(nextIdx);
-  } else {
-    // ✅ Always loop back to first track (infinite)
-    setCurrentIndex(0);
-
-    if (repeatMode === "off") {
-      // autoplay only if repeat is not "off"
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(() => setIsPlaying(false));
-      }
-    }
-  }
-};
+// --- controls ---
+// Next track
 
 
   const prevTrack = () => {
@@ -194,9 +201,9 @@ const nextTrack = () => {
     setCurrentIndex((prev) => (prev > 0 ? prev - 1 : activeQueue.length - 1));
   };
 
-  const handleTrackEnd = () => nextTrack();
+ 
 
-  const toggleShuffle = () => {
+  {/*const toggleShuffle = () => {
     setShuffle((s) => {
       const newS = !s;
       if (newS) {
@@ -221,7 +228,7 @@ const nextTrack = () => {
       }
       return newS;
     });
-  };
+  };*/}
 
   const shuffleTracklist = () => {
     setQueue((prev) => {

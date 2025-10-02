@@ -3,10 +3,8 @@
 import { useState, useEffect, useRef, useDeferredValue } from "react";
 import { PlaylistCard } from "@/components/playlists/PlaylistCard";
 import { TopPlaylist } from "@/components/playlists/TopPlaylist";
-import Link from "next/link";
 import { fetchPlaylists } from "@/lib/spotify";
 import { Button } from "@/components/ui/button";
-import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { DropdownRadio } from "@/components/DropdownRadio";
 
 export interface Playlist {
@@ -19,9 +17,89 @@ export interface Playlist {
   lastWeek?: number;
 }
 
-const moods = ["All", "Love", "Party", "Rap", "Melody"];
-const regions = ["global", "africa", "us"] as const;
-const sorts = ["popular", "recent"] as const;
+const moods = [
+  "All",
+  "Pop",
+  "Afro Pop",
+  "Chill",
+  "Happy",
+  "Sad",
+  "Love",
+  "Romantic",
+  "Heartbreak",
+  "Energetic",
+  "Party",
+  "Focus",
+  "Relax",
+  "Meditation",
+  "Sleep",
+  "Workout",
+  "Motivation",
+  "Rap",
+  "Melody",
+  "Dance",
+  "Upbeat",
+  "Calm",
+  "Dark",
+  "Emotional",
+  "Angry",
+  "Peaceful",
+  "Soulful",
+  "Groovy",
+  "Inspiring",
+  "Summer",
+  "Winter",
+  "Morning",
+  "Evening",
+  "Weekend",
+  "Road Trip",
+  "Study",
+  "Gaming",
+  "Background",
+  "Festival",
+  "90s Nostalgia",
+  "Throwback",
+  "Acoustic",
+  "Instrumental",
+  "Viral Hits"
+];
+
+const regions = [
+  // Global
+  "global",
+
+  // Continents
+  "africa",
+  "europe",
+  "asia",
+  "north-america",
+  "south-america",
+  "oceania",
+  "middle-east",
+
+  // Key Markets / Countries
+  "zambia",
+  "nigeria",
+  "south-africa",
+  "kenya",
+  "ghana",
+  "uk",
+  "us",
+  "canada",
+  "brazil",
+  "mexico",
+  "germany",
+  "france",
+  "spain",
+  "italy",
+  "india",
+  "japan",
+  "south-korea",
+  "australia",
+  "china",
+];
+
+const sorts = ["relevance", "followers", "tracks"];
 
 export default function PlaylistsPage() {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
@@ -29,7 +107,7 @@ export default function PlaylistsPage() {
 
   const [filters, setFilters] = useState({
     region: "global" as "global" | "africa" | "us",
-    sort: "popular" as "popular" | "recent",
+    sort: "relevance" as "relevance" | "followers" | "tracks",
     mood: "All",
     view: "grid" as "grid" | "chart",
   });
@@ -40,14 +118,21 @@ export default function PlaylistsPage() {
   const loaderRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch playlists whenever filters change
-  useEffect(() => {
-    setLoading(true);
-    fetchPlaylists(deferredFilters.mood).then((data) => {
-      setPlaylists(data);
-      setLoading(false);
-      setVisibleItems(itemsPerPage);
-    });
-  }, [deferredFilters]);
+useEffect(() => {
+  setLoading(true);
+
+  fetchPlaylists(
+    deferredFilters.mood,
+    deferredFilters.region,
+    deferredFilters.sort,
+    30 // you can still pass limit
+  ).then((data) => {
+    setPlaylists(data);
+    setLoading(false);
+    setVisibleItems(itemsPerPage);
+  });
+}, [deferredFilters, itemsPerPage]);
+
 
   // Reset visible items on filter change
   useEffect(() => {
@@ -56,24 +141,29 @@ export default function PlaylistsPage() {
 
   // Infinite scroll for grid view
   useEffect(() => {
-    if (filters.view === "chart") return;
+  if (filters.view === "chart") return;
 
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        setVisibleItems((prev) => Math.min(prev + itemsPerPage, playlists?.length));
-      }
-    });
+  const observer = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting) {
+      setVisibleItems((prev) =>
+        Math.min(prev + itemsPerPage, playlists?.length)
+      );
+    }
+  });
 
-    if (loaderRef.current) observer.observe(loaderRef.current);
-    return () => {
-      if (loaderRef.current) observer.unobserve(loaderRef.current);
-    };
-  }, [playlists, filters.view]);
+  const node = loaderRef.current; // ✅ copy to local variable
+  if (node) observer.observe(node);
+
+  return () => {
+    if (node) observer.unobserve(node); // ✅ use the same node reference
+  };
+}, [playlists, filters.view, itemsPerPage]);
+
 
   const clearFilters = () => {
     setFilters({
       region: "global",
-      sort: "popular",
+      sort: "relevance",
       mood: "All",
       view: "grid",
     });
@@ -92,49 +182,29 @@ export default function PlaylistsPage() {
             </h1>
             <div className="mt-6 flex gap-3">
               <Button
-                variant={filters.view === "grid" ? "default" : "secondary"}
+                variant={filters.view === "grid" ? "secondary" : "default"}
                 onClick={() => setFilters((f) => ({ ...f, view: "grid" }))}
               >
                 Grid View
-              </Button>
-              <Button
-                variant={filters.view === "chart" ? "default" : "secondary"}
-                onClick={() => setFilters((f) => ({ ...f, view: "chart" }))}
-              >
-                Weekly Chart
               </Button>
             </div>
           </div>
 
           {/* Filters */}
           <div className="flex flex-wrap gap-4 items-center justify-center">
-            <Select
-              value={filters.region}
-              onValueChange={(val) => setFilters((f) => ({ ...f, region: val as any }))}
-            >
-              <SelectTrigger className="bg-black text-white w-[160px]">
-                <SelectValue placeholder="Region" />
-              </SelectTrigger>
-              <SelectContent className="bg-black text-white">
-                {regions.map((r) => (
-                  <SelectItem key={r} value={r}>{r.toUpperCase()}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <DropdownRadio
+              actionLabel="Region"
+              label="Select Region"
+              data={regions}
+              onChange={(val) => setFilters((f) => ({ ...f, region: val as any }))}
+            />
 
-            <Select
-              value={filters.sort}
-              onValueChange={(val) => setFilters((f) => ({ ...f, sort: val as any }))}
-            >
-              <SelectTrigger className="bg-black text-white w-[160px]">
-                <SelectValue placeholder="Sort" />
-              </SelectTrigger>
-              <SelectContent className="bg-black text-white">
-                {sorts.map((s) => (
-                  <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <DropdownRadio
+              actionLabel="Sort"
+              label="Select"
+              data={sorts}
+              onChange={(val) => setFilters((f) => ({ ...f, sort: val as any }))}
+            />
 
             <DropdownRadio
               actionLabel="Mood"
@@ -154,34 +224,12 @@ export default function PlaylistsPage() {
       <section className="max-w-7xl mx-auto px-6 md:px-12 py-12 grid grid-cols-1 lg:grid-cols-4 gap-12">
         {/* Main Grid */}
         <div className="lg:col-span-3">
-          {filters.view === "chart" ? (
-            <div className="space-y-4 pb-12">
-              <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
-                <span className="relative z-10 bg-white pr-3">Weekly Chart</span>
-                <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
-              </h3>
-              <div className="divide-y">
-                {playlists?.map((p, idx) => (
-                  <div key={p.id} className="flex items-center gap-4 py-4">
-                    <div className="text-3xl font-extrabold text-black w-10">{idx + 1}</div>
-                    <img src={p.image} alt={p.title} className="w-16 h-16 object-cover rounded-md" />
-                    <div className="flex-1">
-                      <p className="font-bold">{p.title}</p>
-                      <p className="text-sm text-gray-600">{p.curator}</p>
-                    </div>
-                    <div className="text-sm text-gray-500">Last week: {p.lastWeek ?? "-"}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <>
               <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
                 <span className="relative z-10 bg-white pr-3">Top Playlists</span>
                 <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
               </h3>
 
-              <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 pb-12">
+              <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {playlists?.slice(0, visibleItems).map((p, idx) => (
                     <PlaylistCard
                       key={idx}
@@ -189,7 +237,7 @@ export default function PlaylistsPage() {
                       title={p.title}
                       cover={p.image}
                       creator={p.curator}
-                      songs={p.tracks}
+                      tracks={p.tracks < 100 ? p.tracks : 100}
                       likes={Math.floor(Math.random() * 100000)}
                     />
                 ))}
@@ -198,8 +246,6 @@ export default function PlaylistsPage() {
               <div ref={loaderRef} className="h-12 flex justify-center items-center">
                 {visibleItems < playlists?.length && <span className="text-gray-500">Loading more...</span>}
               </div>
-            </>
-          )}
         </div>
 
         {/* Sidebar */}

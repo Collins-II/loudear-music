@@ -33,7 +33,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
   const [shareCount, setShareCount] = useState<number>(data.shareCount ?? 0);
   const [downloadCount, setDownloadCount] = useState<number>(data.downloadCount ?? 0);
   const [imgError, setImgError] = useState(false);
-  const [isTrending, setSetIsTrending] = useState(true);
+  const isTrending = true;
 
   const chartRank = 12;
 

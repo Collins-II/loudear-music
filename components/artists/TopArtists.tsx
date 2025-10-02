@@ -36,7 +36,7 @@ const Shimmer = () => (
   <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded-2xl" />
 );
 
-export function TopSongCard({ position, id, title, artist, href, cover, downloads, genre }: TopSongCardProps) {
+export function TopSongCard({ position, title, artist, href, cover, downloads, genre }: TopSongCardProps) {
   const [loading, setLoading] = useState(true);
   const [imgError, setImgError] = useState(false);
 

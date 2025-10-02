@@ -2,9 +2,7 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Card, CardContent } from "@/components/ui/card";
-import { Download, DownloadCloud, DownloadIcon, Play } from "lucide-react";
-import { timeAgo } from "@/lib/utils";
+import { DownloadCloud} from "lucide-react";
 import Link from "next/link";
 
 interface TopVideoProps {

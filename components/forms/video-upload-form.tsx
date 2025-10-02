@@ -8,20 +8,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Upload, Video, ImageIcon, CheckCircle2, Loader2, Calendar, Tag, Info, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Upload, Video, ImageIcon, CheckCircle2, Loader2, Calendar, Tag, Info, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-import cloudinary from "@/lib/cloudinary";
 import { uploadToCloudinary } from "@/lib/helpers";
+import Image from "next/image";
 
 interface VideoUploadFormProps {
   onSuccess?: () => void;
 }
 
-// Convert File to Buffer
-async function bufferFromFile(file: File): Promise<Buffer> {
-  const arrayBuffer = await file.arrayBuffer();
-  return Buffer.from(arrayBuffer);
-}
 
 export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
   const [step, setStep] = useState(1);
@@ -187,7 +182,7 @@ if (videoFile) {
             <div {...getThumbRoot()} className="border-2 border-dashed border-neutral-700 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:border-blue-500">
               <input {...getThumbInput()} />
               {thumbnailPreview ? (
-                <img src={thumbnailPreview} className="w-48 h-32 object-cover rounded-lg shadow-md" alt="Thumbnail Preview" />
+                <Image width={50} height={40} src={thumbnailPreview} className="w-48 h-32 object-cover rounded-lg shadow-md" alt="Thumbnail Preview" />
               ) : (
                 <div className="flex flex-col items-center text-neutral-400">
                   <ImageIcon className="w-12 h-12 mb-2" />
@@ -218,7 +213,7 @@ if (videoFile) {
             {releaseDate && <p><span className="font-medium">Release Date:</span> {releaseDate}</p>}
             {tags && <p><span className="font-medium">Tags:</span> {tags}</p>}
             {description && <p className="text-neutral-400">{description}</p>}
-            {thumbnailPreview && <img src={thumbnailPreview} className="w-40 h-28 rounded-lg shadow-md object-cover" alt="Thumbnail" />}
+            {thumbnailPreview && <Image width={50} height={40} src={thumbnailPreview} className="w-40 h-28 rounded-lg shadow-md object-cover" alt="Thumbnail" />}
             {videoFile && <p>{videoFile.name}</p>}
           </div>
         );

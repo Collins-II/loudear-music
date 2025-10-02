@@ -37,16 +37,22 @@ export async function getAccessToken(): Promise<string> {
 
 export async function fetchPlaylists(
   mood: string = "All",
+  region: string = "global",
+  sort: string = "relevance",
   limit: number = 20
 ) {
   try {
     const token = await getAccessToken();
-    const query = mood !== "All" ? `${mood} playlists` : "playlists";
+
+    // Build query dynamically
+    let query = mood !== "All" ? `${mood} playlists` : "playlists";
+
+    if (region && region !== "global") {
+      query += ` ${region}`;
+    }
 
     const res = await fetch(
-      `https://api.spotify.com/v1/search?q=${encodeURIComponent(
-        query
-      )}&type=playlist&limit=${limit}`,
+      `https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=playlist&limit=${limit}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
@@ -57,21 +63,40 @@ export async function fetchPlaylists(
     }
 
     const data = await res.json();
+    let items: any[] = data?.playlists?.items ?? [];
 
-    // Ensure playlists exist
-    const items = data?.playlists?.items ?? [];
-    return items.map((p: any) => ({
-      id: p?.id,
-      title: p?.name,
-      curator: p?.owner?.display_name ?? "Unknown",
-      image: p?.images?.[0]?.url ?? "/placeholder.jpg",
-      tracks: p?.tracks?.total ?? 0,
+    // ✅ Filter playlists
+    items = items.filter(
+      (p) => p && p.id && p.name && (p.tracks?.total ?? 0) > 0
+    );
+
+    // ✅ Sorting logic
+    if (sort === "tracks") {
+      items.sort((a, b) => (b.tracks?.total ?? 0) - (a.tracks?.total ?? 0));
+    } else if (sort === "alpha") {
+      items.sort((a, b) => a.name.localeCompare(b.name));
+    } else if (sort === "recent") {
+      items.sort(
+        (a, b) =>
+          new Date(b?.snapshot_id?.timestamp ?? 0).getTime() -
+          new Date(a?.snapshot_id?.timestamp ?? 0).getTime()
+      );
+    }
+
+    return items.map((p) => ({
+      id: p.id,
+      title: p.name,
+      curator: p.owner?.display_name ?? "Unknown",
+      image: p.images?.[0]?.url ?? "/placeholder.jpg",
+      tracks: p.tracks?.total ?? 0,
     }));
   } catch (err) {
     console.error("Spotify fetchPlaylists error:", err);
     return [];
   }
 }
+
+
 
 export async function fetchPlaylistById(id: string) {
   try {

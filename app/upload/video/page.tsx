@@ -1,25 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { Video, Film } from "lucide-react";
 import { toast } from "sonner";
 import SingleVideoUploadForm from "@/components/forms/video-upload-form";
-import AlbumVideoUploadForm from "@/components/forms/video-upload-form";
 
 export default function UploadVideosPage() {
   // Success Handlers
   const handleSingleVideoSuccess = () => {
     toast.success("Video uploaded successfully!");
-  };
-
-  const handleAlbumVideoSuccess = () => {
-    toast.success("Video album uploaded successfully!");
   };
 
   return (

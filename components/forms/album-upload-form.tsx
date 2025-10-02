@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import Image from "next/image";
 
 interface AlbumUploadFormProps {
   onSuccess?: () => void;
@@ -41,7 +42,7 @@ interface SongMetadata {
   tags: string;
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+//const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
 export default function AlbumUploadForm({ onSuccess }: AlbumUploadFormProps) {
   const [step, setStep] = useState(1);
@@ -220,8 +221,10 @@ export default function AlbumUploadForm({ onSuccess }: AlbumUploadFormProps) {
             >
               <input {...getCoverInput()} />
               {coverPreview ? (
-                <img
+                <Image
                   src={coverPreview}
+                  width={30}
+                  height={30}
                   alt="Album cover"
                   className="w-40 h-40 object-cover rounded-lg shadow-md"
                 />
@@ -257,6 +260,7 @@ export default function AlbumUploadForm({ onSuccess }: AlbumUploadFormProps) {
                 className="border border-neutral-700 rounded-xl p-4 bg-neutral-800 relative"
               >
                 <button
+                  aria-label="button"
                   type="button"
                   onClick={() =>
                     setSongs((prev) => prev.filter((_, i) => i !== idx))
@@ -313,6 +317,7 @@ export default function AlbumUploadForm({ onSuccess }: AlbumUploadFormProps) {
                   </div>
                   <div className="flex items-center gap-2 mt-6">
                     <input
+                      aria-label="checkbox"
                       type="checkbox"
                       checked={song.explicit}
                       onChange={(e) =>
@@ -376,8 +381,10 @@ export default function AlbumUploadForm({ onSuccess }: AlbumUploadFormProps) {
               <p className="text-neutral-400">{description}</p>
             )}
             {coverPreview && (
-              <img
+              <Image
                 src={coverPreview}
+                width={30}
+                height={30}
                 alt="Album Cover"
                 className="w-40 h-40 rounded-lg shadow-md object-cover"
               />
