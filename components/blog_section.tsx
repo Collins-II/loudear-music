@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { CardContent } from "@/components/ui/card";
 import { timeAgo } from "@/lib/utils";
-import { blogPosts } from "@/app/blog/page";
+import { blogPosts } from "@/data/blogPosts";
 
 // Dummy blog data
 

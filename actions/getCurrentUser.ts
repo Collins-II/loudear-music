@@ -3,7 +3,7 @@
 import { getServerSession } from "next-auth/next";
 import { connectToDatabase } from "@/lib/database";
 import { User } from "@/lib/database/models/user";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 
 export async function getCurrentUser() {
   await connectToDatabase();

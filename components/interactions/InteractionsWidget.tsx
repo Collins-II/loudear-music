@@ -1,7 +1,9 @@
-import { socket } from "@/lib/socketClient";
+
+import { getSocket } from "@/lib/socketClient";
 import { useEffect, useState } from "react";
 
 export default function InteractionWidget({ id }: { id: string }) {
+  const socket = getSocket()
   const [counts, setCounts] = useState({ likes: 0, shares: 0, downloads: 0, views: 0 });
 
   useEffect(() => {
@@ -16,7 +18,7 @@ export default function InteractionWidget({ id }: { id: string }) {
     return () => {
       socket.off("interaction:update");
     };
-  }, [id]);
+  }, [id,socket]);
 
   return (
     <div>

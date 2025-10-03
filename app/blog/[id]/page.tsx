@@ -5,7 +5,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { timeAgo } from "@/lib/utils";
-import { blogPosts } from "../page";
+import { blogPosts } from "@/data/blogPosts";
 
 // Dummy blog data
 const blogPostsData = [

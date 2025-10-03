@@ -1,18 +1,17 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import "react-quill-new/dist/quill.snow.css"; // Quill theme
-import type { Quill } from "react-quill-new";
+import "react-quill-new/dist/quill.snow.css";
 
+// dynamically import ReactQuill
 const ReactQuill = dynamic(() => import("react-quill-new"), { ssr: false });
 
-export default function WysiwygEditor({
-  value,
-  onChange,
-}: {
+interface WysiwygEditorProps {
   value: string;
   onChange: (val: string) => void;
-}) {
+}
+
+export default function WysiwygEditor({ value, onChange }: WysiwygEditorProps) {
   const modules = {
     toolbar: [
       ["bold", "italic", "underline"],
@@ -22,9 +21,9 @@ export default function WysiwygEditor({
     ],
   };
 
-  // Convert Quill's delta content to plain text on change
-  const handleChange = (content: string, delta: any, source: string, editor: Quill) => {
-    onChange(editor.getText().trim()); // plain text only
+  // Use `any` for types since react-quill-new doesn't export Delta/UnprivilegedEditor
+  const handleChange = (content: string, _delta: any, _source: string, editor: any) => {
+    onChange(editor.getText().trim()); // plain text
   };
 
   return (

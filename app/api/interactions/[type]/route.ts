@@ -4,32 +4,45 @@ import { Song } from "@/lib/database/models/song";
 import { Album } from "@/lib/database/models/album";
 import { Video } from "@/lib/database/models/video";
 
-const modelMap: Record<string, any> = { Song, Album, Video };
+// ✅ Model map
+const modelMap = { Song, Album, Video } as const;
 
-export async function POST(req: NextRequest, { params }: { params: { type: string } }) {
+// ✅ Use Next.js inferred context type — do NOT manually define RouteContext
+export async function POST(
+  req: NextRequest,
+  context: { params: Promise<{ type: string }> }
+) {
+  const { type } = await context.params;
+
   try {
-    const { type } = params;
-    const { id, model, userId }: { id: string; model: keyof typeof modelMap; userId: string } = await req.json();
+    const { id, model, userId }: { id: string; model: keyof typeof modelMap; userId: string } =
+      await req.json();
 
     if (!Types.ObjectId.isValid(id) || !Types.ObjectId.isValid(userId)) {
-      return NextResponse.json({ success: false, error: "Invalid ID" });
+      return NextResponse.json({ success: false, error: "Invalid ID" }, { status: 400 });
     }
 
     const Model = modelMap[model];
-    if (!Model) return NextResponse.json({ success: false, error: "Invalid model" });
+    if (!Model) {
+      return NextResponse.json({ success: false, error: "Invalid model" }, { status: 400 });
+    }
 
     const doc = await Model.findById(id);
-    if (!doc) return NextResponse.json({ success: false, error: `${model} not found` });
+    if (!doc) {
+      return NextResponse.json({ success: false, error: `${model} not found` }, { status: 404 });
+    }
 
-    // ✅ Add/remove userId from interaction array
-    let updated = false;
-    const field = `${type}s`; // "likes", "shares", "downloads", "views"
+    const field = `${type}s`; // likes, shares, downloads, views
 
-    if (!Array.isArray(doc[field])) doc[field] = [];
+    if (!Array.isArray(doc[field])) {
+      doc[field] = [];
+    }
 
     const already = doc[field].some((u: any) => u.toString() === userId);
+    let updated = false;
 
     if (type === "like") {
+      // ✅ Toggle like
       if (already) {
         doc[field] = doc[field].filter((u: any) => u.toString() !== userId);
       } else {
@@ -37,38 +50,34 @@ export async function POST(req: NextRequest, { params }: { params: { type: strin
       }
       updated = true;
     } else if (!already) {
+      // ✅ Add once for other types
       doc[field].push(userId);
       updated = true;
     }
 
     if (updated) await doc.save();
 
-    // ✅ Broadcast via socket.io (step 3)
+    const counts = {
+      likes: doc.likes?.length ?? 0,
+      shares: doc.shares?.length ?? 0,
+      downloads: doc.downloads?.length ?? 0,
+      views: doc.views?.length ?? 0,
+    };
+
+    const userLiked = doc.likes?.some((u: any) => u.toString() === userId) ?? false;
+
     globalThis.io?.to(id).emit("interaction:update", {
       id,
       model,
       type,
-      counts: {
-        likes: doc.likes.length,
-        shares: doc.shares.length,
-        downloads: doc.downloads.length,
-        views: doc.views.length,
-      },
-      userLiked: doc.likes.some((u: any) => u.toString() === userId),
+      counts,
+      userLiked,
     });
 
-    return NextResponse.json({
-      success: true,
-      counts: {
-        likes: doc.likes.length,
-        shares: doc.shares.length,
-        downloads: doc.downloads.length,
-        views: doc.views.length,
-      },
-      userLiked: doc.likes.some((u: any) => u.toString() === userId),
-    });
+    return NextResponse.json({ success: true, counts, userLiked });
   } catch (err) {
-    console.error(err);
-    return NextResponse.json({ success: false, error: "Server error" });
+    console.error("Interaction error:", err);
+    return NextResponse.json({ success: false, error: "Server error" }, { status: 500 });
   }
 }
+

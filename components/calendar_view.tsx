@@ -13,10 +13,9 @@ import {
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import dayjs from "dayjs";
-import { Event } from "@/app/events/page";
 
 interface CalendarProps {
-  events: Event[];
+  events: any[];
 }
 
 export default function CalendarView({ events }: CalendarProps) {

@@ -1,4 +1,4 @@
-import { Event } from "@/app/events/page";
+
 
 export const demoArtists = [
   { id: "a1", name: "OLIØ", role: "Producer", img: "https://images.unsplash.com/photo-1513829596324-4bb2800c5efb?q=80&w=800&auto=format&fit=crop" },
@@ -60,7 +60,7 @@ export const merchItems: MerchItem[] =[
   },
 ];
 
-export const eventsData: Event[] = [
+export const eventsData: any[] = [
   {
     id: 1,
     title: "The Boss Is Back Experience",

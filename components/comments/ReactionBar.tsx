@@ -13,8 +13,8 @@ interface Props {
 }
 
 export function ReactionBar({ comment, userId, onToggle }: Props) {
-  const [userReactions, setUserReactions] = useState<ReactionType[]>(
-    comment.userReactions ?? [] // server should return this
+  const [userReactions, setUserReactions] = useState<any>(
+    comment.reactions ?? [] // server should return this
   );
 
   const buttons = [
@@ -30,8 +30,8 @@ export function ReactionBar({ comment, userId, onToggle }: Props) {
     const isActive = userReactions.includes(type);
 
     // Optimistic update
-    setUserReactions((prev) =>
-      isActive ? prev.filter((r) => r !== type) : [...prev, type]
+    setUserReactions((prev:any) =>
+      isActive ? prev.filter((r:any) => r !== type) : [...prev, type]
     );
 
     onToggle(comment._id, type);
