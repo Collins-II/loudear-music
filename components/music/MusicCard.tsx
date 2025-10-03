@@ -2,10 +2,10 @@
 
 import { motion } from "framer-motion";
 import Image, { ImageLoaderProps } from "next/image";
-import { DownloadCloud, Play, Flame, Eye } from "lucide-react";
-import { timeAgo } from "@/lib/utils";
 import Link from "next/link";
+import { Play, Flame, DownloadCloud, Eye } from "lucide-react";
 import { useState } from "react";
+import { timeAgo } from "@/lib/utils";
 
 interface MusicCardProps {
   id: string;
@@ -18,10 +18,9 @@ interface MusicCardProps {
   genre: string;
   publishedAt: string;
   isTrending?: boolean;
-  chartRank?: number; // e.g., 1 for #1, 25 for #25 in Top 100
+  chartRank?: number;
 }
 
-// Safe custom loader for Cloudinary and relative paths
 const customImageLoader = ({ src, width, quality }: ImageLoaderProps) => {
   try {
     const url = new URL(src);
@@ -30,16 +29,12 @@ const customImageLoader = ({ src, width, quality }: ImageLoaderProps) => {
     }
     return src;
   } catch {
-    return src; // relative path fallback
+    return src;
   }
 };
 
-// Shimmer skeleton component
-const Shimmer = () => (
-  <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300 rounded-l-2xl" />
-);
-
 export function MusicCard({
+  id,
   title,
   artist,
   href,
@@ -56,27 +51,24 @@ export function MusicCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ scale: 1.04, rotate: 0.5 }}
-      transition={{ type: "spring", stiffness: 250, damping: 20 }}
-      className="group relative w-full min-w-[260px] max-w-sm cursor-pointer"
+      key={id}
+      initial={{ y: 30, opacity: 0 }}
+      whileInView={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.5 }}
     >
       <Link href={href}>
-        <div className="flex flex-col sm:flex-row overflow-hidden bg-white dark:bg-black/90 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300">
-          {/* Cover */}
-          <div className="relative h-44 sm:h-32 sm:w-32 shrink-0">
-            {loading && <Shimmer />}
+        <div className="overflow-hidden border-b-[4px] border-black bg-white transition relative group rounded-none sm:rounded-none hover:shadow-2xl duration-300">
+          {/* Cover Image */}
+          <div className="relative h-56 w-full sm:h-60">
+            {loading && (
+              <div className="absolute inset-0 animate-pulse bg-gradient-to-r from-gray-300 via-gray-200 to-gray-300" />
+            )}
             <Image
               src={!imgError && cover ? cover : "/assets/images/placeholder_cover.jpg"}
               alt={title}
               loader={customImageLoader}
               fill
-              className={`object-cover rounded-t-2xl sm:rounded-l-2xl sm:rounded-t-none transition-opacity duration-500 ${
-                loading ? "opacity-0" : "opacity-100"
-              }`}
-              placeholder="blur"
-              blurDataURL="/images/placeholder-blur.png"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
               onError={() => {
                 setImgError(true);
                 setLoading(false);
@@ -84,17 +76,22 @@ export function MusicCard({
               onLoad={() => setLoading(false)}
             />
 
-            {/* Hover Overlay */}
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+            {/* Hover Play Button */}
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
               <motion.button
                 whileTap={{ scale: 0.9 }}
-                className="p-3 bg-white/90 backdrop-blur-md rounded-full shadow-lg"
+                className="p-3 bg-white text-black rounded-full shadow-lg hover:scale-110 transition-transform"
               >
-                <Play className="w-6 h-6 text-black" />
+                <Play size={20} />
               </motion.button>
             </div>
 
-            {/* Trending / Rank Badge */}
+            {/* Genre Tag */}
+            <div className="absolute -bottom-3 left-0 md:-bottom-4 md:right-0 bg-black text-white text-1xl px-2 md:px-4 py-0.5 md:py-1 shadow-lg whitespace-nowrap uppercase font-bold">
+              {genre}
+            </div>
+
+            {/* Trending / Chart Badge */}
             {isTrending && (
               <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-pink-500 to-red-500 text-white text-xs font-semibold shadow-md">
                 <Flame size={14} /> Trending
@@ -108,25 +105,21 @@ export function MusicCard({
           </div>
 
           {/* Content */}
-          <div className="flex flex-col justify-between w-full p-4">
-            <div>
-              <p className="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400 truncate mb-1">
-                {artist} • <span className="font-extrabold text-blue-500">{genre}</span>
-              </p>
-              <h4 className="text-base md:text-lg font-extrabold text-gray-900 dark:text-white leading-snug line-clamp-1">
-                {title}
-              </h4>
-            </div>
+          <div className="py-4 space-y-1 pl-2 pr-4">
+            <p className="flex justify-start text-[11px] uppercase font-bold text-slate-500 tracking-wide mt-2">
+              {artist} · {timeAgo(publishedAt)}
+            </p>
 
-            <div className="flex justify-between items-center mt-3 text-sm">
-              <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-                {downloads} <DownloadCloud size={14} />
+            <h3 className="text-black text-2xl md:text-3xl font-extrabold line-clamp-2">
+              {title}
+            </h3>
+
+            <div className="flex justify-between items-center mt-3 text-xs md:text-sm text-gray-600 font-medium">
+              <span className="flex items-center gap-1">
+                <DownloadCloud size={14} /> {downloads.toLocaleString()}
               </span>
-              <span className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
-                {views} <Eye size={14} />
-              </span>
-              <span className="italic text-gray-400 text-xs">
-                {timeAgo(publishedAt)}
+              <span className="flex items-center gap-1">
+                <Eye size={14} /> {views.toLocaleString()}
               </span>
             </div>
           </div>

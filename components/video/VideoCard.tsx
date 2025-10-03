@@ -106,7 +106,7 @@ export function VideoCard({
     <motion.div
       whileHover={{ scale: 1.02 }}
       transition={{ type: "spring", stiffness: 200 }}
-      className="w-full border-b-[2px] border-gray-200"
+      className="w-full border-b-[4px] border-black"
     >
       <Link href={`/videos/${id}`} className="w-full block">
         <div
@@ -155,13 +155,13 @@ export function VideoCard({
             <video ref={preloadRef} className="hidden" />
 
             {category && (
-              <div className="absolute -bottom-1 left-0 bg-black/80 text-white text-[10px] md:text-xs px-2 py-0.5 md:py-1 shadow-lg rounded-tr-lg">
-                <h3 className="text-white font-semibold tracking-tight">{category}</h3>
+              <div className="absolute -bottom-1 left-0 bg-black/80 text-white text-1xl px-2 py-0.5 md:py-1 shadow-lg rounded-tr-lg">
+                <h3 className="text-white font-semibold tracking-tight uppercase">{category}</h3>
               </div>
             )}
           </div>
 
-          <div className="w-full px-3 pb-4 pt-6 space-y-2">
+          <div className="w-full pl-2 pr-3 pb-4 pt-4 space-y-2">
             <div>
               <h3 className="text-lg font-semibold text-gray-900 leading-tight line-clamp-1">
                 {title}

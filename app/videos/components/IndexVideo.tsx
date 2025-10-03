@@ -3,13 +3,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
 
 import { DropdownRadio } from "@/components/DropdownRadio";
 import { ChartRow } from "@/components/music/ChartRow";
@@ -22,6 +15,7 @@ const alphabet = ["All", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"] as const;
 
 type ViewMode = "grid" | "chart";
 type FilterType = "latest" | "trending" | "a-z" | "genre";
+type Sort = "this-week" | "last-week" | "all-time";
 
 interface IndexVideoProps {
   videos: ChartItem[];
@@ -167,24 +161,25 @@ export default function IndexVideo({ videos }: IndexVideoProps) {
                 }
               />
 
-              <Select
-                onValueChange={(val) =>
-                  setFilters((f) => ({ ...f, filter: val as FilterType }))
-                }
-                value={
-                  ["latest", "trending"].includes(filters.filter)
-                    ? filters.filter
-                    : "latest"
-                }
-              >
-                <SelectTrigger className="bg-black text-white w-[160px]">
-                  <SelectValue placeholder="Filter" />
-                </SelectTrigger>
-                <SelectContent className="bg-black text-white">
-                  <SelectItem value="latest">Latest</SelectItem>
-                  <SelectItem value="trending">Trending</SelectItem>
-                </SelectContent>
-              </Select>
+ {/* Sort filter */}
+                            <DropdownRadio
+                              actionLabel="Sort"
+                              label="Select"
+                              data={["latest", "trending"]}
+                              onChange={(val) =>
+                                setFilters((f) => ({ ...f, filter: val as FilterType }))
+                              }
+                            />
+              
+                             {/* Sort filter */}
+                            <DropdownRadio
+                              actionLabel="By Weeks"
+                              label="Select"
+                              data={["all-time", "this-week", "last-week"]}
+                              onChange={(val) =>
+                                setFilters((f) => ({ ...f, sort: val as Sort }))
+                              }
+                            />
 
               <Button variant="secondary" size="sm" onClick={clearFilters}>
                 Clear Filters
@@ -199,6 +194,13 @@ export default function IndexVideo({ videos }: IndexVideoProps) {
         {/* Main */}
         <div className="lg:col-span-3">
           {filters.view === "chart" ? (
+            <div className="space-y-4">
+              <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
+                <span className="relative z-10 bg-white capitalize pr-3">
+                  {`Top ${filters.genre} (${filters.filter.replace("-", " ")})`}
+                </span>
+                <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
+              </h3>
             <div className="divide-y">
               {trendingVideos.map((item) => (
                 <ChartRow
@@ -213,8 +215,18 @@ export default function IndexVideo({ videos }: IndexVideoProps) {
                 />
               ))}
             </div>
+            </div>
           ) : (
             <>
+             <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
+                <span className="relative z-10 bg-white pr-3 capitalize">
+                  {filters.filter === "a-z"
+                    ? "Browse A–Z"
+                    : `${filters.filter} `}
+                </span>
+                <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
+              </h3>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {filteredVideos.slice(0, visibleItems).map((item) => (
                   <ChartCard

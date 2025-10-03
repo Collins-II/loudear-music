@@ -34,7 +34,7 @@ export default function LatestSection({ songs, videos}: SectionProps) {
               <span className="relative z-10 bg-white pr-3">Latest Music</span>
               <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-6 overflow-x-auto pb-4 scrollbar-hide ">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 overflow-x-auto pb-4 scrollbar-hide ">
               {songs?.map((track,idx) => (
                 <MusicCard
                   key={idx}
@@ -72,7 +72,7 @@ export default function LatestSection({ songs, videos}: SectionProps) {
           {/* Latest Videos */}
           <div className="">
   {/* Responsive Layout: horizontal scroll on small, grid on md+ */}
-            <HorizontalSlider title="Latest Videos" gap={6}>
+            <HorizontalSlider title="Latest Videos" >
                 {videos?.map((video) => (
                   <VideoCard
                     key={video.id}

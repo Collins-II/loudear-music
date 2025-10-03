@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import Image, { ImageLoaderProps } from "next/image";
 import { useEffect, useState } from "react";
-import { ArrowUp, ArrowDown, Minus } from "lucide-react";
+//import { ArrowUp, ArrowDown, Minus } from "lucide-react";
 import { io } from "socket.io-client";
 
 interface ChartRowProps {
@@ -63,7 +63,7 @@ export function ChartRow({
   }, [currentPos, href]);
 
   // Movement calculation
-  let movement: "up" | "down" | "same" | "new" = "same";
+ /* let movement: "up" | "down" | "same" | "new" = "same";
   if (prevPos == null) {
     movement = "new";
   } else if (currentPos < prevPos) {
@@ -72,7 +72,7 @@ export function ChartRow({
     movement = "down";
   } else {
     movement = "same";
-  }
+  }*/
 
   return (
     <motion.a
@@ -98,7 +98,7 @@ export function ChartRow({
           </motion.div>
         </AnimatePresence>
 
-        <div className="text-xs flex items-center gap-1">
+        {/*<div className="text-xs flex items-center gap-1">
           {movement === "up" && (
             <motion.span
               key="up"
@@ -129,7 +129,7 @@ export function ChartRow({
               NEW
             </span>
           )}
-        </div>
+        </div>*/}
       </div>
 
       {/* Cover */}

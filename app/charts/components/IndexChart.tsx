@@ -3,13 +3,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
 
 import { ChartRow } from "@/components/music/ChartRow";
 import { DropdownRadio } from "@/components/DropdownRadio";
@@ -313,38 +306,25 @@ useEffect(() => {
                 }
               />
 
-              {/* Main filter (Latest / Trending) */}
-              <Select
-                onValueChange={(val) =>
-                  setFilters((f) => ({ ...f, filter: val as FilterType }))
-                }
-                value={["latest", "trending"].includes(filters.filter) ? filters.filter : "latest"}
-              >
-                <SelectTrigger className="bg-black text-white w-[160px]">
-                  <SelectValue placeholder="Filter" />
-                </SelectTrigger>
-                <SelectContent className="bg-black text-white">
-                  <SelectItem value="latest">Latest</SelectItem>
-                  <SelectItem value="trending">Trending</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Sort dropdown */}
-              <Select
-                onValueChange={(val) =>
-                  setFilters((f) => ({ ...f, sort: val as Sort }))
-                }
-                value={filters.sort}
-              >
-                <SelectTrigger className="bg-black text-white w-[160px]">
-                  <SelectValue placeholder="Sort" />
-                </SelectTrigger>
-                <SelectContent className="bg-black text-white">
-                  <SelectItem value="this-week">This Week</SelectItem>
-                  <SelectItem value="last-week">Last Week</SelectItem>
-                  <SelectItem value="all-time">All Time</SelectItem>
-                </SelectContent>
-              </Select>
+                            {/* Sort filter */}
+                            <DropdownRadio
+                              actionLabel="Sort"
+                              label="Select"
+                              data={["latest", "trending"]}
+                              onChange={(val) =>
+                                setFilters((f) => ({ ...f, filter: val as FilterType }))
+                              }
+                            />
+              
+                             {/* Sort filter */}
+                            <DropdownRadio
+                              actionLabel="By Weeks"
+                              label="Select"
+                              data={["all-time", "this-week", "last-week"]}
+                              onChange={(val) =>
+                                setFilters((f) => ({ ...f, sort: val as Sort }))
+                              }
+                            />
 
               <Button variant="secondary" size="sm" onClick={clearFilters}>
                 Clear Filters
