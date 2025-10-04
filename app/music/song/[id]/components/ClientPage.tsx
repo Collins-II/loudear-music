@@ -212,7 +212,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
             onDownload={() => setDownloadOpen(true)}
           />
           {relatedSongs.length > 0 && (
-            <HorizontalSlider title="May Also Like" className="slider-may-like" gap={6}>
+            <HorizontalSlider title="May Also Like" className="slider-may-like" >
              {relatedSongs.map((song) => (
               <SliderCard 
                 key={song._id}

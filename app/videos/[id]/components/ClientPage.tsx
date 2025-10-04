@@ -291,7 +291,7 @@ const handleInteraction = async (type: "like" | "share" | "download" | "unlike")
 
           {/* Related Videos */}
           {related.length > 0 && (
-            <HorizontalSlider title="You May Also Like" gap={6}>
+            <HorizontalSlider title="You May Also Like" >
               {related.map((vid) => (
                 <SliderCard
                   key={vid._id}

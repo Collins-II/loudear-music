@@ -212,7 +212,7 @@ export default function AlbumPage({ data, relatedSongs }: AlbumPageProps) {
 
           {/* Related Songs */}
           {relatedSongs?.length > 0 && (
-            <HorizontalSlider title="You May Also Like" gap={6}>
+            <HorizontalSlider title="You May Also Like" >
               {relatedSongs.map((song) => (
                 <SliderCard
                   key={song._id}
