@@ -23,6 +23,7 @@ import {
 import { Separator } from "./ui/separator";
 import SignInButton from "./auth/SignInButton";
 import { toast } from "sonner";
+import Sidebar from "./sidebar";
 
 export default function Navbar() {
   const router = useRouter();
@@ -286,100 +287,14 @@ export default function Navbar() {
               onClick={() => setMobileOpen(false)}
             />
 
-            {/* Sidebar */}
-            <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "tween", duration: 0.3 }}
-              className={`fixed top-0 right-0 w-72 h-screen z-50 flex flex-col shadow-lg ${
-                scrolled ? "bg-white text-gray-900" : "bg-black text-white"
-              }`}
-            >
-              <div className="flex justify-between items-center px-6 py-4">
-                <span className="font-bold text-lg">Menu</span>
-                <button aria-label="close-button" onClick={() => setMobileOpen(false)}>
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              <Separator/>
-
-              {/* Mobile Nav + Search + Submit Media Dropdown */}
-              <div className="flex-1 px-6 py-4 overflow-y-auto space-y-4">
-                {navItems.map((item) => {
-                  const isActive = pathname === item.href;
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`block text-base font-semibold ${
-                        isActive
-                          ? "text-blue-500"
-                          : scrolled
-                          ? "text-gray-700 hover:text-blue-600"
-                          : "text-gray-200 hover:text-white"
-                      }`}
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      {item.label}
-                    </Link>
-                  );
-                })}
-
-                
-              </div>
-               {/* Submit Media Dropdown for Mobile */}
-               <div className="px-6 pb-4">
-                {session ? (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="default" className="rounded-full gap-2 w-full">
-                        <UploadCloud className="w-5 h-5" /> Submit Media
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                      align="start"
-                      className={`${
-                        scrolled ? "bg-white text-gray-900" : "bg-black text-white"
-                      } w-full border-none`}
-                    >
-                      <DropdownMenuItem
-                        onClick={() => {
-                          router.push("/upload/song");
-                          setMobileOpen(false);
-                        }}
-                        className="gap-2"
-                      >
-                        <Music className="w-4 h-4" />
-                        Upload Song
-                      </DropdownMenuItem>
-                      <Separator className="bg-neutral-600" />
-                      <DropdownMenuItem
-                        onClick={() => {
-                          router.push("/upload/video");
-                          setMobileOpen(false);
-                        }}
-                        className="gap-2"
-                      >
-                        <VideoIcon className="w-4 h-4" />
-                        Upload Video
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                ) : (
-                  <Button
-                    variant="default"
-                    className="rounded-full gap-2 w-full"
-                    onClick={handleMediaClick}
-                  >
-                    <UploadCloud className="w-5 h-5" /> Submit Media
-                  </Button>
-                )}
-              </div>
-              <div className="px-6 py-4 border-t space-y-4">
-                <SignInButton />
-              </div>
-            </motion.div>
+            <Sidebar
+              scrolled={scrolled}
+              navItems={navItems}
+              mobileOpen={mobileOpen}
+              setMobileOpen={setMobileOpen}
+              handleMediaClick={handleMediaClick}
+            />
+  
           </>
         )}
       </AnimatePresence>

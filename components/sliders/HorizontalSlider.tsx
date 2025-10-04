@@ -8,7 +8,7 @@ interface HorizontalSliderProps {
   title?: string;
   children: ReactNode[];
   className?: string;
-  gap?: "sm" | "md" | "lg"; // Tailwind spacing options
+  gap?: "sm" | "md" | "lg";
 }
 
 export default function HorizontalSlider({
@@ -25,13 +25,8 @@ export default function HorizontalSlider({
     }
   };
 
-  // Tailwind gap scale mapping
   const gapClass =
-    gap === "sm"
-      ? "gap-2"
-      : gap === "lg"
-      ? "gap-8"
-      : "gap-4"; // default md = gap-4
+    gap === "sm" ? "gap-2" : gap === "lg" ? "gap-8" : "gap-4";
 
   return (
     <div className={`w-full ${className}`}>
@@ -44,7 +39,7 @@ export default function HorizontalSlider({
           </h3>
         )}
 
-        {/* Arrows */}
+        {/* Navigation Buttons */}
         <div className="flex items-center gap-3 ml-3">
           <button
             aria-label="scroll left"
@@ -67,12 +62,15 @@ export default function HorizontalSlider({
       <div className="relative">
         <div
           ref={containerRef}
-          className={`flex overflow-x-auto scrollbar-hide px-4 py-2 ${gapClass} scroll-smooth snap-x snap-mandatory touch-pan-x`}
+          className={`flex overflow-x-auto overflow-y-hidden ${gapClass} px-4 py-2 
+          scroll-smooth snap-x snap-mandatory scrollbar-hide
+          touch-pan-x md:touch-auto 
+          webkit-scroll-touch touch-pan-y touch-pinch-zoom`}
         >
           {children.map((child, index) => (
             <motion.div
               key={index}
-              className="flex-shrink-0 snap-center min-w-[80%] sm:min-w-[45%] md:min-w-[30%] lg:min-w-[25%] transition-transform"
+              className="flex-shrink-0 snap-center min-w-[80%] sm:min-w-[45%] md:min-w-[30%] lg:min-w-[25%]"
               whileHover={{ scale: 1.03 }}
               transition={{ type: "spring", stiffness: 300 }}
             >

@@ -13,7 +13,16 @@ export default function Footer() {
         
         {/* About */}
         <div>
-          <h3 className="text-lg font-bold mb-4">About LoudEar</h3>
+           {/* Logo */}
+        <Link href="/" className="flex items-center gap-2">
+          <span
+            className={`italic text-2xl md:text-3xl font-extrabold transition-colors ${
+               "text-primary"
+            }`}
+          >
+            LoudEar
+          </span>
+        </Link>
           <p className="text-sm text-gray-600 leading-relaxed">
             LoudEar is your destination for the latest music and video streaming
             experience. Discover top artists, trending tracks, and exclusive content.

@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import Image from "next/image";
 
+const img1 = "/assets/images/cleo-01.jpg";
+const img2 = "/assets/images/yomaps-02.jpg";
+const img3 = "/assets/images/cleo-03.jpg";
+
 interface Slide {
   id: number;
   title: string;
@@ -18,19 +22,19 @@ const slides: Slide[] = [
     id: 1,
     title: "Top Charts 2025",
     subtitle: "Stream the hottest tracks trending right now",
-    image: "/images/bizzy01.jpg",
+    image: img1,
   },
   {
     id: 2,
     title: "Fresh Music Fridays",
     subtitle: "Discover the newest releases every week",
-    image: "/images/bizzy05.jpg",
+    image: img2,
   },
   {
     id: 3,
     title: "Global Hits",
     subtitle: "The biggest songs making waves worldwide",
-    image: "/images/bizzy03.jpg",
+    image: img3,
   },
 ];
 
@@ -42,7 +46,7 @@ export default function Hero() {
 
   // Auto slide every 8 seconds
   React.useEffect(() => {
-    const timer = setInterval(nextSlide, 8000);
+    const timer = setInterval(nextSlide, 15000);
     return () => clearInterval(timer);
   }, []);
 

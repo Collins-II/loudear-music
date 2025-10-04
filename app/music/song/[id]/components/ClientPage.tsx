@@ -3,12 +3,16 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Image, { ImageLoaderProps } from "next/image";
-import { Heart, Share2, DownloadCloud, Flame } from "lucide-react";
-
+import {
+  Heart,
+  Share2,
+  DownloadCloud,
+  Flame,
+  Play,
+} from "lucide-react";
 import { getSocket } from "@/lib/socketClient";
 import { SongSerialized } from "@/actions/getSongById";
 import CustomPlayer from "@/components/music/CustomPlayer";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import ShareModal from "@/components/modals/ShareModal";
 import DownloadModal from "@/components/modals/DownloadModal";
@@ -17,6 +21,7 @@ import { BiSolidTimer } from "react-icons/bi";
 import HorizontalSlider from "@/components/sliders/HorizontalSlider";
 import { SliderCard } from "@/components/sliders/SliderCard";
 import Comments from "@/components/comments/Comments";
+import { motion } from "framer-motion";
 
 interface ClientPageProps {
   data: SongSerialized;
@@ -31,16 +36,16 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState<number>(data.likeCount ?? 0);
   const [shareCount, setShareCount] = useState<number>(data.shareCount ?? 0);
-  const [downloadCount, setDownloadCount] = useState<number>(data.downloadCount ?? 0);
+  const [downloadCount, setDownloadCount] = useState<number>(
+    data.downloadCount ?? 0
+  );
   const [imgError, setImgError] = useState(false);
   const isTrending = true;
-
   const chartRank = 12;
-
   const [shareOpen, setShareOpen] = useState(false);
   const [downloadOpen, setDownloadOpen] = useState(false);
 
-  // --- Socket interactions ---
+  // Socket interactions
   useEffect(() => {
     if (!data._id) return;
     const socket = getSocket();
@@ -85,56 +90,65 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
   };
 
   return (
-    <main className="bg-white text-gray-900 py-16 px-4 md:px-12">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-12 pt-8">
-        {/* LEFT COLUMN */}
-        <div className="space-y-8">
-          {/* Ad Block */}
-          <Card className="h-24 bg-red-500 flex items-center justify-center border-dashed">
-            <p className="text-white">Ad Space</p>
-          </Card>
-
-
-          {/* Ad Block */}
-          <Card className="h-80 bg-blue-400 flex items-center justify-center border-dashed">
-            <p className="text-white">Ad Space</p>
-          </Card>
-        </div>
-
-        {/* RIGHT COLUMN */}
-        <div className="lg:col-span-2 space-y-10">
-          {/* Hero Section */}
+    <main className="bg-white dark:bg-black text-gray-900 dark:text-gray-100 py-16 px-4 md:px-10">
+      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-10">
+        {/* LEFT: Main Song Details */}
+        <motion.section
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="flex-1 space-y-10"
+        >
+          {/* Cover + Info */}
           <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
-            {/* Cover */}
-            <div className="w-full md:w-72 h-72 relative rounded-2xl overflow-hidden shadow-lg border">
+            <div className="relative w-full md:w-72 h-72 overflow-hidden border-b-[6px] border-black dark:border-white bg-gray-100 rounded-none">
               <Image
-                src={data.coverUrl || "/assets/images/placeholder_cover.jpg"}
+                src={
+                  !imgError && data.coverUrl
+                    ? data.coverUrl
+                    : "/assets/images/placeholder_cover.jpg"
+                }
                 alt={data.title}
                 fill
-                className="object-cover"
                 loader={customImageLoader}
+                className="object-cover"
                 onError={() => setImgError(true)}
               />
-              {imgError && (
-                <div className="absolute inset-0 flex items-center justify-center bg-gray-200 text-gray-500">
-                  No Image
+              {isTrending && (
+                <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-pink-500 to-red-500 text-white text-xs font-semibold shadow-md">
+                  <Flame size={14} /> Trending
                 </div>
               )}
+              {chartRank && chartRank <= 100 && (
+                <div className="absolute top-2 right-2 px-2 py-1 rounded-full bg-black/80 text-white text-xs font-bold shadow-md">
+                  #{chartRank}
+                </div>
+              )}
+              {/* Play Overlay */}
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-all duration-300">
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => handleInteraction("like")}
+                  className="p-3 bg-white text-black rounded-full shadow-lg hover:scale-110 transition-transform"
+                >
+                  <Play size={22} />
+                </motion.button>
+              </div>
             </div>
 
-            {/* Details */}
+            {/* Song Details */}
             <div className="flex-1 space-y-3">
-              <h1 className="text-slate-900 text-3xl md:text-4xl font-extrabold tracking-tight">
+              <h1 className="text-4xl font-extrabold tracking-tight">
                 {data.title}
               </h1>
-              <p className="text-gray-600 text-sm">
+              <p className="text-gray-600 dark:text-gray-400">
                 by <span className="font-semibold">{data.artist}</span>
               </p>
 
-              {/* Genre & Uploaded Time */}
+              {/* Genre + Date */}
               <div className="flex flex-wrap items-center gap-3">
-                <Badge className="rounded-full px-3 py-1 text-sm text-white bg-pink-600">
-                  {data.genre || "Album"}
+                <Badge className="rounded-full px-3 py-1 bg-black text-white dark:bg-white dark:text-black font-semibold uppercase">
+                  {data.genre || "Single"}
                 </Badge>
                 <span className="text-xs text-gray-500 flex items-center gap-1">
                   <BiSolidTimer className="w-4 h-4" />
@@ -142,37 +156,27 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
                 </span>
               </div>
 
-              {/* Trending / Rank Badges */}
-              <div className="flex items-center gap-2">
-                {isTrending && (
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-gradient-to-r from-pink-500 to-red-500 text-white text-xs font-semibold shadow-md">
-                    <Flame size={14} className="animate-bounce" /> Trending
-                  </div>
-                )}
-                {chartRank && chartRank <= 100 && (
-                  <div className="px-2 py-1 rounded-full bg-black/80 text-white text-xs font-bold shadow-md">
-                    #{chartRank}
-                  </div>
-                )}
-              </div>
-
               {/* Interactions */}
-              <div className="flex items-center gap-6 mt-4 text-sm text-gray-700">
+              <div className="flex items-center gap-6 mt-4 text-sm text-gray-700 dark:text-gray-300">
                 <button
                   className="flex items-center gap-2 hover:text-red-600 transition"
                   onClick={() => handleInteraction("like")}
                 >
                   <Heart
-                    className={`w-5 h-5 ${liked ? "text-red-600 fill-red-600" : ""}`}
+                    className={`w-5 h-5 ${
+                      liked ? "text-red-600 fill-red-600" : ""
+                    }`}
                   />
                   {likeCount}
                 </button>
+
                 <button
                   className="flex items-center gap-2 hover:text-blue-600 transition"
                   onClick={() => setShareOpen(true)}
                 >
                   <Share2 className="w-5 h-5" /> {shareCount}
                 </button>
+
                 <button
                   className="flex items-center gap-2 hover:text-green-600 transition"
                   onClick={() => setDownloadOpen(true)}
@@ -182,26 +186,20 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
               </div>
             </div>
           </div>
-          
-          {/* Tags */}
-          <div className="flex flex-wrap items-center gap-2">
-            {["Power", "Enjoyment" ,"Grace"]?.map((tag, i) => (
-              <Badge
-                key={i}
-                className="rounded-full px-3 py-1 cursor-pointer bg-blue-500 hover:bg-black hover:text-white transition"
-                onClick={() => (window.location.href = `/search?q=${tag}`)}
-              >
-                #{tag}
-              </Badge>
-            ))}
-          </div>
-          <div className="w-full h-[4px] bg-black -z-0" />
-          {/* Description Section */}
-          <div className="bg-white rounded-2xl">
-            <p className="text-black font-extrabold text-xl pb-4">{`${formatDate(data.releaseDate as string)} - ${data.title} `}</p>
-            <p className="text-gray-700 text-md leading-relaxed prose" >The band’s fans gleefully push to the front of their gigs in order to get blasted with any manner of fake bodily fluids that erupt from the towering, cartoonish dummies. But over the weekend, some folks who apparently just discovered the band, allegedly got into a tizzy over one aspect of GWAR’s current show — a mock beheading of Tesla CEO and former DOGE boss Elon Musk. The tweets appeared to be an attempt to gin up outrage over the formerly uncontroversial bit, at a time when Donald Trump and the chairman of the FCC have been sending ominous messages about their view of the limits on the First Amendment’s right to free speech.</p>
-          </div>
 
+          {/* Description */}
+          <div className="bg-gray-50 dark:bg-neutral-900 border-b-[4px] border-black dark:border-white p-6">
+            <h2 className="text-2xl font-extrabold mb-3">
+              {formatDate(data.releaseDate as string)} — {data.title}
+            </h2>
+            <p className="text-gray-700 dark:text-gray-300 leading-relaxed text-sm md:text-base">
+              The band’s fans gleefully push to the front of their gigs in order
+              to get blasted with any manner of fake bodily fluids that erupt
+              from the towering, cartoonish dummies. But over the weekend,
+              some folks allegedly got into a tizzy over one aspect of GWAR’s
+              current show — a mock beheading of Tesla CEO Elon Musk...
+            </p>
+          </div>
 
           {/* Player */}
           <CustomPlayer
@@ -211,32 +209,44 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
             coverUrl={data.coverUrl}
             onDownload={() => setDownloadOpen(true)}
           />
+
+          {/* Related Songs */}
           {relatedSongs.length > 0 && (
-            <HorizontalSlider title="May Also Like" className="slider-may-like" >
-             {relatedSongs.map((song) => (
-              <SliderCard 
-                key={song._id}
-                id={song._id}
-                title={song.title}
-                artist={song.artist}
-                cover={song.coverUrl}
-                downloads={song.downloadCount}
-                publishedAt={song.releaseDate as string}
-                genre={song.genre}
-                views={song.viewCount}
-              />
-             ))}
-          </HorizontalSlider>
+            <HorizontalSlider title="May Also Like" className="mt-12">
+              {relatedSongs.map((song) => (
+                <SliderCard
+                  key={song._id}
+                  id={song._id}
+                  title={song.title}
+                  artist={song.artist}
+                  cover={song.coverUrl}
+                  downloads={song.downloadCount}
+                  publishedAt={song.releaseDate as string}
+                  genre={song.genre}
+                  views={song.viewCount}
+                />
+              ))}
+            </HorizontalSlider>
           )}
-          
-        {/* Comments */}
+
+          {/* Comments */}
           <Comments
             model="Song"
             id={data._id}
             initialComments={data.latestComments}
             user={user}
           />
-        </div>
+        </motion.section>
+
+        {/* RIGHT: Ads / Sidebar */}
+        <aside className="w-full lg:w-[300px] flex flex-col gap-8">
+          <div className="h-32 bg-gradient-to-r from-pink-600 to-red-500 flex items-center justify-center text-white font-bold text-lg rounded-none border-b-[4px] border-black">
+            Ad Space
+          </div>
+          <div className="h-64 bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg rounded-none border-b-[4px] border-black">
+            Ad Space
+          </div>
+        </aside>
       </div>
 
       {/* Modals */}
