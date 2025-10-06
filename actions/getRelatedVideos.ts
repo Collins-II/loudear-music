@@ -1,6 +1,6 @@
 import { connectToDatabase } from "@/lib/database";
 import { Video } from "@/lib/database/models/video";
-import { VideoSerialized } from "./getSongById";
+import { VideoSerialized } from "./getItemsWithStats";
 
 export async function getRelatedVideos(
   genre: string,

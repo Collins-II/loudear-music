@@ -2,7 +2,7 @@
 import { Types } from "mongoose";
 import { connectToDatabase } from "@/lib/database";
 import { Song } from "@/lib/database/models/song";
-import { SongSerialized, serializeSong } from "./getSongById";
+import { SongSerialized, serializeSong } from "./getItemsWithStats";
 
 /**
  * Fetch related songs based on genre, excluding the current song

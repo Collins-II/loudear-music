@@ -6,7 +6,7 @@ import { User } from "lucide-react";
 import { Composer } from "./Composer";
 import { CommentItem } from "./CommentItem";
 import { getSocket } from "@/lib/socketClient";
-import type { CommentSerialized } from "@/actions/getSongById";
+import type { CommentSerialized } from "@/actions/getItemsWithStats";
 import type { User as UserType } from "next-auth";
 import Image from "next/image";
 

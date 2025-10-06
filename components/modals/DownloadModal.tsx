@@ -3,7 +3,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { DownloadCloud } from "lucide-react";
-import { SongSerialized } from "@/actions/getSongById";
+import { SongSerialized } from "@/actions/getItemsWithStats";
 
 interface DownloadModalProps {
   data: SongSerialized;

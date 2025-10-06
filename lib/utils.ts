@@ -12,6 +12,10 @@ import { ISong } from "@/lib/database/models/song";
 import { IAlbum } from "@/lib/database/models/album";
 import { IVideo } from "@/lib/database/models/video";
 
+export function isBaseSerialized(obj: any): obj is { title: string; artist: string; genre?: string; _id: string } {
+  return !!obj && typeof obj === "object" && typeof obj.title === "string" && typeof obj.artist === "string" && !!obj._id;
+}
+
 export function normalizeDoc(doc: ISong | IAlbum | IVideo) {
   const anyDoc: any = doc;
   return {

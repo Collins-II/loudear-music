@@ -5,7 +5,7 @@ import { Edit2, Trash2, Flag, User, CornerUpRight, ChevronDown, ChevronUp } from
 import ReactMarkdown from "react-markdown";
 //import { ReactionBar } from "./ReactionBar";
 import { motion, AnimatePresence } from "framer-motion";
-import { CommentSerialized } from "@/actions/getSongById";
+import { CommentSerialized } from "@/actions/getItemsWithStats";
 import Image from "next/image";
 
 interface Props {
@@ -67,7 +67,7 @@ export function CommentItem({
                       aria-label="delete"
                       onClick={() => onDelete(comment._id)}
                     >
-                      <Trash2 className="w-4 h-4 text-red-500 hover:text-red-700" />
+                      <Trash2 className="w-4 h-4 text-black hover:text-red-700" />
                     </button>
                   </>
                 )}
@@ -84,7 +84,7 @@ export function CommentItem({
                     aria-label="delete-admin"
                     onClick={() => onDelete(comment._id)}
                   >
-                    <Trash2 className="w-4 h-4 text-red-600 hover:text-red-800" />
+                    <Trash2 className="w-4 h-4 text-black hover:text-black/80" />
                   </button>
                 )}
               </div>
@@ -117,7 +117,7 @@ export function CommentItem({
             {userId && (
               <button
                 onClick={() => onReply(comment._id)}
-                className="flex items-center gap-1 text-blue-600 hover:text-blue-800 font-medium"
+                className="flex items-center gap-1 text-gray-600 hover:text-gray-800 font-medium"
               >
                 <CornerUpRight className="h-3.5 w-3.5" />
                 Reply

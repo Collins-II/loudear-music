@@ -81,7 +81,6 @@ export default function LatestSection({ songs, videos}: SectionProps) {
                     artist={video.artist as string}
                     cover={video.image}
                     downloads={video.stats.downloads}
-                    publishedAt={video.releaseDate}
                     category={video.genre}
                     views={video.stats.views}
                     videoUrl={video.videoUrl as string}

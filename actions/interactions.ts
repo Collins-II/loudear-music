@@ -1,6 +1,6 @@
 "use server";
 
-import { incrementInteraction } from "@/actions/getSongById";
+import { incrementInteraction } from "@/actions/getItemsWithStats";
 
 export async function handleInteraction(
   id: string,

@@ -15,6 +15,7 @@ interface SliderCardProps {
   publishedAt: string;
   genre?: string;
   views?: number;
+  href: string;
 }
 
 // Safe Cloudinary / relative loader
@@ -36,13 +37,13 @@ const Shimmer = () => (
 );
 
 export function SliderCard({
-  id,
   title,
   artist,
   cover,
   downloads,
   genre,
   views = 0,
+  href,
 }: SliderCardProps) {
   const [loading, setLoading] = useState(true);
   const [imgError, setImgError] = useState(false);
@@ -53,7 +54,7 @@ export function SliderCard({
       transition={{ type: "spring", stiffness: 200 }}
       className="w-54 border-b-[2px] border-gray-200"
     >
-      <Link href={`/videos/${id}`} className="w-full cursor-pointer block">
+      <Link href={href} className="w-full cursor-pointer block">
         <div className="w-full group overflow-hidden transition-all bg-white rounded-2xl">
           {/* Cover */}
           <div className="relative h-52 w-full">

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Heart, Flame, Laugh, ThumbsUp, ThumbsDown } from "lucide-react";
-import type { CommentSerialized } from "@/actions/getSongById";
+import type { CommentSerialized } from "@/actions/getItemsWithStats";
 
 type ReactionType = "heart" | "fire" | "laugh" | "up" | "down";
 

@@ -52,4 +52,4 @@ const ChartHistorySchema = new Schema<IChartHistoryDoc>(
 /* -------------------------------------------------------------------------- */
 
 export const ChartHistory =
-  models.ChartHistory || model<IChartHistoryDoc>("ChartHistory", ChartHistorySchema);
+  models?.ChartHistory || model<IChartHistoryDoc>("ChartHistory", ChartHistorySchema);

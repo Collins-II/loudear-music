@@ -2,36 +2,52 @@ import ClientPage from "./components/ClientPage";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { getRelatedSongs } from "@/actions/getRelatedSongs";
-import { getSongWithStats, incrementInteraction, SongSerialized } from "@/actions/getSongById";
+import { getSongWithStats, incrementInteraction, SongSerialized } from "@/actions/getItemsWithStats";
+import { isBaseSerialized } from "@/lib/utils";
 
 interface SongDetailsPageProps {
   params: Promise<{ id: string }>; // ✅ params is async
 }
 
-export async function generateMetadata(
-  { params }: SongDetailsPageProps
-): Promise<Metadata> {
+/**
+ * Type guard to ensure we have a serialized item (Song/Album/Video)
+ * and not just the internal-only object.
+ */
+
+/* -----------------------------------------------------------
+ * Dynamic Metadata for SEO and Social Sharing
+ * ----------------------------------------------------------- */
+export async function generateMetadata({
+  params,
+}: SongDetailsPageProps): Promise<Metadata> {
   try {
-    const { id } = await params; // ✅ await params
+    const { id } = await params;
     const song = await getSongWithStats(id);
 
-    if (!song) {
-      return { title: "Song not found" };
-    }
+    // Narrow / guard
+    if (!song || !isBaseSerialized(song)) {
+        return { title: "Song not found" };
+    };
 
     return {
-      title: song.title,
+      title: `${song.title} - ${song.artist}`,
       description: song.description || `${song.title} by ${song.artist}`,
       openGraph: {
-        title: song.title,
+        title: `${song.title} - ${song.artist}`,
         description: song.description || `${song.title} by ${song.artist}`,
         type: "music.song",
         images: song.coverUrl ? [{ url: song.coverUrl }] : undefined,
       },
+      twitter: {
+        card: "summary_large_image",
+        title: song.title,
+        description: song.description || `${song.title} by ${song.artist}`,
+        images: song.coverUrl ? [song.coverUrl] : [],
+      },
     };
   } catch (error) {
-    console.log("SONG_ERROR",error)
-    return { title: "Song details" };
+    console.error("SONG_METADATA_ERROR", error);
+    return { title: "Song Details" };
   }
 }
 
@@ -42,11 +58,11 @@ export default async function SongDetailsPage(
     const { id } = await params; // ✅ await params
     const media = await getSongWithStats(id);
 
-    const relatedSongs = await getRelatedSongs(media?.genre as string, media?._id as string);
-
-    if (!media) {
+    if (!media || !isBaseSerialized(media)) {
       notFound();
     }
+
+    const relatedSongs = await getRelatedSongs(media?.genre as string, media?._id as string);
 
     // Increment view count
     await incrementInteraction(id, "Song", "view");

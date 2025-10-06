@@ -2,7 +2,7 @@
 import { createServer } from "http";
 import { Server } from "socket.io";
 import next from "next";
-import { CommentSerialized, ReactionType } from "./actions/getSongById";
+import { CommentSerialized, ReactionType } from "./actions/getItemsWithStats";
 
 declare global {
   var io: Server | undefined;

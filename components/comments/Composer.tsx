@@ -51,7 +51,7 @@ export function Composer({ onSubmit, replyTo, onCancelReply, isSending }: Props)
         <Button
           onClick={handleSubmit}
           disabled={isSending || !text.trim()}
-          className="bg-pink-600 hover:bg-pink-700 text-white flex items-center gap-1"
+          className="bg-black hover:bg-black/80 text-white flex items-center gap-1"
         >
           {isSending ? (
             <Loader2 className="h-4 w-4 animate-spin" />

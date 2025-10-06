@@ -18,7 +18,7 @@ import {
 import Image from "next/image";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
-import { SongSerialized } from "@/actions/getSongById";
+import { SongSerialized } from "@/actions/getItemsWithStats";
 
 interface AlbumPlayerProps {
   albumTitle: string;

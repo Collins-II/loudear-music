@@ -2,8 +2,9 @@
 import ClientPage from "./components/ClientPage";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import { getVideoWithStats, incrementInteraction, VideoSerialized } from "@/actions/getSongById";
+import { getVideoWithStats, incrementInteraction, VideoSerialized } from "@/actions/getItemsWithStats";
 import { getRelatedVideos } from "@/actions/getRelatedVideos";
+import { isBaseSerialized } from "@/lib/utils";
 
 interface SongDetailsPageProps {
   params: Promise<{ id: string }>; // ✅ params is async
@@ -16,7 +17,7 @@ export async function generateMetadata(
     const { id } = await params; // ✅ await params
     const song = await getVideoWithStats(id);
 
-    if (!song) {
+    if (!song || !isBaseSerialized(song)) {
       return { title: "Video not found" };
     }
 
@@ -42,12 +43,12 @@ export default async function VideoDetailsPage(
   try {
     const { id } = await params; // ✅ await params
     const media = await getVideoWithStats(id);
-    const vids = await getRelatedVideos(media?.genre as string, media?._id as string);
-    console.log("VIDEOS_DATA",media)
 
-    if (!media) {
+    if (!media || !isBaseSerialized(media)) {
       notFound();
     }
+
+    const vids = await getRelatedVideos(media?.genre as string, media?._id as string);
 
     // Increment view count
     await incrementInteraction(id, "Video", "view");
