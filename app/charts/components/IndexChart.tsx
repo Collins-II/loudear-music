@@ -239,7 +239,7 @@ useEffect(() => {
     <main className="bg-background min-h-screen">
       {/* Header */}
       <section className="bg-gradient-to-r from-black via-gray-900 to-black text-white pt-24 pb-12 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between pt-10 gap-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start justify-between gap-6">
           <div>
             <motion.h1
               initial={{ y: -20, opacity: 0 }}
@@ -268,7 +268,7 @@ useEffect(() => {
           </div>
 
           {/* Filters */}
-          <section className="flex flex-col flex-wrap gap-6 items-center justify-center">
+          <section className="flex flex-col flex-wrap gap-6 items-start lg:items-end justify-center">
             <div className="flex gap-6 text-lg font-bold">
               {(["songs", "albums", "videos"] as const).map((cat) => (
                 <button
@@ -285,7 +285,7 @@ useEffect(() => {
               ))}
             </div>
 
-            <div className="flex flex-wrap w-full items-center justify-center gap-4">
+            <div className="flex flex-wrap w-full items-center justify-start gap-4">
               {/* A–Z filter */}
               <DropdownRadio
                 actionLabel="A-Z"

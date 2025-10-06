@@ -18,7 +18,7 @@ import CustomPlayer from "@/components/music/CustomPlayer";
 import { Badge } from "@/components/ui/badge";
 import ShareModal from "@/components/modals/ShareModal";
 import DownloadModal from "@/components/modals/DownloadModal";
-import { formatDate, timeAgo } from "@/lib/utils";
+import { timeAgo } from "@/lib/utils";
 import HorizontalSlider from "@/components/sliders/HorizontalSlider";
 import { SliderCard } from "@/components/sliders/SliderCard";
 import Comments from "@/components/comments/Comments";
@@ -170,7 +170,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
         <section className="lg:col-span-8 space-y-8">
           {/* Hero */}
           <div className="bg-white dark:bg-neutral-900 border-b-[4px] border-black dark:border-white/5 overflow-hidden">
-            <div className="md:flex items-center gap-6 p-6 md:p-8">
+            <div className="md:flex items-center gap-6 py-6 ">
               {/* Cover */}
               <div className="w-full md:w-80 flex-shrink-0">
                 <div className="relative w-full h-80 rounded-xl overflow-hidden bg-gray-100 dark:bg-neutral-800">
@@ -216,20 +216,19 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
                       By <span className="font-semibold text-black dark:text-white">{data.artist}</span>
                     </p>
                     <p className="text-sm text-gray-500 mt-1">
-                      {data.genre} • Released {formatDate(data.releaseDate ?? data.createdAt)}
+                      {data.genre} • <span className="text-xs text-gray-500">{timeAgo(data.createdAt)}</span>
                     </p>
                   </div>
 
                   <div className="mt-3 sm:mt-0 flex items-center gap-2">
                     <Badge className="uppercase px-3 py-1 text-xs">Single</Badge>
-                    <span className="text-xs text-gray-500">{timeAgo(data.createdAt)}</span>
                   </div>
                 </div>
 
                 {/* Stats + actions */}
                 <div className="mt-6 flex items-center gap-4 flex-wrap">
                   {/* Stats row */}
-                  <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
+                  <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
                     <div className="flex items-center gap-2">
                       <Eye className="w-4 h-4 text-gray-500" />
                       <span className="font-semibold">{data.viewCount ?? 0}</span>
@@ -251,7 +250,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
                   </div>
 
                   {/* Action buttons */}
-                  <div className=" flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-3">
                    <button
                       type="button"
                       aria-label={liked ? "Unlike" : "Like"}

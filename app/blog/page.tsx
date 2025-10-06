@@ -39,7 +39,7 @@ const clearFilters = () => {
     <section className="bg-background min-h-screen">
       {/* Hero Header */}
       <section className="bg-gradient-to-r from-black via-gray-900 to-black text-white pt-24 pb-12 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between pt-10 gap-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start justify-between pt-10 gap-6">
           <motion.h1
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -50,7 +50,7 @@ const clearFilters = () => {
           </motion.h1>
 
           {/* Filters */}
-          <div className="flex gap-4 flex-wrap items-center justify-center">
+          <div className="flex gap-4 flex-wrap items-center justify-start">
             <CalendarFilter onChange={(val) => setSelectedDate(val)} />
             <DropdownRadio
               actionLabel="Genre"

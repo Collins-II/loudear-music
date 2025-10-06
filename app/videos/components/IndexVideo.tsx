@@ -113,7 +113,7 @@ export default function IndexVideo({ videos }: IndexVideoProps) {
     <main className="bg-background min-h-screen">
       {/* Header */}
       <section className="bg-gradient-to-r from-black via-gray-900 to-black text-white pt-24 pb-12 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between pt-10 gap-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start justify-between gap-6">
           <div>
             <motion.h1
               initial={{ y: -20, opacity: 0 }}
@@ -142,7 +142,7 @@ export default function IndexVideo({ videos }: IndexVideoProps) {
 
           {/* Filters */}
           <section className="flex flex-col flex-wrap gap-6 items-center justify-center">
-            <div className="flex flex-wrap w-full items-center justify-center gap-4">
+            <div className="flex flex-wrap w-full items-center justify-start gap-4">
               <DropdownRadio
                 actionLabel="A-Z"
                 label="By Alphabet"

@@ -175,7 +175,7 @@ useEffect(() => {
     <main className="bg-background min-h-screen">
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-black via-gray-900 to-black text-white pt-24 pb-12 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start justify-between gap-6">
           <div>
             <h1 className="text-4xl md:text-6xl font-extrabold bg-blue-400 bg-clip-text text-transparent">
               Discover Playlists
@@ -191,7 +191,7 @@ useEffect(() => {
           </div>
 
           {/* Filters */}
-          <div className="flex flex-wrap gap-4 items-center justify-center">
+          <div className="flex flex-wrap gap-4 items-center justify-start">
             <DropdownRadio
               actionLabel="Region"
               label="Select Region"
