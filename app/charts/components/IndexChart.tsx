@@ -32,7 +32,7 @@ export default function ChartsPageWrapper() {
         const charts = await getCharts({
           category: "songs",
           region: "global",
-          sort: "this-week",
+          sort: "all-time",
           limit: 50,
         });
 

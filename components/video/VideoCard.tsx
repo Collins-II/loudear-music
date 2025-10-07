@@ -181,6 +181,7 @@ export function VideoCard({
             </div>
           )}
         </div>
+        </Link>
 
         {/* Info */}
         <div className="pl-2 pr-3 py-3 space-y-1.5">
@@ -199,7 +200,6 @@ export function VideoCard({
             </span>
           </div>
         </div>
-      </Link>
 
       {/* Mobile hint */}
       {isTouchDevice && (

@@ -1,4 +1,5 @@
 import ClientPage from "./components/ClientPage";
+import NetworkError from "@/components/NetworkError";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { getRelatedSongs } from "@/actions/getRelatedSongs";
@@ -6,17 +7,9 @@ import { getSongWithStats, incrementInteraction, SongSerialized } from "@/action
 import { isBaseSerialized } from "@/lib/utils";
 
 interface SongDetailsPageProps {
-  params: Promise<{ id: string }>; // ✅ params is async
+  params: Promise<{ id: string }>;
 }
 
-/**
- * Type guard to ensure we have a serialized item (Song/Album/Video)
- * and not just the internal-only object.
- */
-
-/* -----------------------------------------------------------
- * Dynamic Metadata for SEO and Social Sharing
- * ----------------------------------------------------------- */
 export async function generateMetadata({
   params,
 }: SongDetailsPageProps): Promise<Metadata> {
@@ -24,10 +17,9 @@ export async function generateMetadata({
     const { id } = await params;
     const song = await getSongWithStats(id);
 
-    // Narrow / guard
     if (!song || !isBaseSerialized(song)) {
-        return { title: "Song not found" };
-    };
+      return { title: "Song not found" };
+    }
 
     return {
       title: `${song.title} - ${song.artist}`,
@@ -45,17 +37,15 @@ export async function generateMetadata({
         images: song.coverUrl ? [song.coverUrl] : [],
       },
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error("SONG_METADATA_ERROR", error);
     return { title: "Song Details" };
   }
 }
 
-export default async function SongDetailsPage(
-  { params }: SongDetailsPageProps
-) {
+export default async function SongDetailsPage({ params }: SongDetailsPageProps) {
   try {
-    const { id } = await params; // ✅ await params
+    const { id } = await params;
     const media = await getSongWithStats(id);
 
     if (!media || !isBaseSerialized(media)) {
@@ -64,12 +54,22 @@ export default async function SongDetailsPage(
 
     const relatedSongs = await getRelatedSongs(media?.genre as string, media?._id as string);
 
-    // Increment view count
     await incrementInteraction(id, "Song", "view");
 
     return <ClientPage data={media as SongSerialized} relatedSongs={relatedSongs} />;
-  } catch (error) {
-    console.log("[SongDetailsPage Error]", error);
+  } catch (error: any) {
+    console.error("[SongDetailsPage Error]", error);
+
+    // ✅ Detect MongoDB network issues gracefully
+    if (
+      error?.name === "MongoServerSelectionError" ||
+      error?.message?.includes("ENOTFOUND") ||
+      error?.message?.includes("failed to connect") ||
+      error?.message?.includes("ServerSelectionTimeoutError")
+    ) {
+      return <NetworkError />;
+    }
+
     notFound();
   }
 }

@@ -8,7 +8,7 @@ export const getVideos = async (limit = 16): Promise<ChartItem[]> => {
     return await getCharts({
       category: "videos",
       limit,
-      sort: "this-week",
+      sort: "all-time",
       region: "global",
     });
   } catch (error) {

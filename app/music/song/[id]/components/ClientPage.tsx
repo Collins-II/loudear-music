@@ -8,8 +8,6 @@ import {
   Share2,
   DownloadCloud,
   Flame,
-  Copy,
-  Twitter,
   Eye,
 } from "lucide-react";
 import { getSocket } from "@/lib/socketClient";
@@ -22,7 +20,8 @@ import { timeAgo } from "@/lib/utils";
 import HorizontalSlider from "@/components/sliders/HorizontalSlider";
 import { SliderCard } from "@/components/sliders/SliderCard";
 import Comments from "@/components/comments/Comments";
-import { toast } from "sonner"; // optional if you use toast library (replace or remove if not installed)
+import ChartStatsCard from "@/components/charts/ChartStatsCard";
+import SharePanel from "@/components/SharePanel";
 
 /**
  * Design goals:
@@ -53,7 +52,6 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
   const [imgError, setImgError] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [downloadOpen, setDownloadOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   // socket: synchronize live counts and userLiked state
   useEffect(() => {
@@ -95,8 +93,6 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
         if (type === "like") {
           setLiked((v) => !v);
           setLikeCount((n) => (liked ? Math.max(0, n - 1) : n + 1));
-        } else if (type === "share") {
-          setShareCount((n) => n + 1);
         } else if (type === "download") {
           setDownloadCount((n) => n + 1);
         }
@@ -131,22 +127,6 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
       }
     } else {
       setShareOpen(true);
-    }
-  };
-
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(pageUrl);
-      setCopied(true);
-      // small feedback
-      if (typeof toast === "function") toast.success("Link copied to clipboard");
-      else alert("Link copied to clipboard");
-      setTimeout(() => setCopied(false), 2400);
-      await handleInteraction("share");
-    } catch (err) {
-      console.error("Copy failed", err);
-      if (typeof toast === "function") toast.error("Could not copy link");
-      else alert("Could not copy link");
     }
   };
 
@@ -286,19 +266,12 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
                     </button>
                   </div>
                 </div>
-
-                {/* Short description */}
-                {data.description && (
-                  <p className="mt-4 text-gray-700 dark:text-gray-300 leading-relaxed text-sm md:text-base">
-                    {data.description}
-                  </p>
-                )}
               </div>
             </div>
           </div>
 
           {/* Player */}
-          <div className="rounded-lg bg-white dark:bg-neutral-900 p-4 md:p-6 border-b-[3px] border-black/10 dark:border-white/5">
+          <div className="rounded-lg bg-white dark:bg-neutral-900 border-b-[3px] border-black/10 dark:border-white/5">
             <CustomPlayer
               src={data.fileUrl}
               title={data.title}
@@ -312,13 +285,15 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
           </div>
 
           {/* Description / Article */}
+          {data.description && (
           <article className="prose prose-lg dark:prose-invert max-w-none">
-            <h2 className="mt-6 text-2xl font-bold">About the track</h2>
+            <h3 className="mt-6 text-2xl md:text-3xl font-extrabold">About the track</h3>
             <p>
               {data.description ??
                 "No description available. This page displays metadata, stats and community comments for the release."}
             </p>
           </article>
+        )}
 
           {/* Related songs */}
           {relatedSongs?.length > 0 && (
@@ -352,77 +327,24 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
         <aside className="lg:col-span-4">
           <div className="sticky top-20 space-y-6">
             {/* Share panel */}
-            <div className="rounded-lg bg-white dark:bg-neutral-900 p-4 border-b-[2px] border-black/5 dark:border-white/5 shadow-sm">
-              <div className="flex items-center gap-4  mb-3">
-              <h4 className="text-sm font-semibold">Share this track</h4>
-              {shareCount > 0  &&  (
-              <div className="flex items-center gap-1">
-                 <span className="text-sm text-black/80 font-light">{shareCount}</span>
-                 <span className="text-xs text-gray-400">shares</span>
-               </div>
-              )}
-              </div>
+            <SharePanel
+              title={data.title}
+              artist={data.artist}
+              shareCount={shareCount}
+              onShare={() => handleInteraction("share")}
+            />
 
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleNativeShare}
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 rounded-md bg-black text-white"
-                >
-                  <Share2 className="w-4 h-4" /> Share
-                </button>
-
-                <button
-                  onClick={handleCopyLink}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-md border"
-                  aria-label="Copy link"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
-              </div>
-
-              <div className="mt-3 flex items-center gap-2">
-                <a
-                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${data.title} — ${data.artist}`)}&url=${encodeURIComponent(pageUrl)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-md border"
-                >
-                  <Twitter className="w-4 h-4" /> Twitter
-                </a>
-
-                <a
-                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-md border"
-                >
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M22 12a10 10 0 1 0-11.6 9.9v-7H8.9v-3h1.5V9.3c0-1.5.9-2.4 2.3-2.4.7 0 1.4.1 1.4.1v1.6h-.8c-.8 0-1 0-1 1v1.2h1.8l-.3 3h-1.5v7A10 10 0 0 0 22 12z"/></svg>
-                  Facebook
-                </a>
-              </div>
-
-              {copied && <div className="mt-3 text-sm text-green-600">Link copied to clipboard</div>}
-            </div>
-
-            {/* Chart & meta */}
-            <div className="rounded-lg bg-white dark:bg-neutral-900 p-4 border-b-[2px] border-black/5 dark:border-white/5 shadow-sm">
-              <h4 className="text-sm font-semibold mb-3">Chart & stats</h4>
-
-              <div className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
-                <div className="flex justify-between">
-                  <span>Trending position</span>
-                  <span className="font-semibold">{data.trendingPosition ?? "—"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Chart this week</span>
-                  <span className="font-semibold">{data.chartPosition ?? "—"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Peak</span>
-                  <span className="font-semibold">{data.chartHistory?.[0]?.peak ?? "—"}</span>
-                </div>
-              </div>
-            </div>
+            <ChartStatsCard
+              data={{
+                trendingPosition: data.trendingPosition,
+                chartPosition: data.chartPosition,
+                peak: data.chartHistory?.[0]?.peak,
+                plays: data.viewCount,
+                likes: data.likeCount,
+                shares: shareCount,
+                downloads: data.downloadCount,
+              }}
+            />
 
             {/* CTA / Ads placeholder */}
             <div className="rounded-lg bg-gradient-to-br from-indigo-600 to-violet-600 p-6 text-white text-center">

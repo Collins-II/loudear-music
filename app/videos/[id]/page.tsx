@@ -5,6 +5,7 @@ import { Metadata } from "next";
 import { getVideoWithStats, incrementInteraction, VideoSerialized } from "@/actions/getItemsWithStats";
 import { getRelatedVideos } from "@/actions/getRelatedVideos";
 import { isBaseSerialized } from "@/lib/utils";
+import NetworkError from "@/components/NetworkError";
 
 interface SongDetailsPageProps {
   params: Promise<{ id: string }>; // ✅ params is async
@@ -54,8 +55,19 @@ export default async function VideoDetailsPage(
     await incrementInteraction(id, "Video", "view");
 
     return <ClientPage data={media as VideoSerialized} relatedVideos={vids} />;
-  } catch (error) {
-    console.log("[SongDetailsPage Error]", error);
-    notFound();
-  }
+  } catch (error: any) {
+      console.error("[SongDetailsPage Error]", error);
+  
+      // ✅ Detect MongoDB network issues gracefully
+      if (
+        error?.name === "MongoServerSelectionError" ||
+        error?.message?.includes("ENOTFOUND") ||
+        error?.message?.includes("failed to connect") ||
+        error?.message?.includes("ServerSelectionTimeoutError")
+      ) {
+        return <NetworkError />;
+      }
+  
+      notFound();
+    }
 }

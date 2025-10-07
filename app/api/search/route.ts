@@ -67,28 +67,6 @@ export async function GET(req: NextRequest) {
       results.push(...videos.map((v) => normalize(v, "video")));
     }
 
-    // ARTISTS (from Song.artist, Album.curator, Video.artist)
-    if (!type || type === "all" || type === "artists") {
-      const [songArtists, albumArtists, videoArtists] = await Promise.all([
-        Song.find({ artist: regex }).distinct("artist"),
-        Album.find({ curator: regex }).distinct("curator"),
-        Video.find({ artist: regex }).distinct("artist"),
-      ]);
-
-      const uniqueArtists = Array.from(
-        new Set([...songArtists, ...albumArtists, ...videoArtists])
-      ).slice(0, limit);
-
-      results.push(
-        ...uniqueArtists.map((name) => ({
-          id: name,
-          title: name,
-          artist: name,
-          image: "/assets/images/placeholder_artist.jpg",
-          category: "artist",
-        }))
-      );
-    }
 
     return NextResponse.json({
       query,

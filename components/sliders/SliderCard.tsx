@@ -52,7 +52,7 @@ export function SliderCard({
     <motion.div
       whileHover={{ scale: 1.03 }}
       transition={{ type: "spring", stiffness: 200 }}
-      className="w-54 border-b-[2px] border-gray-200"
+      className="w-54 border-b-[4px] border-black"
     >
       <Link href={href} className="w-full cursor-pointer block">
         <div className="w-full group overflow-hidden transition-all bg-white rounded-2xl">

@@ -16,6 +16,18 @@ export function isBaseSerialized(obj: any): obj is { title: string; artist: stri
   return !!obj && typeof obj === "object" && typeof obj.title === "string" && typeof obj.artist === "string" && !!obj._id;
 }
 
+export  function addSnippet(song: ISong) {
+  const duration = song.duration ?? 0;
+  if (duration < 15) return null;
+
+  const start = Math.floor(Math.random() * Math.max(1, duration - 10));
+  const snippetStart = Math.max(5, start);
+  const snippetEnd = Math.min(duration, snippetStart + 10);
+
+  return { start: snippetStart, end: snippetEnd };
+}
+
+
 export function normalizeDoc(doc: ISong | IAlbum | IVideo) {
   const anyDoc: any = doc;
   return {

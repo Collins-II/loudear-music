@@ -3,37 +3,47 @@ import { getCharts, getTrending } from "@/actions/getCharts";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const category = (searchParams.get("category") as "songs" | "albums" | "videos") || "songs";
+  const category =
+    (searchParams.get("category") as "songs" | "albums" | "videos") || "songs";
   const limit = parseInt(searchParams.get("limit") || "50", 10);
 
   try {
-    // fetch charts
+    // fetch charted data
     const charts = await getCharts({ category, limit });
 
-    // ✅ Emit real-time update to connected clients via globalThis.io
-    if (globalThis.io) {
-      // Broadcast to all clients
-      globalThis.io.emit("trending:update", { category, charts });
-
-      // Optionally, also broadcast to category-specific rooms
-      globalThis.io.to(`charts:${category}`).emit("trending:update", { category, charts });
+    // optionally fetch top trending videos if category === "videos"
+    let topVideos: any[] = [];
+    if (category === "videos") {
+      topVideos = await getTrending({
+        model: "Video",
+        limit: 10,
+        sinceDays: 30,
+      });
     }
 
-    // if category is videos, also send top 10
-    let topVideos: any = [];
-    if (category === "videos") {
-      topVideos = await getTrending(
-        {
-          model:"Video",
-          limit: 10,
-          sinceDays: 30
-        }
-      );
+    // normalize charts for front-end trending display
+    const items = charts.map((chart: any, i: number) => ({
+      id: chart._id?.toString?.() || chart.id || `item-${i}`,
+      title: chart.title || chart.name || "Untitled",
+      artist: chart.artist || chart.creator || "Unknown Artist",
+      cover:
+        chart.coverImage || chart.image || chart.thumbnail || "/placeholder.png",
+      rank: i + 1,
+      score: chart.score || chart.plays || chart.views || 0,
+    }));
+
+    // ✅ Emit live update for connected clients (optional)
+    if (globalThis.io) {
+      globalThis.io.emit("trending:update", { category, items });
+      globalThis.io.to(`charts:${category}`).emit("trending:update", {
+        category,
+        items,
+      });
     }
 
     return NextResponse.json({
       category,
-      charts,
+      items,
       topVideos,
     });
   } catch (error: any) {

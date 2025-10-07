@@ -114,7 +114,7 @@ const handleDownload = async () => {
 
 
   return (
-    <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-2xl p-4 shadow-lg flex flex-col sm:flex-row sm:items-center gap-4 w-full">
+    <div className="bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-2xl p-4 shadow-lg flex flex-col sm:flex-row sm:items-center gap-4 w-full">
       <audio ref={audioRef} src={src} preload="metadata" />
 
       {/* Album Art */}
@@ -165,7 +165,7 @@ const handleDownload = async () => {
               onChange={handleSeek}
               className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-green-500"
             />
-            <span className="text-[11px] text-gray-300 hidden sm:block">
+            <span className="text-[11px] text-gray-300 ">
               {formatTime(duration)}
             </span>
           </div>
@@ -175,8 +175,8 @@ const handleDownload = async () => {
       {/* Volume + Download */}
       <div className="flex items-center justify-between sm:justify-end gap-4">
         {/* Volume Control */}
-        <div className="hidden md:block flex items-center gap-1">
-          <Volume2 className="w-4 h-4 text-gray-300 hidden sm:block" />
+        <div className="w-full flex items-center gap-1">
+          <Volume2 className="w-4 h-4 text-gray-300" />
           <input
             aria-label="Volume"
             type="range"
@@ -185,7 +185,7 @@ const handleDownload = async () => {
             step={0.01}
             value={volume}
             onChange={handleVolume}
-            className="w-full accent-green-500 cursor-pointer"
+            className="w-full accent-white cursor-pointer"
           />
         </div>
 
@@ -193,7 +193,7 @@ const handleDownload = async () => {
 
           <Button
             size="icon"
-            className="bg-green-500 hover:bg-green-600 rounded-full p-2"
+            className="bg-black hover:bg-black/80 rounded-full p-2"
             onClick={handleDownload}
           >
             <DownloadCloud className="w-4 h-4" />

@@ -11,24 +11,15 @@ import { Album } from "@/lib/database/models/album";
 import { Video } from "@/lib/database/models/video";
 import { normalizeDoc } from "@/lib/utils";
 
-/* ------------------------------------------------------------------ */
-/* Types */
-/* ------------------------------------------------------------------ */
 export type ItemType = "Song" | "Album" | "Video";
 export type ChartCategory = "songs" | "albums" | "videos";
-
-interface TrendingOptions {
-  model: ItemType;
-  limit?: number;
-  sinceDays?: number;
-}
 
 export interface ChartItem {
   id: string;
   title: string;
   artist?: string;
   image: string;
-  videoUrl?: string; // <--- for videos
+  videoUrl?: string;
   position: number;
   lastWeek?: number | null;
   peak?: number | null;
@@ -44,63 +35,75 @@ export interface ChartItem {
     shares: number;
     comments: number;
   };
-  snippet?: { start: number, end: number };
+  snippet?: { start: number; end: number };
 }
 
 /* ------------------------------------------------------------------ */
-/* Normalizer */
+/* Trending Calculation */
 /* ------------------------------------------------------------------ */
-
-/* ------------------------------------------------------------------ */
-/* Trending calculation */
-/* ------------------------------------------------------------------ */
-export async function getTrending({ model, limit = 50, sinceDays = 7 }: TrendingOptions) {
+export async function getTrending({
+  model,
+  limit = 50,
+  sinceDays = 7,
+}: {
+  model: ItemType;
+  limit?: number;
+  sinceDays?: number;
+}) {
   await connectToDatabase();
   const Model = model === "Song" ? Song : model === "Album" ? Album : Video;
 
   const sinceDate = new Date();
   sinceDate.setDate(sinceDate.getDate() - sinceDays);
 
-  const rawItems = (await Model.find({ createdAt: { $gte: sinceDate } })
+  // Try fetching recent items first
+  let rawItems = await Model.find({ createdAt: { $gte: sinceDate } })
     .lean()
-    .exec()) as unknown[];
+    .exec();
 
-  const scored = rawItems.map((it) => {
-    const n = normalizeDoc(it as any);
+  // 🩵 Fallback: if too few or none, fetch all items
+  if (!Array.isArray(rawItems) || rawItems.length < 5) {
+    console.warn(
+      `[getTrending] Only ${rawItems?.length ?? 0} recent items found, falling back to all records`
+    );
+    rawItems = await Model.find().lean().exec();
+  }
+
+  const scored = rawItems.map((it: any) => {
+    const n = normalizeDoc(it);
     const score =
       (n.viewCount || 0) +
       (n.likeCount || 0) * 2 +
       (n.shareCount || 0) * 3 +
       (n.downloadCount || 0) * 1.5;
-
     return { ...n, trendingScore: score };
   });
 
   scored.sort((a, b) => b.trendingScore - a.trendingScore);
-
   return scored.slice(0, limit);
 }
 
 /* ------------------------------------------------------------------ */
-/* Get Charts + Emit via socket */
+/* Get Charts */
 /* ------------------------------------------------------------------ */
-interface GetChartsArgs {
-  category: ChartCategory;
-  region?: string;
-  sort?: "this-week" | "last-week" | "all-time";
-  limit?: number;
-}
-
 export async function getCharts({
   category,
   region = "global",
   sort = "this-week",
   limit = 50,
-}: GetChartsArgs): Promise<ChartItem[]> {
+}: {
+  category: ChartCategory;
+  region?: string;
+  sort?: "this-week" | "last-week" | "all-time";
+  limit?: number;
+}): Promise<ChartItem[]> {
   await connectToDatabase();
 
-  const model: ItemType = category === "songs" ? "Song" : category === "albums" ? "Album" : "Video";
+  const model: ItemType =
+    category === "songs" ? "Song" : category === "albums" ? "Album" : "Video";
+
   const trending = await getTrending({ model, limit: 200, sinceDays: 14 });
+  if (!trending.length) return [];
 
   const currentWeek = `${dayjs().year()}-W${String(dayjs().isoWeek()).padStart(2, "0")}`;
   const lastWeek = dayjs().subtract(1, "week").format("YYYY-[W]WW");
@@ -130,8 +133,8 @@ export async function getCharts({
     return {
       id: idStr,
       title: t.title,
-      artist: t.artist,
-      image: t.coverUrl ?? "",
+      artist: t.artist ?? t.artist ?? "Unknown Artist",
+      image: t.coverUrl ?? t.coverUrl ?? "",
       videoUrl: t.videoUrl,
       position: cur?.position ?? idx + 1,
       lastWeek: last?.position ?? null,
@@ -139,7 +142,7 @@ export async function getCharts({
       weeksOn: cur?.weeksOn ?? 1,
       region,
       genre: t.genre ?? "Unknown",
-      releaseDate: t.releaseDate,
+      releaseDate: t.releaseDate ?? new Date().toISOString(),
       stats: {
         plays: t.viewCount ?? 0,
         downloads: t.downloadCount ?? 0,
@@ -160,14 +163,16 @@ export async function getCharts({
     items.sort((a, b) => (b.stats.plays ?? 0) - (a.stats.plays ?? 0));
   }
 
-  // 🔥 Emit real-time updates
-  globalThis.io?.emit("charts:update:category", { category, items });
-  items.forEach((item) => {
-    globalThis.io?.emit("charts:update:item", {
-      id: item.id,
-      newPos: item.position,
+  // ✅ Emit array updates
+  if (Array.isArray(items) && items.length > 1) {
+    globalThis.io?.emit("charts:update:category", { category, items });
+    items.forEach((item) => {
+      globalThis.io?.emit("charts:update:item", {
+        id: item.id,
+        newPos: item.position,
+      });
     });
-  });
+  }
 
   return items;
 }

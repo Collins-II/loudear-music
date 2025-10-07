@@ -3,6 +3,13 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+
 /* Theme Variables */
 @theme inline {
   --color-background: var(--background);

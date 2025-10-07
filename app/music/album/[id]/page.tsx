@@ -8,6 +8,7 @@ import {
   incrementInteraction,
   AlbumSerialized,
 } from "@/actions/getItemsWithStats";
+import NetworkError from "@/components/NetworkError";
 
 interface AlbumDetailsPageProps {
   params: Promise<{ id: string }>;
@@ -80,8 +81,19 @@ export default async function AlbumDetailsPage({ params }: AlbumDetailsPageProps
     await incrementInteraction(id, "Album", "view");
 
     return <ClientPage data={album} relatedSongs={relatedSongs} />;
-  } catch (error) {
-    console.error("[AlbumDetailsPage Error]", error);
+} catch (error: any) {
+    console.error("[SongDetailsPage Error]", error);
+
+    // ✅ Detect MongoDB network issues gracefully
+    if (
+      error?.name === "MongoServerSelectionError" ||
+      error?.message?.includes("ENOTFOUND") ||
+      error?.message?.includes("failed to connect") ||
+      error?.message?.includes("ServerSelectionTimeoutError")
+    ) {
+      return <NetworkError />;
+    }
+
     notFound();
   }
 }

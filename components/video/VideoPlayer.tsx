@@ -156,7 +156,7 @@ export default function VideoPlayer({
 
   return (
     <div
-      className="relative w-full overflow-hidden bg-black shadow-xl rounded-md aspect-[16/9] sm:aspect-video"
+      className="relative w-full overflow-hidden bg-black shadow-xl rounded-md aspect-video sm:aspect-video min-h-[50vh]"
       onMouseMove={() => setShowOverlay(true)}
       onMouseLeave={() => setShowOverlay(false)}
     >
@@ -164,7 +164,7 @@ export default function VideoPlayer({
         ref={videoRef}
         src={src}
         poster={thumbnail}
-        className="w-full h-full object-contain sm:object-cover bg-black"
+        className="w-full h-full min-h-[50vh] object-contain sm:object-cover bg-black"
         onClick={togglePlay}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
@@ -172,7 +172,7 @@ export default function VideoPlayer({
         controls={false}
       />
 
-      {/* ✅ LOGIN OVERLAY if no user */}
+      {/* LOGIN OVERLAY */}
       {!userId && (
         <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center gap-3 text-white z-20">
           <LogIn size={40} className="opacity-80" />
@@ -180,7 +180,7 @@ export default function VideoPlayer({
         </div>
       )}
 
-      {/* ✅ Overlay UI */}
+      {/* Overlay UI */}
       <AnimatePresence>
         {showOverlay && (
           <motion.div
@@ -247,7 +247,7 @@ export default function VideoPlayer({
         )}
       </AnimatePresence>
 
-      {/* ✅ Social Reactions (only if logged in) */}
+      {/* Social Reactions */}
       {userId && (
         <>
           <motion.div
