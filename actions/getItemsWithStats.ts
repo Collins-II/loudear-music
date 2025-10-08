@@ -268,7 +268,7 @@ export async function getItemWithStats(model: ItemType, id: string) {
   ]);
 
   // Trending score within recent period
-  const sinceDate = dayjs().subtract(14, "day").toDate();
+  const sinceDate = dayjs().subtract(365, "day").toDate();
   const recentItems = await Model.find({ createdAt: { $gte: sinceDate } })
     .select("_id views likes shares downloads")
     .lean();

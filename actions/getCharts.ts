@@ -89,7 +89,7 @@ export async function getTrending({
 export async function getCharts({
   category,
   region = "global",
-  sort = "this-week",
+  sort = "all-time",
   limit = 50,
 }: {
   category: ChartCategory;
@@ -102,7 +102,7 @@ export async function getCharts({
   const model: ItemType =
     category === "songs" ? "Song" : category === "albums" ? "Album" : "Video";
 
-  const trending = await getTrending({ model, limit: 200, sinceDays: 14 });
+  const trending = await getTrending({ model, limit: 200, sinceDays: 365 });
   if (!trending.length) return [];
 
   const currentWeek = `${dayjs().year()}-W${String(dayjs().isoWeek()).padStart(2, "0")}`;

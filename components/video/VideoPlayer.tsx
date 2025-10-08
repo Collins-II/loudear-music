@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Play,
@@ -9,12 +9,6 @@ import {
   VolumeX,
   Maximize2,
   Minimize2,
-  Heart,
-  Share2,
-  Flame,
-  Laugh,
-  Smile,
-  Eye,
   LogIn,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -37,9 +31,6 @@ export default function VideoPlayer({
   thumbnail,
   id,
   userId,
-  initialLikes = 0,
-  initialViews = 0,
-  initialShares = 0,
 }: SocialVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -49,37 +40,14 @@ export default function VideoPlayer({
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [likes, setLikes] = useState(initialLikes);
-  const [views, setViews] = useState(initialViews);
-  const [shareCount, setShareCount] = useState(initialShares);
-  const [showReactions, setShowReactions] = useState(false);
-  const [liked, setLiked] = useState(false);
 
-  // ✅ Handle Interactions
-  const handleInteraction = useCallback(
-    async (type: "like" | "share") => {
-      if (!userId) return alert("Please sign in to interact.");
-      try {
-        if (type === "like") {
-          setLiked((v) => !v);
-          setLikes((n) => (liked ? Math.max(0, n - 1) : n + 1));
-        } else if (type === "share") {
-          setShareCount((n) => n + 1);
-        }
-        await incrementInteraction(id, "Video", type, userId);
-      } catch (err) {
-        console.error(err);
-      }
-    },
-    [id, userId, liked]
-  );
 
   // ✅ Play & Controls
   const togglePlay = () => {
     if (!videoRef.current || !userId) return;
     if (isPlaying) videoRef.current.pause();
     else videoRef.current.play();
-    setIsPlaying(!isPlaying);
+    setIsPlaying(!isPlaying) ;
   };
 
   const toggleMute = () => {
@@ -114,7 +82,7 @@ export default function VideoPlayer({
 
     const onPlay = () => {
       if (userId) {
-        setViews((v) => v + 1);
+       // setViews((v) => v + 1);
         incrementInteraction(id, "Video", "view", userId);
       }
     };
@@ -247,7 +215,7 @@ export default function VideoPlayer({
         )}
       </AnimatePresence>
 
-      {/* Social Reactions */}
+      {/* Social Reactions 
       {userId && (
         <>
           <motion.div
@@ -289,7 +257,7 @@ export default function VideoPlayer({
             </div>
           </motion.div>
 
-          {/* Reaction Popup */}
+          
           <AnimatePresence>
             {showReactions && (
               <motion.div
@@ -309,7 +277,7 @@ export default function VideoPlayer({
             )}
           </AnimatePresence>
         </>
-      )}
+      )}*/}
     </div>
   );
 }

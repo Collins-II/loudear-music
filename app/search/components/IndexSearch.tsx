@@ -1,12 +1,7 @@
 "use client";
 
-import React, {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-  JSX,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState, JSX } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -18,10 +13,11 @@ import {
   Video,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
 /* ---------------------------
    Types
 ----------------------------*/
-type ResultType = "song" | "album" | "video"
+type ResultType = "song" | "album" | "video";
 type SortOption = "relevance" | "newest" | "popular";
 
 interface SearchResultBase {
@@ -31,6 +27,7 @@ interface SearchResultBase {
   subtitle?: string;
   image?: string;
   genre?: string;
+  href: string;
   releaseDate?: string;
   stats?: {
     plays?: number;
@@ -38,9 +35,7 @@ interface SearchResultBase {
     downloads?: number;
     likes?: number;
   };
-  extra?: {
-    previewUrl?: string; // small mp4/mp3 preview url (optional)
-  };
+  extra?: { previewUrl?: string };
 }
 
 interface SearchResponse {
@@ -60,7 +55,7 @@ interface TrendingItem {
 }
 
 /* ---------------------------
-   Constants & Utilities
+   Utils & Hooks
 ----------------------------*/
 const DEFAULT_LIMIT = 20;
 
@@ -74,22 +69,30 @@ function useDebounced<T>(value: T, delay = 350) {
 }
 
 /* ---------------------------
-   Small UI: result tile with hover preview
+   Small UI Components
 ----------------------------*/
-const IconForType = ({ t }: { t: ResultType }) => {
-  if (t === "song") return <Music2 size={14} />;
-  if (t === "album") return <Disc size={14} />;
-  if (t === "video") return <Video size={14} />;
-};
+const IconForType = ({ t }: { t: ResultType }) =>
+  t === "song" ? (
+    <Music2 size={14} />
+  ) : t === "album" ? (
+    <Disc size={14} />
+  ) : (
+    <Video size={14} />
+  );
 
-function PreviewLayer({
-  previewUrl,
-  playing,
-}: {
-  previewUrl?: string;
-  playing: boolean;
-}) {
-  // show a muted, looped small video if available, otherwise nothing
+const SkeletonCard = () => (
+  <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-neutral-900 border border-black/5 dark:border-white/5 shadow">
+    <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/20 dark:via-white/10 to-transparent" />
+    <div className="w-full h-56 md:h-48 lg:h-56 bg-gray-200 dark:bg-neutral-800" />
+    <div className="p-4 space-y-3">
+      <div className="h-4 w-3/4 bg-gray-200 dark:bg-neutral-800 rounded" />
+      <div className="h-3 w-1/2 bg-gray-200 dark:bg-neutral-800 rounded" />
+      <div className="h-3 w-full bg-gray-200 dark:bg-neutral-800 rounded" />
+    </div>
+  </div>
+);
+
+function PreviewLayer({ previewUrl, playing }: { previewUrl?: string; playing: boolean }) {
   if (!previewUrl) return null;
   return (
     <video
@@ -104,41 +107,28 @@ function PreviewLayer({
   );
 }
 
-function SkeletonCard() {
-  return (
-    <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-neutral-900 border border-black/5 dark:border-white/5 shadow">
-      {/* shimmer overlay */}
-      <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/20 dark:via-white/10 to-transparent" />
-
-      {/* thumbnail */}
-      <div className="w-full h-56 md:h-48 lg:h-56 bg-gray-200 dark:bg-neutral-800" />
-
-      {/* content placeholders */}
-      <div className="p-4 space-y-3">
-        <div className="h-4 w-3/4 bg-gray-200 dark:bg-neutral-800 rounded" />
-        <div className="h-3 w-1/2 bg-gray-200 dark:bg-neutral-800 rounded" />
-        <div className="h-3 w-full bg-gray-200 dark:bg-neutral-800 rounded" />
-      </div>
-    </div>
-  );
-}
-
-
 function ResultTile({ item, rank }: { item: SearchResultBase; rank?: number }) {
   const [hover, setHover] = useState(false);
   const [playingPreview, setPlayingPreview] = useState(false);
-  useEffect(() => {
-    // when hover state changes, set playingPreview briefly after hover to avoid immediate buffering
-    let t: number | undefined;
-    if (hover && item.extra?.previewUrl) {
-      t = window.setTimeout(() => setPlayingPreview(true), 180);
-    } else {
-      setPlayingPreview(false);
+
+ useEffect(() => {
+  let t: number | undefined;
+
+  if (hover && item.extra?.previewUrl) {
+    t = window.setTimeout(() => setPlayingPreview(true), 180);
+  } else {
+    setPlayingPreview(false);
+  }
+
+  return () => {
+    if (t !== undefined) {
+      window.clearTimeout(t);
     }
-    return () => {
-      if (t) window.clearTimeout(t);
-    };
-  }, [hover, item.extra?.previewUrl]);
+  };
+}, [hover, item.extra?.previewUrl]);
+
+
+
 
   return (
     <motion.article
@@ -151,22 +141,15 @@ function ResultTile({ item, rank }: { item: SearchResultBase; rank?: number }) {
       className="relative rounded-2xl bg-white dark:bg-neutral-900 border border-black/5 dark:border-white/5 overflow-hidden shadow hover:shadow-lg transition"
     >
       <div className="relative w-full h-56 md:h-48 lg:h-56">
-        {/* image / preview container */}
         {item.extra?.previewUrl && hover ? (
-          <div className="absolute inset-0">
+          <>
             <PreviewLayer previewUrl={item.extra.previewUrl} playing={playingPreview} />
             <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
               <PlayCircle className="text-white" size={48} />
             </div>
-          </div>
+          </>
         ) : item.image ? (
-          <Image
-            src={item.image}
-            alt={item.title}
-            fill
-            className="object-cover"
-            priority={false}
-          />
+          <Image src={item.image} alt={item.title} fill className="object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400">
             <IconForType t={item.type} />
@@ -184,12 +167,10 @@ function ResultTile({ item, rank }: { item: SearchResultBase; rank?: number }) {
               {item.subtitle ?? (item.type === "song" ? "Song" : item.type)}
             </div>
           </div>
-
           <div className="text-right text-xs text-gray-400">
             {item.releaseDate ? new Date(item.releaseDate).getFullYear() : ""}
           </div>
         </div>
-
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center gap-2 text-xs text-gray-500">
             {item.genre && (
@@ -201,11 +182,9 @@ function ResultTile({ item, rank }: { item: SearchResultBase; rank?: number }) {
               <span>{item.stats.plays.toLocaleString()} plays</span>
             )}
           </div>
-
           <a
-            href={`/view/${item.type}/${item.id}`}
+            href={item.href}
             className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 text-sm font-medium"
-            aria-label={`Open ${item.title}`}
           >
             Open <ArrowRight size={14} />
           </a>
@@ -216,16 +195,15 @@ function ResultTile({ item, rank }: { item: SearchResultBase; rank?: number }) {
 }
 
 /* ---------------------------
-   Trending leaderboard visual
+   Trending Leaderboard
 ----------------------------*/
 function TrendingLeaderboard({ list }: { list: TrendingItem[] }) {
   return (
     <section className="rounded-2xl bg-gradient-to-r from-pink-600 via-red-500 to-orange-400 text-white p-4 shadow-lg">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-extrabold">Top Trending</h3>
+        <h3 className="text-lg font-extrabold">Global Trends</h3>
         <div className="text-xs opacity-90">Updated weekly</div>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {list.slice(0, 6).map((t) => (
           <div key={t.id} className="bg-white/10 rounded-xl p-3 flex items-center gap-3">
@@ -238,12 +216,10 @@ function TrendingLeaderboard({ list }: { list: TrendingItem[] }) {
                 </div>
               )}
             </div>
-
             <div className="flex-1 min-w-0">
               <div className="text-sm font-semibold truncate">{t.title}</div>
               <div className="text-xs opacity-90">{t.artist ?? "Various"}</div>
             </div>
-
             <div className="text-right">
               <div className="text-sm font-bold">#{t.rank}</div>
               <div className="text-xs opacity-90">{t.score ? t.score.toFixed(0) : "—"}</div>
@@ -256,275 +232,169 @@ function TrendingLeaderboard({ list }: { list: TrendingItem[] }) {
 }
 
 /* ---------------------------
-   Main Page Component
+   MAIN PAGE
 ----------------------------*/
 export default function InteractiveSearchPage(): JSX.Element {
-  // query & filters
-  const [query, setQuery] = useState("");
-  const debouncedQuery = useDebounced(query, 350);
+  const router = useRouter();
+  const params = useSearchParams();
 
-  const [type, setType] = useState<"all" | ResultType>("all");
-  const [genre, setGenre] = useState<string>("All");
-  const [sort, setSort] = useState<SortOption>("relevance");
+  const [query, setQuery] = useState(params.get("q") || "");
+  const [type, setType] = useState<"all" | ResultType>(
+    (params.get("type") as any) || "all"
+  );
+  const [genre, setGenre] = useState(params.get("genre") || "All");
+  const [sort, setSort] = useState<SortOption>(
+    (params.get("sort") as SortOption) || "relevance"
+  );
 
-  // results / paging
+  const debouncedQuery = useDebounced(query, 400);
   const [results, setResults] = useState<SearchResultBase[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // suggestions
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [activeSuggestion, setActiveSuggestion] = useState(-1);
-
-  // trending
   const [trending, setTrending] = useState<TrendingItem[]>([]);
-
-  // refs
-  const abortRef = useRef<AbortController | null>(null);
-  const suggestAbortRef = useRef<AbortController | null>(null);
   const loaderRef = useRef<HTMLDivElement | null>(null);
 
-  // preview audio/video focus lock (only one preview plays)
-  //const [previewPlayingId, setPreviewPlayingId] = useState<string | null>(null);
-
-  /* fetch trending once */
-/* fetch trending once */
-useEffect(() => {
-  const ctrl = new AbortController();
-
-  fetch("/api/trending?limit=6", {
-    signal: ctrl.signal,
-    cache: "no-store",
-  })
-    .then((r) => (r.ok ? r.json() : Promise.reject(r.statusText)))
-    .then((body: { items: TrendingItem[] }) => {
-      setTrending(body.items ?? []);
-    })
-    .catch((err) => {
-      console.warn("Failed to fetch trending:", err);
-    });
-
-  return () => ctrl.abort();
-}, []);
-
-  /* Fetch suggestions */
+  /* ✨ Sync URL when filters change */
   useEffect(() => {
-    if (!debouncedQuery || debouncedQuery.trim().length < 2) {
-      setSuggestions([]);
-      setActiveSuggestion(-1);
+    const url = new URL(window.location.href);
+    url.searchParams.set("q", query);
+    url.searchParams.set("type", type);
+    url.searchParams.set("genre", genre);
+    url.searchParams.set("sort", sort);
+    router.replace(url.pathname + "?" + url.searchParams.toString());
+  }, [query, type, genre, sort, router]);
+
+  /* 🔍 Fetch results */
+  const fetchResults = useCallback(async () => {
+    if (!debouncedQuery.trim()) {
+      setResults([]);
+      setTotal(0);
       return;
     }
-    suggestAbortRef.current?.abort();
-    const ctrl = new AbortController();
-    suggestAbortRef.current = ctrl;
-    fetch(`/api/search/suggest?q=${encodeURIComponent(debouncedQuery)}`, {
-      signal: ctrl.signal,
-      cache: "no-store",
-    })
-      .then((r) => (r.ok ? r.json() : Promise.reject(r.statusText)))
-      .then((body: { suggestions?: string[] }) => {
-        setSuggestions((body.suggestions ?? []).slice(0, 6));
-      })
-      .catch(() => {})
-      .finally(() => {});
-    return () => ctrl.abort();
-  }, [debouncedQuery]);
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `/api/search?q=${encodeURIComponent(debouncedQuery)}&type=${type}&genre=${genre}&sort=${sort}&page=${page}&limit=${DEFAULT_LIMIT}`
+      );
+      if (!res.ok) throw new Error("Failed to fetch results");
+      const data = (await res.json()) as SearchResponse;
+      setResults(data.results);
+      setTotal(data.total);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, [debouncedQuery, type, genre, sort, page]);
 
-  /* Fetch page */
-  const fetchPage = useCallback(
-    async (opts: { q?: string; p?: number; append?: boolean } = {}) => {
-      const q = opts.q ?? debouncedQuery;
-      const p = opts.p ?? 1;
-      const append = Boolean(opts.append);
-      if (!q || q.trim().length === 0) {
-        setResults([]);
-        setTotal(0);
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-      abortRef.current?.abort();
-      const ctrl = new AbortController();
-      abortRef.current = ctrl;
-
-      const params = new URLSearchParams({
-        q: q.trim(),
-        type: type === "all" ? "" : type,
-        genre: genre === "All" ? "" : genre,
-        sort,
-        page: String(p),
-        limit: String(DEFAULT_LIMIT),
-      });
-
-      try {
-        const res = await fetch(`/api/search?${params.toString()}`, {
-          signal: ctrl.signal,
-          cache: "no-store",
-        });
-        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-        const body = (await res.json()) as SearchResponse;
-        setTotal(body.total ?? 0);
-        setPage(body.page ?? p);
-        setResults((prev) => (append ? [...prev, ...(body.results ?? [])] : body.results ?? []));
-      } catch (err: any) {
-        if (err.name !== "AbortError") {
-          console.error("Search error", err);
-          setError(err.message ?? "Search failed");
-        }
-      } finally {
-        setLoading(false);
-      }
-    },
-    [debouncedQuery, type, genre, sort]
-  );
-
-  /* main effect: run search when debouncedQuery or filters change */
   useEffect(() => {
-    setPage(1);
-    fetchPage({ q: debouncedQuery, p: 1, append: false });
-  }, [debouncedQuery, type, genre, sort, fetchPage]);
+    fetchResults();
+  }, [fetchResults]);
 
-  /* infinite scroll observer */
+  /* 🧠 Fetch trending */
+  useEffect(() => {
+    fetch("/api/trending/global?limit=6")
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((data) => setTrending(data.items || []))
+      .catch(() => {});
+  }, []);
+
+  /* ♾ Infinite Scroll */
   useEffect(() => {
     if (!loaderRef.current) return;
     const obs = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && !loading && results.length < total) {
-          fetchPage({ q: debouncedQuery, p: page + 1, append: true });
+          setPage((p) => p + 1);
         }
       },
       { threshold: 1 }
     );
     obs.observe(loaderRef.current);
     return () => obs.disconnect();
-  }, [loaderRef, loading, results.length, total, page, fetchPage, debouncedQuery]);
+  }, [loaderRef, loading, results.length, total]);
 
-  /* keyboard nav for suggestions */
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (suggestions.length === 0) return;
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setActiveSuggestion((i) => Math.min(i + 1, suggestions.length - 1));
-      } else if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setActiveSuggestion((i) => Math.max(i - 1, 0));
-      } else if (e.key === "Enter") {
-        if (activeSuggestion >= 0) {
-          setQuery(suggestions[activeSuggestion]);
-          setSuggestions([]);
-        }
-      } else if (e.key === "Escape") {
-        setSuggestions([]);
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [suggestions, activeSuggestion]);
-
-  /* UI helpers */
-  const handleSelectSuggestion = (s: string) => {
-    setQuery(s);
-    setSuggestions([]);
-  };
-
-  const clear = () => {
-    setQuery("");
-    setSuggestions([]);
-    setResults([]);
-    setTotal(0);
-  };
-
-  /* render */
   return (
-    <main className="min-h-screen bg-white pt-12">
+    <main className="min-h-screen bg-gradient-to-br from-neutral-950 via-neutral-900 to-black text-white pt-12">
+      {/* Header */}
+      <header className="border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-6 py-10 text-center md:text-left">
+          <h1 className="text-4xl md:text-5xl font-extrabold">
+            <span className="text-white">LoudEar </span>
+            <span className="bg-gradient-to-r from-rose-500 to-purple-600 bg-clip-text text-transparent">
+              Search
+            </span>
+          </h1>
+          <p className="mt-3 text-sm text-gray-400 max-w-2xl">
+            Discover songs, albums, and videos instantly.
+          </p>
+        </div>
+      </header>
+
+      {/* Search Input */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Header / Search */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row md:items-center gap-4 justify-between">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-extrabold text-black">LoudEar Search</h1>
-              <p className="text-sm text-gray-500 mt-1">Discover songs, albums, videos and artists — interactive previews included.</p>
-            </div>
+        <motion.form
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full md:w-3/5 mx-auto border border-white/10 bg-neutral-900/80 backdrop-blur-md rounded-full px-4 py-2 flex items-center gap-2"
+        >
+          <input
+            type="text"
+            placeholder="Search songs, artists, albums..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="flex-1 px-3 py-2 bg-transparent text-sm text-white placeholder-gray-400 focus:outline-none"
+          />
+          {query && (
+            <Button
+              type="button"
+              onClick={() => setQuery("")}
+              size="sm"
+              variant="ghost"
+              className="rounded-full bg-white hover:bg-white/10"
+            >
+              <XIcon className="w-4 h-4 text-black" />
+            </Button>
+          )}
+        </motion.form>
 
-            <div className="w-full md:w-2/5">
-               <motion.form               
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className={`w-full border rounded-full px-3 py-2 flex items-center gap-2 bg-black/90 text-white border-black"
-                  }`}
-                               >
-                  <input
-                    type="text"
-                    placeholder="Search tracks, videos, artists..."
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    autoFocus
-                    className={`flex-1 px-4 py-1 text-sm rounded-full border-none focus:ring-2 transition-colors duration-200 bg-black/50 text-white placeholder-white/60 focus:ring-blue-400 focus:outline-none`}
-                  />
-                  {query ? (
-                  <Button onClick={clear} size="sm" className="bg-white text-black rounded-full">
-                    <XIcon />
-                  </Button>
-                  ) : null}
-                
-                 </motion.form>
-
-              {/* suggestion dropdown */}
-              <AnimatePresence>
-                {suggestions.length > 0 && (
-                  <motion.ul
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    className="mt-2 bg-white dark:bg-neutral-900 border border-black/5 dark:border-white/5 rounded-xl shadow-lg overflow-hidden text-sm"
-                  >
-                    {suggestions.map((s, i) => (
-                      <li
-                        key={s}
-                        onMouseDown={(ev) => {
-                          ev.preventDefault();
-                          handleSelectSuggestion(s);
-                        }}
-                        className={`px-4 py-2 cursor-pointer ${i === activeSuggestion ? "bg-gray-100 dark:bg-neutral-800" : "hover:bg-gray-50 dark:hover:bg-neutral-800"}`}
-                      >
-                        {s}
-                      </li>
-                    ))}
-                  </motion.ul>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-
-          {/* filters row */}
-          <div className="mt-4 flex items-center gap-3 flex-wrap">
+        {/* Filters */}
+        <div className="mt-6 flex flex-wrap justify-center md:justify-between items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap justify-center">
             {(["all", "song", "album", "video"] as const).map((t) => (
               <button
                 key={t}
                 onClick={() => setType(t)}
-                className={`px-3 py-1 rounded-full text-sm border ${type === t ? "bg-indigo-600 text-white border-indigo-600" : "bg-white dark:bg-neutral-900 text-gray-700 dark:text-gray-200 border-black/5 dark:border-white/5"}`}
-                //aria-pressed={type === t ? "true" : "false"}
+                className={`px-3 py-1.5 rounded-full text-sm border transition ${
+                  type === t
+                    ? "bg-white text-black border-transparent"
+                    : "bg-neutral-900 border-white/10 text-gray-400 hover:text-white"
+                }`}
               >
                 {t[0].toUpperCase() + t.slice(1)}
               </button>
             ))}
+          </div>
 
-            <select aria-label="select-button" value={genre} onChange={(e) => setGenre(e.target.value)} className="ml-auto rounded-full px-3 py-1 border bg-white dark:bg-neutral-900 text-sm text-black/80">
-              <option>All</option>
-              <option>Hip Hop</option>
-              <option>Pop</option>
-              <option>Afrobeat</option>
-              <option>RnB</option>
-              <option>Gospel</option>
+          <div className="flex gap-3">
+            <select
+              aria-label="select-button"
+              value={genre}
+              onChange={(e) => setGenre(e.target.value)}
+              className="rounded-full bg-neutral-900 border border-white/10 text-sm px-3 py-1.5 text-gray-300"
+            >
+              {["All", "Hip Hop", "Pop", "Afrobeat", "RnB", "Gospel"].map((g) => (
+                <option key={g}>{g}</option>
+              ))}
             </select>
 
-            <select aria-label="select-button" value={sort} onChange={(e) => setSort(e.target.value as SortOption)} className="rounded-full px-3 py-1 border bg-white dark:bg-neutral-900 text-sm text-black/80">
+            <select
+              aria-label="select-button"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortOption)}
+              className="rounded-full bg-neutral-900 border border-white/10 text-sm px-3 py-1.5 text-gray-300"
+            >
               <option value="relevance">Relevance</option>
               <option value="newest">Newest</option>
               <option value="popular">Popular</option>
@@ -532,60 +402,37 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* Trending + Results */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Trending (left/above on large) */}
-          <div className="lg:col-span-4">
-            <TrendingLeaderboard list={trending} />
-            <div className="mt-6 bg-white dark:bg-neutral-900 border border-black/5 dark:border-white/5 rounded-2xl p-4">
-              <h4 className="font-semibold mb-2">Chart Tips</h4>
-              <ul className="text-sm text-gray-500 space-y-1">
-                <li>Try filters like <span className="font-medium">genre:Hip Hop</span></li>
-                <li>Use <span className="font-medium">artist:Name</span> to narrow results</li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Grid results */}
+        {/* Results Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mt-10">
           <div className="lg:col-span-8">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-xl font-bold">Interactive Grid</h2>
-                <p className="text-sm text-gray-500">{total ? `${total.toLocaleString()} results` : debouncedQuery ? "No results" : "Start typing to search"}</p>
-              </div>
-
-              <div className="flex items-center font-semibold gap-2 text-sm text-gray-700">
-                <div className="hidden sm:block">Type: <strong className="ml-1">{type}</strong></div>
-                <div className="hidden sm:block">Genre: <strong className="ml-1">{genre}</strong></div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <h2 className="text-2xl font-bold mb-4">Search Results</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               <AnimatePresence>
-                {loading && results.length === 0
+                {loading
                   ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
                   : results.map((r, idx) => (
                       <ResultTile key={`${r.type}-${r.id}`} item={r} rank={idx + 1} />
                     ))}
               </AnimatePresence>
             </div>
-
-            <div ref={loaderRef} className="h-16 flex items-center justify-center mt-8 text-sm text-gray-500">
-              {loading ? "Loading..." : results.length < total ? "Scroll to load more…" : total > 0 ? "End of results" : ""}
+            <div ref={loaderRef} className="h-16 flex items-center justify-center mt-10 text-sm text-gray-500">
+              {loading
+                ? "Loading..."
+                : results.length < total
+                ? "Scroll to load more…"
+                : total > 0
+                ? "End of results"
+                : query
+                ? "No results found"
+                : ""}
             </div>
-
-            {error && <div className="mt-4 text-red-500 text-sm">{error}</div>}
           </div>
+
+          <aside className="lg:col-span-4 space-y-6">
+            <TrendingLeaderboard list={trending} />
+          </aside>
         </div>
       </section>
     </main>
   );
 }
-
-/* ---------------------------
-   Optional fallback for Button/Badge imports
-   If your project doesn't have these components, you can
-   replace imports near the top with simple components:
-   const Button = ({ children, ...p }) => <button {...p}>{children}</button>;
-   const Badge = (...) => <span className="...">{children}</span>;
-----------------------------*/

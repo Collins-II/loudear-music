@@ -19,11 +19,11 @@ interface TrendingItem {
 }
 
 export async function getTrendingGlobal({
-  limit = 50,
-  sinceDays = 7,
+  limit,
+  sinceDays 
 }: {
-  limit?: number;
-  sinceDays?: number;
+  limit: number;
+  sinceDays: number;
 }) {
   await connectToDatabase();
 
