@@ -2,9 +2,13 @@
 
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
-import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Share2, Copy, Check, Twitter } from "lucide-react";
+import { CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Share2, Copy, Check } from "lucide-react";
+import { FaXTwitter } from "react-icons/fa6";
+import { FaFacebook } from "react-icons/fa";
+import { IoLogoWhatsapp } from "react-icons/io";
+import { TiSocialInstagram } from "react-icons/ti";
+import { FaTiktok } from "react-icons/fa6";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
@@ -14,15 +18,13 @@ interface SharePanelProps {
   artist?: string;
   shareCount?: number;
   className?: string;
-  /** Optional backend interaction callback */
   onShare?: () => Promise<void> | void;
 }
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
 
 /**
- * 🎧 SharePanel — Universal social sharing component.
- * Responsive, accessible, and production-ready.
+ * 🎧 SharePanel — Modern & minimal social sharing panel with motion and vibrant icons.
  */
 export default function SharePanel({
   title,
@@ -34,7 +36,7 @@ export default function SharePanel({
   const pathname = usePathname();
   const [copied, setCopied] = useState(false);
 
-  const URL = `${BASE_URL}${pathname}`
+  const URL = `${BASE_URL}${pathname}`;
 
   const handleShareRecorded = useCallback(async () => {
     try {
@@ -52,10 +54,10 @@ export default function SharePanel({
           text: `Listen to ${title}${artist ? ` by ${artist}` : ""}`,
           url: URL,
         });
-        toast.success("Shared successfully");
+        toast.success("Shared successfully!");
         await handleShareRecorded();
       } catch {
-        // User cancelled or not supported
+        // ignored
       }
     } else {
       handleCopyLink();
@@ -74,77 +76,104 @@ export default function SharePanel({
     }
   };
 
+  const socials = [
+    {
+      name: "Twitter",
+      href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(`${title} — ${artist ?? ""}`)}&url=${encodeURIComponent(URL)}`,
+      color: "text-sky-500 hover:bg-sky-500/10",
+      icon: FaXTwitter,
+    },
+    {
+      name: "Facebook",
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(URL)}`,
+      color: "text-blue-600 hover:bg-blue-600/10",
+      icon:  FaFacebook,
+    },
+    {
+      name: "Instagram",
+      href: "https://www.instagram.com/",
+      color: "text-pink-500 hover:bg-pink-500/10",
+      icon: TiSocialInstagram,
+    },
+    {
+      name: "WhatsApp",
+      href: `https://api.whatsapp.com/send?text=${encodeURIComponent(`${title} — ${artist ?? ""} ${URL}`)}`,
+      color: "text-green-500 hover:bg-green-500/10",
+      icon: IoLogoWhatsapp,
+    },
+    {
+      name: "TikTok",
+      href: `https://api.tiktok.com/send?text=${encodeURIComponent(`${title} — ${artist ?? ""} ${URL}`)}`,
+      color: "text-red-500 hover:bg-red-500/10",
+      icon: FaTiktok,
+    },
+  ];
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 15 }}
       whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
+      transition={{ duration: 0.45, ease: "easeOut" }}
       className={cn(
-        "w-full rounded-2xl bg-white/80 dark:bg-neutral-900/80 border border-black/5 dark:border-white/10 shadow-sm backdrop-blur-sm py-4",
-        "hover:shadow-md transition-shadow duration-200",
+        "border-b-[4px] border-black py-3 dark:border-white/5 bg-gradient-to-br from-white/80 to-gray-50/60 dark:from-neutral-900/80 dark:to-neutral-950/70 backdrop-blur-md transition-all duration-300",
         className
       )}
     >
       <CardHeader className="flex items-center justify-between pb-3">
-        <CardTitle className="text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-          Share this track
+        <CardTitle className="text-sm md:text-base font-light text-gray-800 dark:text-gray-200 flex items-center gap-2">
+          <Share2 className="w-4 h-4 text-primary" />
+          Share with
         </CardTitle>
         {shareCount > 0 && (
-          <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-            <span className="font-medium text-gray-900 dark:text-gray-200">{shareCount}</span>
-            <span>shares</span>
-          </div>
+          <span className="text-xs text-gray-500 dark:text-gray-400">
+            {shareCount} shares
+          </span>
         )}
       </CardHeader>
 
-      <CardContent className="space-y-3 text-sm text-gray-600 dark:text-gray-300">
-        {/* Primary share actions */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button
+      <CardContent className="pt-3 space-y-4">
+        {/* Primary share / copy */}
+        <div className="flex items-center gap-2">
+          <motion.button
+            whileTap={{ scale: 0.97 }}
             onClick={handleNativeShare}
-            variant="default"
-            className="flex-1 bg-black text-white hover:bg-gray-800 min-w-[120px]"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-white bg-gradient-to-r from-black to-gray-800 dark:from-gray-200 dark:to-gray-400 dark:text-black font-medium shadow hover:opacity-90 transition-all"
           >
-            <Share2 className="w-4 h-4 mr-2" /> Share
-          </Button>
+            <Share2 className="w-4 h-4" /> Share
+          </motion.button>
 
-          <Button
+          <motion.button
+            whileTap={{ scale: 0.97 }}
             onClick={handleCopyLink}
-            variant="outline"
             aria-label="Copy link"
-            className="flex items-center justify-center min-w-[50px]"
+            className={cn(
+              "p-2.5 rounded-xl border border-gray-200 dark:border-white/10 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-neutral-800 transition",
+              copied && "text-green-500 border-green-500"
+            )}
           >
-            {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
-          </Button>
+            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+          </motion.button>
         </div>
 
-        {/* Social networks */}
-        <div className="flex flex-wrap gap-2 pt-2">
-          <a
-            href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${title} — ${artist ?? ""}`)}&url=${encodeURIComponent(URL)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-neutral-800 transition w-full sm:w-auto justify-center"
-          >
-            <Twitter className="w-4 h-4 text-sky-500" /> Twitter
-          </a>
-
-          <a
-            href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(URL)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-md border border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-neutral-800 transition w-full sm:w-auto justify-center"
-          >
-            <svg
-              className="w-4 h-4 text-blue-600"
-              viewBox="0 0 24 24"
-              fill="currentColor"
+        {/* Social icons grid */}
+        <div className="grid grid-cols-5 gap-3 pt-2">
+          {socials.map((s) => (
+            <motion.a
+              key={s.name}
+              href={s.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              className={cn(
+                "flex flex-col items-center justify-center p-2.5  dark:border-white/10 transition-all duration-200",
+                s.color
+              )}
             >
-              <path d="M22 12a10 10 0 1 0-11.6 9.9v-7H8.9v-3h1.5V9.3c0-1.5.9-2.4 2.3-2.4.7 0 1.4.1 1.4.1v1.6h-.8c-.8 0-1 0-1 1v1.2h1.8l-.3 3h-1.5v7A10 10 0 0 0 22 12z" />
-            </svg>
-            Facebook
-          </a>
-          
+              <s.icon className="w-6 h-6 text-black" />
+              {/*<span className="text-[11px] mt-1 font-medium">{s.name}</span>*/}
+            </motion.a>
+          ))}
         </div>
       </CardContent>
     </motion.div>

@@ -58,7 +58,7 @@ export function ChartCard({
       <Link href={href}>
         <div className="flex flex-col sm:flex-row overflow-hidden bg-white dark:bg-black/90 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300">
           {/* Rank Badge */}
-          <div className="flex items-center justify-center h-12 sm:h-auto sm:w-14 bg-gradient-to-b from-indigo-600 to-purple-600 text-white text-lg sm:text-2xl font-extrabold shrink-0">
+          <div className="flex items-center justify-center h-12 sm:h-auto sm:w-14 bg-black text-white text-lg sm:text-2xl font-extrabold shrink-0">
             #{rank}
           </div>
 

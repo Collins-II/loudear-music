@@ -2,13 +2,13 @@
 import ClientPage from "./components/ClientPage";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-import { getRelatedSongs } from "@/actions/getRelatedSongs";
 import {
   getAlbumWithStats,
   incrementInteraction,
   AlbumSerialized,
 } from "@/actions/getItemsWithStats";
 import NetworkError from "@/components/NetworkError";
+import { getRelatedAlbums } from "@/actions/getRelatedAlbums";
 
 interface AlbumDetailsPageProps {
   params: Promise<{ id: string }>;
@@ -75,7 +75,7 @@ export default async function AlbumDetailsPage({ params }: AlbumDetailsPageProps
     const album = media as AlbumSerialized;
 
     // Related songs: only call when genre and _id are available
-    const relatedSongs = await getRelatedSongs(album.genre, album._id as string);
+    const relatedSongs = await getRelatedAlbums(album.genre, album._id as string);
 
     // Increment view count (server-side)
     await incrementInteraction(id, "Album", "view");

@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 import { Play, Pause, Volume2, DownloadCloud } from "lucide-react";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
 
 interface CustomPlayerProps {
   src: string;
   title: string;
   artist: string;
   coverUrl?: string;
-  onDownload: () => void;
+  onDownload?: () => void;
 }
 
 export default function CustomPlayer({
@@ -21,12 +22,13 @@ export default function CustomPlayer({
   onDownload,
 }: CustomPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
 
-  // Sync progress with audio
+  // --- Update progress and waveform ---
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -45,10 +47,44 @@ export default function CustomPlayer({
     };
   }, []);
 
+  // --- Draw simple sine wave progress bar ---
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const width = canvas.width;
+    const height = canvas.height;
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#fff";
+
+    const waveAmplitude = 4;
+    const waveFrequency = 0.04;
+    const offset = progress / 5;
+
+    ctx.beginPath();
+    for (let x = 0; x < width; x++) {
+      const y =
+        height / 2 +
+        Math.sin((x + offset * 20) * waveFrequency) * waveAmplitude;
+      ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Fill progress
+    ctx.fillStyle = "#fff";
+    ctx.globalAlpha = 0.1;
+    ctx.fillRect(0, 0, (progress / 100) * width, height);
+    ctx.globalAlpha = 1;
+  }, [progress]);
+
+  // --- Controls ---
   const togglePlay = () => {
     const audio = audioRef.current;
     if (!audio) return;
-
     if (isPlaying) {
       audio.pause();
       setIsPlaying(false);
@@ -61,7 +97,6 @@ export default function CustomPlayer({
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const audio = audioRef.current;
     if (!audio) return;
-
     const value = parseFloat(e.target.value);
     audio.currentTime = (value / 100) * audio.duration;
     setProgress(value);
@@ -70,7 +105,6 @@ export default function CustomPlayer({
   const handleVolume = (e: React.ChangeEvent<HTMLInputElement>) => {
     const audio = audioRef.current;
     if (!audio) return;
-
     const value = parseFloat(e.target.value);
     audio.volume = value;
     setVolume(value);
@@ -86,39 +120,41 @@ export default function CustomPlayer({
   };
 
   const safeFilename = (name: string) =>
-    name.replace(/[<>:"/\\|?*]+/g, "").trim(); // sanitize for FS
-
+    name.replace(/[<>:"/\\|?*]+/g, "").trim();
   const downloadFileName = `${safeFilename(artist)} - ${safeFilename(title)}.mp3`;
 
-const handleDownload = async () => {
-  try {
-    const response = await fetch(src);
-    if (!response.ok) throw new Error("Failed to fetch audio file");
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(src);
+      if (!response.ok) throw new Error("Failed to fetch audio file");
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
 
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = downloadFileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
 
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = downloadFileName; // ✅ dynamic filename
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-
-    window.URL.revokeObjectURL(url);
-    if(onDownload) onDownload()
-  } catch (err) {
-    console.error("Download failed:", err);
-  }
-};
-
+      onDownload?.();
+    } catch (err) {
+      console.error("Download failed:", err);
+    }
+  };
 
   return (
-    <div className="bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-2xl p-4 shadow-lg flex flex-col sm:flex-row sm:items-center gap-4 w-full">
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="w-full rounded-3xl bg-white border-[3px] border-black text-black p-5 flex flex-col sm:flex-row gap-5 items-center"
+    >
       <audio ref={audioRef} src={src} preload="metadata" />
 
       {/* Album Art */}
-      <div className="relative w-full sm:w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden shadow-md mx-auto sm:mx-0">
+      <div className="relative w-28 h-28 sm:w-24 sm:h-24 rounded-xl overflow-hidden shadow-lg flex-shrink-0">
         <Image
           src={coverUrl || "/assets/images/placeholder_cover.jpg"}
           alt={`${title} cover`}
@@ -127,78 +163,81 @@ const handleDownload = async () => {
         />
       </div>
 
-      {/* Track Info + Controls */}
-      <div className="flex-1 flex flex-col gap-2">
-        {/* Track Info */}
-        <div className="flex flex-col items-center sm:items-start">
-          <span className="text-sm font-semibold truncate w-full">{title}</span>
-          <span className="text-xs text-gray-400 truncate w-full">{artist}</span>
+      {/* Info + Controls */}
+      <div className="flex-1 flex flex-col justify-between w-full">
+        <div className="flex flex-col text-center sm:text-left mb-2">
+          <span className="text-base font-semibold tracking-wide">{title}</span>
+          <span className="text-sm text-gray-600">{artist}</span>
         </div>
 
-        {/* Playback Controls */}
-        <div className="flex flex-row sm:items-center gap-2">
-          {/* Play/Pause */}
-          <Button
-            size="icon"
-            aria-label={isPlaying ? "Pause" : "Play"}
-            onClick={togglePlay}
-            className="bg-white text-black hover:text-white rounded-full p-2 hover:scale-105 transition mx-auto sm:mx-0"
-          >
-            {isPlaying ? (
-              <Pause className="w-5 h-5" />
-            ) : (
-              <Play className="w-5 h-5" />
-            )}
-          </Button>
-
-          {/* Progress Bar */}
-          <div className="flex items-center gap-2 w-full">
-            <span className="text-[11px] text-gray-300 hidden sm:block">
-              {formatTime(audioRef.current?.currentTime || 0)}
-            </span>
-            <input
-              aria-label="Track progress"
-              type="range"
-              min={0}
-              max={100}
-              value={progress}
-              onChange={handleSeek}
-              className="flex-1 h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-green-500"
-            />
-            <span className="text-[11px] text-gray-300 ">
-              {formatTime(duration)}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Volume + Download */}
-      <div className="flex items-center justify-between sm:justify-end gap-4">
-        {/* Volume Control */}
-        <div className="w-full flex items-center gap-1">
-          <Volume2 className="w-4 h-4 text-gray-300" />
+        {/* Wave Progress */}
+        <div className="relative w-full h-8 mt-1">
+          <canvas
+            ref={canvasRef}
+            width={600}
+            height={30}
+            className="w-full h-full rounded-md bg-neutral-900"
+          />
           <input
-            aria-label="Volume"
+            aria-label="Seek track"
             type="range"
             min={0}
-            max={1}
-            step={0.01}
-            value={volume}
-            onChange={handleVolume}
-            className="w-full accent-white cursor-pointer"
+            max={100}
+            value={progress}
+            onChange={handleSeek}
+            className="absolute inset-0 opacity-0 cursor-pointer"
           />
         </div>
 
-        {/* Download Button */}
+        {/* Playback Controls */}
+        <div className="flex flex-col md:flex-row items-center justify-between mt-3">
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={togglePlay}
+              size="icon"
+              className="bg-black/20 text-black hover:bg-gray-500 rounded-full p-2 transition"
+              aria-label={isPlaying ? "Pause" : "Play"}
+            >
+              {isPlaying ? (
+                <Pause className="w-5 h-5" />
+              ) : (
+                <Play className="w-5 h-5" />
+              )}
+            </Button>
 
-          <Button
-            size="icon"
-            className="bg-black hover:bg-black/80 rounded-full p-2"
-            onClick={handleDownload}
-          >
-            <DownloadCloud className="w-4 h-4" />
-          </Button>
+            <div className="flex items-center gap-2 text-xs text-gray-600 font-mono">
+              <span>{formatTime(audioRef.current?.currentTime || 0)}</span>
+              <span>/</span>
+              <span>{formatTime(duration)}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1">
+              <Volume2 className="w-4 h-4 text-gray-800" />
+              <input
+                aria-label="range"
+                type="range"
+                min={0}
+                max={1}
+                step={0.01}
+                value={volume}
+                onChange={handleVolume}
+                className="w-full accent-black cursor-pointer"
+              />
+            </div>
+
+            <Button
+              size="icon"
+              onClick={handleDownload}
+              className="bg-black/10 hover:bg-black/20 rounded-full p-2 border border-black/10"
+              aria-label="Download"
+            >
+              <DownloadCloud className="w-4 h-4 text-black" />
+            </Button>
+          </div>
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

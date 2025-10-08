@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 import {
   Play,
   Pause,
   Volume2,
   VolumeX,
   DownloadCloud,
-  Music,
+  //Music,
   Repeat,
   Shuffle,
   SkipBack,
@@ -18,7 +18,9 @@ import {
 import Image from "next/image";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import { Button } from "@/components/ui/button";
 import { SongSerialized } from "@/actions/getItemsWithStats";
+import { Separator } from "../ui/separator";
 
 interface AlbumPlayerProps {
   albumTitle: string;
@@ -40,43 +42,23 @@ export default function AlbumPlayer({
   className = "",
 }: AlbumPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  // queues
   const [queue, setQueue] = useState<SongSerialized[]>(tracks);
-  const [shuffledQueue] = useState<SongSerialized[] | null>(null);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const activeQueue = shuffledQueue ?? queue;
-  const currentTrack = activeQueue[currentIndex] || null;
+  const currentTrack = queue[currentIndex] || null;
 
-  // playback state
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
-
-  const [volume, setVolume] = useState<number>(() => {
-    if (typeof window !== "undefined") {
-      const v = localStorage.getItem("player_volume");
-      return v ? Number(v) : 1;
-    }
-    return 1;
-  });
-  const [muted, setMuted] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("player_muted") === "true";
-    }
-    return false;
-  });
-
-  const [shuffle] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(false);
   const [repeatMode, setRepeatMode] = useState<RepeatMode>("off");
 
-  // likes state
-  const [likesMap, setLikesMap] = useState<Record<string, number>>(() =>
+  /*const [likesMap, setLikesMap] = useState<Record<string, number>>(() =>
     tracks.reduce((acc, t) => {
       acc[t._id] = t.likeCount ?? 0;
       return acc;
     }, {} as Record<string, number>)
-  );
+  );*/
   const [userLiked, setUserLiked] = useState<Record<string, boolean>>(() =>
     tracks.reduce((acc, t) => {
       acc[t._id] = !!(t as any).userLiked;
@@ -84,91 +66,60 @@ export default function AlbumPlayer({
     }, {} as Record<string, boolean>)
   );
 
-  // Apply volume
-  const applyVolumeToAudio = useCallback(() => {
+  const applyVolume = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
       audioRef.current.muted = muted;
     }
   }, [volume, muted]);
 
-  useEffect(() => {
-    applyVolumeToAudio();
-    localStorage.setItem("player_volume", String(volume));
-    localStorage.setItem("player_muted", String(muted));
-  }, [volume, muted, applyVolumeToAudio]);
+  useEffect(() => applyVolume(), [applyVolume]);
 
-  const nextTrack = useCallback(() => {
-  if (!currentTrack) return;
+  const handleTrackEnd = useCallback(() => {
+    if (!audioRef.current) return;
 
-  if (repeatMode === "one" && audioRef.current) {
-    // restart same track
-    audioRef.current.currentTime = 0;
-    audioRef.current.play();
-    return;
-  }
-
-  const nextIdx = currentIndex + 1;
-
-  if (nextIdx < activeQueue.length) {
-    setCurrentIndex(nextIdx);
-  } else {
-    // ✅ Always loop back to first track (infinite)
-    setCurrentIndex(0);
-
-    if (repeatMode === "off") {
-      // autoplay only if repeat is not "off"
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
-        audioRef.current.play().catch(() => setIsPlaying(false));
-      }
-    }
-  }
-}, [currentIndex, activeQueue, repeatMode, currentTrack]);
-
-// Wrap handleTrackEnd in useCallback
-const handleTrackEnd = useCallback(() => {
-  nextTrack();
-}, [nextTrack]);
-
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-
-    const onTimeUpdate = () =>
-      setProgress((audio.currentTime / (audio.duration || 1)) * 100 || 0);
-    const onLoaded = () => {
-      setDuration(audio.duration || 0);
-      setProgress((audio.currentTime / (audio.duration || 1)) * 100 || 0);
-    };
-    const onEnded = () => handleTrackEnd();
-
-    audio.addEventListener("timeupdate", onTimeUpdate);
-    audio.addEventListener("loadedmetadata", onLoaded);
-    audio.addEventListener("ended", onEnded);
-
-    return () => {
-      audio.removeEventListener("timeupdate", onTimeUpdate);
-      audio.removeEventListener("loadedmetadata", onLoaded);
-      audio.removeEventListener("ended", onEnded);
-    };
-  }, [currentIndex, activeQueue, repeatMode,handleTrackEnd]);
-
-  // load currentTrack
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio) return;
-    if (!currentTrack) {
-      audio.pause();
-      setIsPlaying(false);
+    if (repeatMode === "one") {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play();
       return;
     }
+
+    const nextIndex = currentIndex + 1;
+    if (nextIndex < queue.length) {
+      setCurrentIndex(nextIndex);
+    } else if (repeatMode === "all") {
+      setCurrentIndex(0);
+    } else {
+      setIsPlaying(false);
+    }
+  }, [currentIndex, repeatMode, queue.length]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const update = () => setProgress((audio.currentTime / audio.duration) * 100 || 0);
+    const loaded = () => setDuration(audio.duration || 0);
+    const ended = () => handleTrackEnd();
+
+    audio.addEventListener("timeupdate", update);
+    audio.addEventListener("loadedmetadata", loaded);
+    audio.addEventListener("ended", ended);
+
+    return () => {
+      audio.removeEventListener("timeupdate", update);
+      audio.removeEventListener("loadedmetadata", loaded);
+      audio.removeEventListener("ended", ended);
+    };
+  }, [handleTrackEnd]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !currentTrack) return;
     audio.src = currentTrack.fileUrl;
-    audio.load();
     if (isPlaying) audio.play().catch(() => setIsPlaying(false));
   }, [currentTrack]); // eslint-disable-line
 
-  // --- controls ---
   const togglePlay = async () => {
     const audio = audioRef.current;
     if (!audio || !currentTrack) return;
@@ -176,244 +127,198 @@ const handleTrackEnd = useCallback(() => {
       audio.pause();
       setIsPlaying(false);
     } else {
-      try {
-        await audio.play();
-        setIsPlaying(true);
-      } catch {
-        setIsPlaying(false);
-      }
+      await audio.play().catch(() => {});
+      setIsPlaying(true);
     }
   };
 
-  const handleSeek = (pct: number) => {
+  const prevTrack = () => setCurrentIndex((prev) => (prev > 0 ? prev - 1 : queue.length - 1));
+  const nextTrack = () => setCurrentIndex((prev) => (prev + 1) % queue.length);
+
+  const handleSeek = (val: number) => {
     const audio = audioRef.current;
     if (!audio || !audio.duration) return;
-    audio.currentTime = (pct / 100) * audio.duration;
-    setProgress(pct);
+    audio.currentTime = (val / 100) * audio.duration;
+    setProgress(val);
   };
-
-// --- controls ---
-// Next track
-
-
-  const prevTrack = () => {
-    if (activeQueue.length === 0) return;
-    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : activeQueue.length - 1));
-  };
-
- 
-
-  {/*const toggleShuffle = () => {
-    setShuffle((s) => {
-      const newS = !s;
-      if (newS) {
-        const arr = [...queue];
-        for (let i = arr.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-        const curId = currentTrack?._id;
-        let idx = arr.findIndex((x) => x._id === curId);
-        if (idx === -1 && curId) {
-          arr.unshift(queue.find((t) => t._id === curId)!);
-          idx = 0;
-        }
-        setShuffledQueue(arr);
-        setCurrentIndex(idx >= 0 ? idx : 0);
-      } else {
-        const curId = currentTrack?._id;
-        const idx = queue.findIndex((t) => t._id === curId);
-        setShuffledQueue(null);
-        setCurrentIndex(idx >= 0 ? idx : 0);
-      }
-      return newS;
-    });
-  };*/}
-
-  const shuffleTracklist = () => {
-    setQueue((prev) => {
-      const arr = [...prev];
-      for (let i = arr.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-      return arr;
-    });
-  };
-
-  const toggleRepeat = () =>
-    setRepeatMode((prev) => (prev === "off" ? "all" : prev === "all" ? "one" : "off"));
 
   const toggleMute = () => setMuted((m) => !m);
-  const handleVolumeChange = (val: number) => setVolume(val);
+  const toggleRepeat = () =>
+    setRepeatMode((r) => (r === "off" ? "all" : r === "all" ? "one" : "off"));
 
-  const downloadTrack = async (track: SongSerialized) => {
-    if (!track?.fileUrl) return;
-    try {
-      const res = await fetch(track.fileUrl);
-      if (!res.ok) throw new Error("Fetch failed");
-      const blob = await res.blob();
-      saveAs(blob, `${track.artist} - ${track.title}.mp3`);
-    } catch (err) {
-      console.error("Download failed", err);
-    }
+  const shuffleQueue = () => {
+    setQueue((prev) => [...prev].sort(() => Math.random() - 0.5));
   };
 
   const downloadAlbum = async () => {
     const zip = new JSZip();
     for (const track of queue) {
-      try {
-        const res = await fetch(track.fileUrl);
-        const blob = await res.blob();
-        zip.file(`${track.artist} - ${track.title}.mp3`, blob);
-      } catch {}
+      const res = await fetch(track.fileUrl);
+      const blob = await res.blob();
+      zip.file(`${track.artist} - ${track.title}.mp3`, blob);
     }
     const content = await zip.generateAsync({ type: "blob" });
     saveAs(content, `${albumArtist} - ${albumTitle}.zip`);
   };
 
-  const toggleLike = async (track: SongSerialized) => {
-    if (!userId) {
-      alert("Please sign in to like tracks.");
-      return;
-    }
-    const id = track._id;
-    const currentlyLiked = !!userLiked[id];
-    setUserLiked((p) => ({ ...p, [id]: !currentlyLiked }));
-    setLikesMap((p) => ({ ...p, [id]: (p[id] || 0) + (currentlyLiked ? -1 : 1) }));
+  const downloadTrack = async (track: SongSerialized) => {
+    const res = await fetch(track.fileUrl);
+    const blob = await res.blob();
+    saveAs(blob, `${track.artist} - ${track.title}.mp3`);
+  };
 
-    try {
-      const res = await fetch("/api/interactions/like", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, model: "Song", userId }),
-      });
-      if (!res.ok) throw new Error("like failed");
-    } catch {
-      setUserLiked((p) => ({ ...p, [id]: currentlyLiked }));
-      setLikesMap((p) => ({ ...p, [id]: (p[id] || 0) + (currentlyLiked ? 1 : -1) }));
-    }
+  const toggleLike = async (track: SongSerialized) => {
+    if (!userId) return alert("Sign in to like songs.");
+    const id = track._id;
+    const liked = userLiked[id];
+    setUserLiked((p) => ({ ...p, [id]: !liked }));
+    //setLikesMap((p) => ({ ...p, [id]: (p[id] ?? 0) + (liked ? -1 : 1) }));
   };
 
   const formatTime = (t: number) => {
     if (!t || isNaN(t)) return "0:00";
-    const mins = Math.floor(t / 60);
-    const secs = Math.floor(t % 60).toString().padStart(2, "0");
-    return `${mins}:${secs}`;
+    const m = Math.floor(t / 60);
+    const s = Math.floor(t % 60)
+      .toString()
+      .padStart(2, "0");
+    return `${m}:${s}`;
   };
 
   return (
-    <div
-      className={`bg-gradient-to-r from-gray-900 to-gray-800 text-white rounded-2xl shadow-xl p-4 sm:p-6 flex flex-col gap-6 ${className}`}
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className={`bg-white border-y-[3px] md:border-[3px] border-black text-black md:rounded-3xl py-6 md:p-6 flex flex-col gap-6 ${className}`}
     >
       <audio ref={audioRef} preload="metadata" />
 
       {/* Header */}
       <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
-        <div className="relative rounded-lg overflow-hidden shadow-md w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48">
+        <div className="relative rounded-2xl overflow-hidden border-2 border-black w-36 h-36 sm:w-44 sm:h-44">
           <Image
             src={coverUrl ?? "/assets/images/placeholder_cover.jpg"}
-            alt={`${albumTitle} cover`}
+            alt={albumTitle}
             fill
             className="object-cover"
           />
         </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-lg sm:text-xl md:text-2xl font-bold">{albumTitle}</h3>
-          <p className="text-sm text-gray-300">{albumArtist}</p>
 
-          {/* Playback Controls */}
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-6">
-            <Button variant="ghost" size="icon" onClick={prevTrack} className="text-gray-300 hover:text-white">
+        <div className="flex-1">
+          <h3 className="text-2xl font-extrabold tracking-tight">{albumTitle}</h3>
+          <p className="text-sm text-gray-700">{albumArtist}</p>
+
+          {/* Controls */}
+        <div className="flex items-start md:items-center gap-3 mt-4 flex-col md:flex-row w-full">
+          <div className="flex items-center gap-3 flex-wrap">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={prevTrack}
+              className="border border-black rounded-full hover:bg-black hover:text-white"
+            >
               <SkipBack className="w-5 h-5" />
             </Button>
+
             <Button
-              size="icon"
               onClick={togglePlay}
-              className="bg-green-500 hover:bg-green-600 text-white rounded-full p-3"
+              size="icon"
+              className="bg-black text-white hover:bg-gray-800 rounded-full p-3"
             >
               {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
             </Button>
-            <Button variant="ghost" size="icon" onClick={nextTrack} className="text-gray-300 hover:text-white">
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={nextTrack}
+              className="border border-black rounded-full hover:bg-black hover:text-white"
+            >
               <SkipForward className="w-5 h-5" />
             </Button>
+            </div>
 
-            {/* Progress Bar */}
+            {/* Progress */}
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <span className="text-xs text-gray-300 hidden sm:block">
-                {formatTime(audioRef.current?.currentTime ?? 0)}
-              </span>
+              <span className="text-xs">{formatTime(audioRef.current?.currentTime ?? 0)}</span>
               <input
-                aria-label="progress"
+                aria-label="range"
                 type="range"
                 min={0}
                 max={100}
                 value={isNaN(progress) ? 0 : Math.max(0, Math.min(100, progress))}
                 onChange={(e) => handleSeek(Number(e.target.value))}
-                className="flex-1 h-1 accent-green-500 cursor-pointer"
+                className="flex-1 h-1 accent-black cursor-pointer w-full"
               />
-              <span className="text-xs text-gray-300 hidden sm:block">{formatTime(duration)}</span>
+              <span className="text-xs">{formatTime(duration)}</span>
             </div>
           </div>
         </div>
       </div>
-
-      {/* Controls */}
+      <Separator className="flex md:hidden" />
+      {/* Bottom Controls */}
       <div className="flex flex-wrap items-center gap-3">
         <Button
           variant="ghost"
           size="icon"
-          onClick={shuffleTracklist}
-          className={`${shuffle ? "text-green-400" : "text-gray-400"} hover:text-white`}
+          onClick={shuffleQueue}
+          className="border border-black hover:bg-black hover:text-white rounded-full"
         >
           <Shuffle className="w-5 h-5" />
         </Button>
+
         <Button
           variant="ghost"
           size="icon"
           onClick={toggleRepeat}
-          className={`${repeatMode !== "off" ? "text-green-400" : "text-gray-400"} hover:text-white relative`}
+          className="border border-black hover:bg-black hover:text-white rounded-full relative"
         >
           <Repeat className="w-5 h-5" />
           {repeatMode === "one" && (
-            <span className="absolute right-1 top-1 text-[10px] font-bold text-green-300">1</span>
+            <span className="absolute top-1 right-1 text-[10px] font-bold">1</span>
           )}
         </Button>
-        <Button variant="ghost" size="icon" onClick={toggleMute} className="text-gray-400 hover:text-white">
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleMute}
+          className="border border-black hover:bg-black hover:text-white rounded-full"
+        >
           {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
         </Button>
+
         <input
-          aria-label="volume"
+          aria-label="range"
           type="range"
           min={0}
           max={1}
           step={0.05}
           value={muted ? 0 : volume}
-          onChange={(e) => handleVolumeChange(Number(e.target.value))}
-          className="w-16 sm:w-24 md:w-32 lg:w-40 accent-green-500"
+          onChange={(e) => setVolume(Number(e.target.value))}
+          className="w-32 accent-black"
         />
-        <button
-          aria-label="download"
+
+        <Button
           onClick={downloadAlbum}
-          className="text-gray-300 hover:text-white p-1 flex items-center gap-1 text-sm"
+          className="bg-black text-white rounded-full px-3 hover:bg-gray-800"
         >
-          <DownloadCloud className="w-4 h-4" /> <span className="hidden sm:inline">Download Album</span>
-        </button>
+          <DownloadCloud className="w-4 h-4 mr-2" /> Download Album
+        </Button>
       </div>
 
       {/* Tracklist */}
-      <div className="bg-gray-800 rounded-xl p-2 sm:p-3 divide-y divide-gray-700 overflow-auto max-h-52 sm:max-h-60 md:max-h-72">
+      <div className="bg-neutral-100 rounded-2xl border border-black/20 p-3 divide-y divide-black/10 max-h-64 overflow-auto">
         {queue.map((track, idx) => {
-          const id = track._id;
-          const active = currentTrack?._id === id;
+          const active = currentTrack?._id === track._id;
           return (
             <div
-              key={id}
-              className={`flex items-center gap-3 p-2 rounded-md ${
-                active ? "bg-green-600/20" : "hover:bg-gray-700/60"
-              } transition`}
+              key={track._id}
+              className={`flex items-center gap-3 p-2 rounded-md transition ${
+                active ? "bg-black text-white" : "hover:bg-black/5"
+              }`}
             >
-              <div className="w-10 h-10 rounded-md overflow-hidden bg-gray-900 flex-shrink-0">
+              <div className="w-10 h-10 rounded-md overflow-hidden border border-black/20 flex-shrink-0">
                 <Image
                   src={track.coverUrl ?? "/assets/images/placeholder_cover.jpg"}
                   alt={track.title}
@@ -422,45 +327,30 @@ const handleTrackEnd = useCallback(() => {
                   className="object-cover"
                 />
               </div>
-              <div className="flex-1 min-w-0">
+              <button
+                onClick={() => {
+                  setCurrentIndex(idx);
+                  setIsPlaying(true);
+                }}
+                className="flex-1 text-left"
+              >
+                <div className="text-sm font-semibold truncate">{track.title}</div>
+                <div className="text-xs text-gray-500 truncate">{track.artist}</div>
+              </button>
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => {
-                    setCurrentIndex(idx);
-                    setIsPlaying(true);
-                  }}
-                  className="text-left w-full"
-                >
-                  <div className="flex items-center gap-2">
-                    <Music
-                      className={`w-4 h-4 ${active ? "text-green-400 animate-pulse" : "text-gray-400"}`}
-                    />
-                    <div className="truncate">
-                      <div
-                        className={`text-sm font-medium truncate ${
-                          active ? "text-white" : "text-gray-100"
-                        }`}
-                      >
-                        {track.title}
-                      </div>
-                      <div className="text-xs text-gray-400 truncate">{track.artist}</div>
-                    </div>
-                  </div>
-                </button>
-              </div>
-              <div className="flex items-center gap-2 sm:gap-3">
-                <button
+                  aria-label="action-buttons"
                   onClick={() => toggleLike(track)}
-                  className={`flex items-center gap-1 text-xs ${
-                    userLiked[id] ? "text-pink-400" : "text-gray-300"
-                  } hover:text-pink-400`}
+                  className={`${
+                    userLiked[track._id] ? "text-red-500" : "text-gray-700"
+                  } hover:text-red-500`}
                 >
                   <HeartIcon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{likesMap[id] ?? 0}</span>
                 </button>
                 <button
-                  aria-label="download"
+                  aria-label="action-buttons"
                   onClick={() => downloadTrack(track)}
-                  className="text-gray-300 hover:text-white p-1"
+                  className="text-gray-700 hover:text-black"
                 >
                   <DownloadCloud className="w-4 h-4" />
                 </button>
@@ -469,5 +359,6 @@ const handleTrackEnd = useCallback(() => {
           );
         })}
       </div>
-    </div>
-  )}
+    </motion.div>
+  );
+}

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import Image, { ImageLoaderProps } from "next/image";
-import { Heart, Share2, DownloadCloud, Flame, Eye } from "lucide-react";
+import { Heart, DownloadCloud, Flame, Eye } from "lucide-react";
 import { getSocket } from "@/lib/socketClient";
 import { AlbumSerialized, SongSerialized } from "@/actions/getItemsWithStats";
 import AlbumPlayer from "@/components/music/AlbumPlayer";
@@ -19,7 +19,7 @@ import SharePanel from "@/components/SharePanel";
 
 interface AlbumClientPageProps {
   data: AlbumSerialized;
-  relatedSongs: SongSerialized[];
+  relatedSongs: AlbumSerialized[];
 }
 
 export default function AlbumClientPage({ data, relatedSongs }: AlbumClientPageProps) {
@@ -92,23 +92,6 @@ useEffect(() => {
 
   const pageUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/music/album/${data._id}`;
 
-  const handleNativeShare = async () => {
-    if ((navigator as any).share) {
-      try {
-        await (navigator as any).share({
-          title: data.title,
-          text: data.description ?? `${data.title} — ${data.artist}`,
-          url: pageUrl,
-        });
-        await handleInteraction("share");
-      } catch (err) {
-        console.debug("Native share canceled/failed", err);
-      }
-    } else {
-      setShareOpen(true);
-    }
-  };
-
   const customImageLoader = ({ src, width, quality }: ImageLoaderProps) => {
     try {
       const url = new URL(src);
@@ -128,7 +111,7 @@ useEffect(() => {
         <section className="lg:col-span-8 space-y-8">
           {/* Hero Section */}
           {/* Hero */}
-          <div className="bg-white dark:bg-neutral-900 border-b-[4px] border-black dark:border-white/5 overflow-hidden">
+          <div className="bg-white dark:bg-neutral-900 dark:border-white/5 overflow-hidden">
             <div className="md:flex items-center gap-6 py-6 ">
               {/* Cover */}
               <div className="w-full md:w-80 flex-shrink-0">
@@ -208,7 +191,7 @@ useEffect(() => {
 
                   </div>
 
-                  {/* Action buttons */}
+                  {/* Action buttons 
                   <div className="flex flex-wrap items-center gap-3">
                    <button
                       type="button"
@@ -243,14 +226,13 @@ useEffect(() => {
                       <DownloadCloud className="w-4 h-4" />
                       <span className="text-sm font-medium">Download</span>
                     </button>
-                  </div>
+                  </div>*/}
                 </div>
               </div>
             </div>
           </div>
 
           {/* Player */}
-          <div className=" bg-white dark:bg-neutral-900 border-b-[4px] border-black pb-4 dark:border-white/5">
             <AlbumPlayer
               userId={userId}
               tracks={(data.songs ?? []) as SongSerialized[]}
@@ -258,7 +240,6 @@ useEffect(() => {
               albumArtist={data.artist}
               coverUrl={data.coverUrl}
             />
-          </div>
 
         {/* Description / Article */}
           {data.description && (
@@ -282,7 +263,7 @@ useEffect(() => {
                   artist={song.artist}
                   cover={song.coverUrl}
                   downloads={song.downloadCount}
-                  publishedAt={(song.releaseDate ?? song.createdAt) as string}
+                  publishedAt={(song.createdAt) as string}
                   genre={song.genre}
                   views={song.viewCount}
                   href={`/music/song/${song._id}`}

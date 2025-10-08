@@ -42,28 +42,28 @@ export default function ChartStatsCard({ title = "Chart & Stats", data, classNam
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.35 }}
       className={cn(
-        "w-full py-4 rounded-2xl bg-white/80 dark:bg-neutral-900/80 border border-black/5 dark:border-white/10 shadow-sm backdrop-blur-sm",
+        "w-full py-4 rounded-2xl bg-black dark:bg-neutral-900/80 border border-black/5 dark:border-white/10 shadow-sm backdrop-blur-sm",
         "hover:shadow-md transition-shadow duration-200",
         className
       )}
     >
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+        <CardTitle className="text-sm font-semibold text-white dark:text-gray-200">
           {title}
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="space-y-3 text-sm text-gray-600 dark:text-gray-300">
+      <CardContent className="space-y-3 text-sm text-white dark:text-gray-300">
         {items.map(({ label, value, icon: Icon }) => (
           <div
             key={label}
             className="flex items-center justify-between border-b border-gray-100 dark:border-white/5 pb-2 last:border-0 last:pb-0"
           >
             <div className="flex items-center gap-2">
-              <Icon className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+              <Icon className="w-4 h-4 text-white dark:text-gray-400" />
               <span>{label}</span>
             </div>
-            <span className="font-semibold text-gray-900 dark:text-gray-100">{value}</span>
+            <span className="font-semibold text-white dark:text-gray-100">{value}</span>
           </div>
         ))}
 

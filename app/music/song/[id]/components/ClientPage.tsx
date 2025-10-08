@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import Image, { ImageLoaderProps } from "next/image";
 import {
   Heart,
-  Share2,
+  //Share2,
   DownloadCloud,
   Flame,
   Eye,
@@ -112,7 +112,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
   // share helpers
   const pageUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/music/song/${data._id}`;
 
-  const handleNativeShare = async () => {
+  /*const handleNativeShare = async () => {
     if ((navigator as any).share) {
       try {
         await (navigator as any).share({
@@ -128,7 +128,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
     } else {
       setShareOpen(true);
     }
-  };
+  };*/
 
   // image loader
   const customImageLoader = ({ src, width, quality }: ImageLoaderProps) => {
@@ -149,7 +149,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
         {/* HERO + MAIN: cols 1-8 */}
         <section className="lg:col-span-8 space-y-8">
           {/* Hero */}
-          <div className="bg-white dark:bg-neutral-900 border-b-[4px] border-black dark:border-white/5 overflow-hidden">
+          <div className="bg-white dark:bg-neutral-900 dark:border-white/5 overflow-hidden">
             <div className="md:flex items-center gap-6 py-6 ">
               {/* Cover */}
               <div className="w-full md:w-80 flex-shrink-0">
@@ -229,7 +229,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
 
                   </div>
 
-                  {/* Action buttons */}
+                  {/* Action buttons 
                   <div className="flex flex-wrap items-center gap-3">
                    <button
                       type="button"
@@ -264,14 +264,13 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
                       <DownloadCloud className="w-4 h-4" />
                       <span className="text-sm font-medium">Download</span>
                     </button>
-                  </div>
+                  </div>*/}
                 </div>
               </div>
             </div>
           </div>
 
           {/* Player */}
-          <div className="rounded-lg bg-white dark:bg-neutral-900 border-b-[3px] border-black/10 dark:border-white/5">
             <CustomPlayer
               src={data.fileUrl}
               title={data.title}
@@ -282,7 +281,6 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
                 handleInteraction("download");
               }}
             />
-          </div>
 
           {/* Description / Article */}
           {data.description && (
@@ -340,9 +338,9 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
                 chartPosition: data.chartPosition,
                 peak: data.chartHistory?.[0]?.peak,
                 plays: data.viewCount,
-                likes: data.likeCount,
+                likes: likeCount,
                 shares: shareCount,
-                downloads: data.downloadCount,
+                downloads: downloadCount,
               }}
             />
 
