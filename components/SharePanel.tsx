@@ -131,7 +131,7 @@ export default function SharePanel({
         )}
       </CardHeader>
 
-      <CardContent className="pt-3 space-y-4">
+      <CardContent className="space-y-4">
         {/* Primary share / copy */}
         <div className="flex items-center gap-2">
           <motion.button

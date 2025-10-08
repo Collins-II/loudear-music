@@ -5,7 +5,6 @@ import { useSession } from "next-auth/react";
 import Image, { ImageLoaderProps } from "next/image";
 import {
   Heart,
-  Share2,
   DownloadCloud,
   Flame,
   Eye,
@@ -38,7 +37,7 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
   const [shareCount, setShareCount] = useState(data.shareCount ?? 0);
   const [downloadCount, setDownloadCount] = useState(data.downloadCount ?? 0);
   const [imgError, setImgError] = useState(false);
-  const [downloading, setDownloading] = useState(false);
+  //const [downloading, setDownloading] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [downloadOpen, setDownloadOpen] = useState(false);
 
@@ -88,7 +87,7 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
   );
 
   // ✅ Download logic
-  const handleDownload = async () => {
+  /*const handleDownload = async () => {
     if (!data.fileUrl) return;
     setDownloading(true);
     try {
@@ -108,21 +107,7 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
     } finally {
       setDownloading(false);
     }
-  };
-
-  // ✅ Native share
-  const handleNativeShare = async () => {
-    if ((navigator as any).share) {
-      try {
-        await (navigator as any).share({
-          title: data.title,
-          text: `${data.title} — ${data.artist}`,
-          url: pageUrl,
-        });
-        await handleInteraction("share");
-      } catch {}
-    } else setShareOpen(true);
-  };
+  };*/
 
   const customImageLoader = ({ src, width, quality }: ImageLoaderProps) => {
     try {
@@ -144,7 +129,7 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
         <section className="lg:col-span-8 space-y-8">
 
           {/* Hero Section */}
-          <div className="bg-white dark:bg-neutral-900 border-b-[4px] border-black dark:border-white/5 overflow-hidden">
+          <div className="bg-white dark:bg-neutral-900 dark:border-white/5 overflow-hidden">
             <div className="md:flex items-center gap-6 py-6">
               {/* Thumbnail */}
               <div className="w-full md:w-80 flex-shrink-0">
@@ -206,7 +191,7 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3">
+                 {/* <div className="flex flex-wrap items-center gap-3">
                     <button
                       onClick={() => handleInteraction("like")}
                       className={`inline-flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${
@@ -235,14 +220,13 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
                         {downloading ? "Downloading..." : "Download"}
                       </span>
                     </button>
-                  </div>
+                  </div>*/}
                 </div>
               </div>
             </div>
           </div>
 
           {/* Video Player */}
-          <div className="bg-white dark:bg-neutral-900 border-b-[4px] border-black dark:border-white/5 pb-4">
             <VideoPlayer
               id={data._id}
               userId={userId}
@@ -253,7 +237,6 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
               initialLikes={data.likeCount}
               initialViews={data.viewCount}
             />
-          </div>
 
           {/* Description */}
           {data.description && (
