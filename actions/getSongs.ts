@@ -17,7 +17,7 @@ export const getSongs = async (limit = 16): Promise<ChartItem[]> => {
       region: "global",
     });
   } catch (error) {
-    console.error("[GET_SONGS_ERR]", error);
+    console.log("[GET_SONGS_ERR]", error);
     throw new Error("Failed to fetch trending songs");
   }
 };

@@ -124,7 +124,7 @@ export default function VideoPlayer({
 
   return (
     <div
-      className="relative w-full overflow-hidden bg-black shadow-xl rounded-md aspect-video sm:aspect-video min-h-[50vh]"
+      className="relative w-full overflow-hidden bg-black shadow-sm rounded-md aspect-video sm:aspect-video min-h-[50vh]"
       onMouseMove={() => setShowOverlay(true)}
       onMouseLeave={() => setShowOverlay(false)}
     >

@@ -1,9 +1,10 @@
-import React from "react";
-import IndexSearch from "./components/IndexSearch";
+import { Suspense } from "react";
+import IndexPage from "./components/IndexSearch";
 
-export default async function VideoPage() {
-
+export default function SearchPage() {
   return (
-      <IndexSearch />
+    <Suspense fallback={<div className="p-10 text-gray-400">Loading search...</div>}>
+      <IndexPage />
+    </Suspense>
   );
 }

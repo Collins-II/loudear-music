@@ -16,6 +16,10 @@ import { SliderCard } from "@/components/sliders/SliderCard";
 import Comments from "@/components/comments/Comments";
 import ChartStatsCard from "@/components/charts/ChartStatsCard";
 import SharePanel from "@/components/SharePanel";
+import InteractiveButtons from "@/components/interactive-buttons";
+import ViewStats from "@/components/stats/ViewStats";
+import JSZip from "jszip";
+import { saveAs } from "file-saver";
 
 interface AlbumClientPageProps {
   data: AlbumSerialized;
@@ -33,7 +37,23 @@ export default function AlbumClientPage({ data, relatedSongs }: AlbumClientPageP
   const [downloadCount, setDownloadCount] = useState(data.downloadCount ?? 0);
   const [imgError, setImgError] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+    const [downloading, setDownloading] = useState(false);
+    const [ queue ] = useState<SongSerialized[]>(data.songs as SongSerialized[]);
   //const [downloadOpen, setDownloadOpen] = useState(false);
+
+    // ✅ Download logic
+  const downloadAlbum = async () => {
+    setDownloading(true)
+      const zip = new JSZip();
+      for (const track of queue) {
+        const res = await fetch(track.fileUrl);
+        const blob = await res.blob();
+        zip.file(`${track.artist} - ${track.title}.mp3`, blob);
+      }
+      const content = await zip.generateAsync({ type: "blob" });
+      saveAs(content, `${data.artist} - ${data.title}.zip`);
+      setDownloading(false)
+    };
 
   // ✅ Fixed: proper cleanup & types
 useEffect(() => {
@@ -111,7 +131,7 @@ useEffect(() => {
         <section className="lg:col-span-8 space-y-8">
           {/* Hero Section */}
           {/* Hero */}
-          <div className="bg-white dark:bg-neutral-900 dark:border-white/5 overflow-hidden">
+          <div className="italic bg-white dark:bg-neutral-900 dark:border-white/5 overflow-hidden">
             <div className="md:flex items-center gap-6 py-6 ">
               {/* Cover */}
               <div className="w-full md:w-80 flex-shrink-0">
@@ -240,6 +260,16 @@ useEffect(() => {
               albumArtist={data.artist}
               coverUrl={data.coverUrl}
             />
+            <div className="flex items-center justify-between flex-wrap">
+              <InteractiveButtons
+                liked={liked}
+                downloading={downloading}
+                handleDownload={downloadAlbum}
+                handleInteraction={() => handleInteraction("like")}
+              />
+            
+              <ViewStats current={data.viewCount} previous={80} />
+            </div>
 
         {/* Description / Article */}
           {data.description && (

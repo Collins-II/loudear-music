@@ -1,12 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Edit2, Trash2, Flag, User, CornerUpRight, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  Edit2,
+  Trash2,
+  Flag,
+  CornerUpRight,
+  ChevronDown,
+  ChevronUp,
+  User,
+} from "lucide-react";
 import ReactMarkdown from "react-markdown";
-//import { ReactionBar } from "./ReactionBar";
 import { motion, AnimatePresence } from "framer-motion";
-import { CommentSerialized } from "@/actions/getItemsWithStats";
 import Image from "next/image";
+import { CommentSerialized } from "@/actions/getItemsWithStats";
 
 interface Props {
   comment: CommentSerialized;
@@ -32,142 +39,163 @@ export function CommentItem({
   const own = userId && comment.user?._id === userId;
 
   return (
-    <div className="space-y-3">
-      <div className="flex gap-3 items-start">
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex space-x-4 py-4 border-b border-neutral-200 dark:border-neutral-700"
+    >
+      {/* Avatar */}
+      <div className="flex-shrink-0">
         {comment.user?.image ? (
           <Image
             src={comment.user.image}
             alt={comment.user.name}
-            width={20}
-            height={20}
-            className="w-9 h-9 rounded-full object-cover"
+            width={40}
+            height={40}
+            className="w-10 h-10 rounded-full object-cover"
           />
         ) : (
-          <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-            <User className="w-4 h-4 text-gray-500" />
+          <div className="w-10 h-10 rounded-full bg-neutral-200 dark:bg-neutral-700 flex items-center justify-center">
+            <User className="w-5 h-5 text-neutral-500" />
           </div>
         )}
-
-        <div className="flex-1">
-          <div className="bg-muted rounded-xl px-4 py-3 border shadow-sm">
-            <div className="flex justify-between items-start">
-              <p className="text-sm font-semibold text-gray-900">
-                {comment.user?.name}
-              </p>
-              <div className="flex gap-2">
-                {own && (
-                  <>
-                    <button
-                      aria-label="edit"
-                      onClick={() => setIsEditing(true)}
-                    >
-                      <Edit2 className="w-4 h-4 text-gray-500 hover:text-gray-700" />
-                    </button>
-                    <button
-                      aria-label="delete"
-                      onClick={() => onDelete(comment._id)}
-                    >
-                      <Trash2 className="w-4 h-4 text-black hover:text-red-700" />
-                    </button>
-                  </>
-                )}
-                {!own && (
-                  <button
-                    aria-label="flag"
-                    onClick={() => alert("Flagged for moderation")}
-                  >
-                    <Flag className="w-4 h-4 text-yellow-500 hover:text-yellow-600" />
-                  </button>
-                )}
-                {isAdmin && (
-                  <button
-                    aria-label="delete-admin"
-                    onClick={() => onDelete(comment._id)}
-                  >
-                    <Trash2 className="w-4 h-4 text-black hover:text-black/80" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {isEditing ? (
-              <textarea
-                aria-label="edit-textarea"
-                className="w-full border p-2 rounded mt-2 text-sm"
-                defaultValue={comment.content}
-                onBlur={(e) => {
-                  setIsEditing(false);
-                  onEdit(comment._id, e.target.value);
-                }}
-              />
-            ) : (
-              <div className="mt-2 prose prose-sm max-w-none text-gray-800">
-                <ReactMarkdown>{comment.content}</ReactMarkdown>
-              </div>
-            )}
-          </div>
-
-          {/* ✅ Actions: reactions + reply */}
-          <div className="flex items-center gap-4 mt-2 text-xs text-gray-600">
-            {/*<ReactionBar
-              comment={comment}
-              userId={userId}
-              onToggle={onToggleReaction}
-            />*/}
-            {userId && (
-              <button
-                onClick={() => onReply(comment._id)}
-                className="flex items-center gap-1 text-gray-600 hover:text-gray-800 font-medium"
-              >
-                <CornerUpRight className="h-3.5 w-3.5" />
-                Reply
-              </button>
-            )}
-            {comment.replies && comment.replies.length > 0 && (
-              <button
-                onClick={() => setShowReplies(!showReplies)}
-                className="flex items-center gap-1 text-gray-500 hover:text-gray-700 font-medium"
-              >
-                {showReplies ? (
-                  <>
-                    <ChevronUp className="h-3.5 w-3.5" /> Hide Replies
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="h-3.5 w-3.5" /> Show Replies ({comment.replies.length})
-                  </>
-                )}
-              </button>
-            )}
-          </div>
-
-          {/* ✅ Nested replies with animation */}
-          <AnimatePresence>
-            {showReplies && comment.replies && comment.replies.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-                className="pl-6 mt-3 space-y-3 border-l border-gray-200"
-              >
-                {comment.replies.map((reply:any) => (
-                  <CommentItem
-                    key={reply._id}
-                    comment={reply}
-                    userId={userId}
-                    onReply={onReply}
-                    onEdit={onEdit}
-                    onDelete={onDelete}
-                    onToggleReaction={onToggleReaction}
-                    isAdmin={isAdmin}
-                  />
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
       </div>
-    </div>
+
+      {/* Content */}
+      <div className="flex-1">
+        <div className="flex justify-between">
+          <div className="flex flex-col">
+            <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+              {comment.user?.name || "Anonymous"}
+            </p>
+            <span className="text-xs text-neutral-500 dark:text-neutral-400">
+              {new Date(comment.createdAt).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {own && (
+              <>
+                <button
+                  aria-label="edit"
+                  onClick={() => setIsEditing(true)}
+                  className="p-1 hover:text-blue-500 transition-colors"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+                <button
+                  aria-label="delete"
+                  onClick={() => onDelete(comment._id)}
+                  className="p-1 hover:text-red-500 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </>
+            )}
+
+            {!own && (
+              <button
+                aria-label="flag"
+                onClick={() => alert("Flagged for moderation")}
+                className="p-1 hover:text-yellow-500 transition-colors"
+              >
+                <Flag className="w-4 h-4" />
+              </button>
+            )}
+
+            {isAdmin && (
+              <button
+                aria-label="admin-delete"
+                onClick={() => onDelete(comment._id)}
+                className="p-1 hover:text-red-500 transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Comment Text */}
+        <div className="mt-2">
+          {isEditing ? (
+            <textarea
+              aria-label="edit-textarea"
+              className="w-full border border-neutral-300 dark:border-neutral-600 bg-transparent rounded-lg p-2 text-sm text-neutral-800 dark:text-neutral-200"
+              defaultValue={comment.content}
+              onBlur={(e) => {
+                setIsEditing(false);
+                onEdit(comment._id, e.target.value);
+              }}
+              autoFocus
+            />
+          ) : (
+            <ReactMarkdown >
+              {comment.content}
+            </ReactMarkdown>
+          )}
+        </div>
+
+        {/* Actions: Reply & Replies Toggle */}
+        <div className="flex items-center gap-4 mt-3 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+          {userId && (
+            <button
+              onClick={() => onReply(comment._id)}
+              className="flex items-center gap-1 hover:text-blue-500 transition"
+            >
+              <CornerUpRight className="h-3.5 w-3.5" />
+              Reply
+            </button>
+          )}
+
+          {comment.replies && comment.replies.length > 0 && (
+            <button
+              onClick={() => setShowReplies(!showReplies)}
+              className="flex items-center gap-1 hover:text-blue-500 transition"
+            >
+              {showReplies ? (
+                <>
+                  <ChevronUp className="h-3.5 w-3.5" /> Hide Replies
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-3.5 w-3.5" /> Show Replies (
+                  {comment.replies.length})
+                </>
+              )}
+            </button>
+          )}
+        </div>
+
+        {/* Replies */}
+        <AnimatePresence>
+          {showReplies && comment.replies && comment?.replies?.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="pl-6 mt-3 space-y-4 border-l border-neutral-200 dark:border-neutral-700"
+            >
+              {comment.replies.map((reply: any) => (
+                <CommentItem
+                  key={reply._id}
+                  comment={reply}
+                  userId={userId}
+                  onReply={onReply}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  onToggleReaction={onToggleReaction}
+                  isAdmin={isAdmin}
+                />
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </motion.div>
   );
 }

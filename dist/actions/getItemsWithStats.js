@@ -130,12 +130,19 @@ async function getItemWithStats(model, id) {
         comment_1.Comment.find({ targetId: id, targetModel: model, parent: null })
             .sort({ createdAt: -1 })
             .limit(3)
-            .populate("user", "_id name image")
+            .populate([
+            { path: "user", select: "_id name image" },
+            {
+                path: "replies",
+                populate: { path: "user", select: "_id name image" },
+                options: { sort: { createdAt: 1 }, limit: 5 },
+            },
+        ])
             .lean()
             .then((res) => serializeComments(res)),
     ]);
     // Trending score within recent period
-    const sinceDate = (0, dayjs_1.default)().subtract(14, "day").toDate();
+    const sinceDate = (0, dayjs_1.default)().subtract(365, "day").toDate();
     const recentItems = await Model.find({ createdAt: { $gte: sinceDate } })
         .select("_id views likes shares downloads")
         .lean();

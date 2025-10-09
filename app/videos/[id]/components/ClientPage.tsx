@@ -16,11 +16,13 @@ import ShareModal from "@/components/modals/ShareModal";
 import DownloadModal from "@/components/modals/DownloadModal";
 import VideoPlayer from "@/components/video/VideoPlayer";
 import HorizontalSlider from "@/components/sliders/HorizontalSlider";
-import { SliderCard } from "@/components/sliders/SliderCard";
 import Comments from "@/components/comments/Comments";
 import { Badge } from "@/components/ui/badge";
 import ChartStatsCard from "@/components/charts/ChartStatsCard";
 import SharePanel from "@/components/SharePanel";
+import { VideoCard } from "@/components/video/VideoCard";
+import InteractiveButtons from "@/components/interactive-buttons";
+import ViewStats from "@/components/stats/ViewStats";
 
 interface VideoPageProps {
   data: VideoSerialized;
@@ -37,7 +39,7 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
   const [shareCount, setShareCount] = useState(data.shareCount ?? 0);
   const [downloadCount, setDownloadCount] = useState(data.downloadCount ?? 0);
   const [imgError, setImgError] = useState(false);
-  //const [downloading, setDownloading] = useState(false);
+  const [downloading, setDownloading] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [downloadOpen, setDownloadOpen] = useState(false);
 
@@ -87,7 +89,7 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
   );
 
   // ✅ Download logic
-  /*const handleDownload = async () => {
+  const handleDownload = async () => {
     if (!data.fileUrl) return;
     setDownloading(true);
     try {
@@ -107,7 +109,7 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
     } finally {
       setDownloading(false);
     }
-  };*/
+  };
 
   const customImageLoader = ({ src, width, quality }: ImageLoaderProps) => {
     try {
@@ -129,7 +131,7 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
         <section className="lg:col-span-8 space-y-8">
 
           {/* Hero Section */}
-          <div className="bg-white dark:bg-neutral-900 dark:border-white/5 overflow-hidden">
+          <div className="italic bg-white dark:bg-neutral-900 dark:border-white/5 overflow-hidden">
             <div className="md:flex items-center gap-6 py-6">
               {/* Thumbnail */}
               <div className="w-full md:w-80 flex-shrink-0">
@@ -191,40 +193,18 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
                     </div>
                   </div>
 
-                 {/* <div className="flex flex-wrap items-center gap-3">
-                    <button
-                      onClick={() => handleInteraction("like")}
-                      className={`inline-flex items-center gap-2 px-3 py-2 rounded-md border transition-colors ${
-                        liked
-                          ? "bg-red-50 border-red-200 text-red-600"
-                          : "bg-white dark:bg-neutral-800 border-black/5 dark:border-white/5 text-gray-700 dark:text-gray-200"
-                      }`}
-                    >
-                      <Heart className={`w-4 h-4 ${liked ? "fill-red-500 text-red-500" : "text-gray-500"}`} />
-                      <span className="text-sm font-medium">{liked ? "Liked" : "Like"}</span>
-                    </button>
-
-                    <button
-                      onClick={handleNativeShare}
-                      className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-black text-white"
-                    >
-                      <Share2 className="w-4 h-4" /> Share
-                    </button>
-
-                    <button
-                      onClick={handleDownload}
-                      className="inline-flex items-center gap-2 px-3 py-2 rounded-md border bg-white dark:bg-neutral-800 border-black/5 dark:border-white/5"
-                    >
-                      <DownloadCloud className="w-4 h-4" />
-                      <span className="text-sm font-medium">
-                        {downloading ? "Downloading..." : "Download"}
-                      </span>
-                    </button>
-                  </div>*/}
+                 {/* */}
                 </div>
               </div>
             </div>
           </div>
+          {/* Description */}
+          {data.description && (
+            <article className="prose prose-lg dark:prose-invert max-w-none">
+              <h3 className="mt-6 text-2xl md:text-3xl font-extrabold">About the video</h3>
+              <p className="italic">{data.description}</p>
+            </article>
+          )}
 
           {/* Video Player */}
             <VideoPlayer
@@ -237,30 +217,31 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
               initialLikes={data.likeCount}
               initialViews={data.viewCount}
             />
+         <div className="flex items-center justify-between flex-wrap">
+          <InteractiveButtons
+            liked={liked}
+            downloading={downloading}
+            handleDownload={handleDownload}
+            handleInteraction={() => handleInteraction("like")}
+          />
 
-          {/* Description */}
-          {data.description && (
-            <article className="prose prose-lg dark:prose-invert max-w-none">
-              <h3 className="mt-6 text-2xl md:text-3xl font-extrabold">About the video</h3>
-              <p className="italic">{data.description}</p>
-            </article>
-          )}
+          <ViewStats current={data.viewCount} previous={80} />
+        </div> 
 
           {/* Related videos */}
           {relatedVideos.length > 0 && (
             <HorizontalSlider title="You May Also Like">
-              {relatedVideos.map((vid) => (
-                <SliderCard
-                  key={vid._id}
-                  id={vid._id}
-                  title={vid.title}
-                  artist={vid.artist}
-                  cover={vid.coverUrl}
-                  downloads={vid.downloadCount}
-                  publishedAt={vid.createdAt}
-                  genre={vid.genre}
-                  views={vid.viewCount}
-                  href={`/videos/${vid._id}`}
+              {relatedVideos.map((video) => (
+                <VideoCard
+                  key={video._id}
+                  id={video._id}
+                  title={video.title}
+                  artist={video.artist as string}
+                  cover={video.coverUrl}
+                  downloads={video.downloadCount}
+                  category={video.genre}
+                  views={video.viewCount}
+                  videoUrl={video.fileUrl as string}
                 />
               ))}
             </HorizontalSlider>

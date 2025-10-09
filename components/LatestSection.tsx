@@ -72,7 +72,7 @@ export default function LatestSection({ songs, videos}: SectionProps) {
           {/* Latest Videos */}
           <div className="">
   {/* Responsive Layout: horizontal scroll on small, grid on md+ */}
-            <HorizontalSlider title="Latest Videos" >
+            <HorizontalSlider title="Top Videos" >
                 {videos?.map((video) => (
                   <VideoCard
                     key={video.id}

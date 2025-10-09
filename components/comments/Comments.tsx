@@ -229,9 +229,8 @@ export default function Comments({
    * ---------------------- */
   return (
     <div className="space-y-6">
-      <h3 className="w-full relative text-slate-900 text-xl md:text-2xl font-extrabold tracking-tight mb-6">
+      <h3 className="w-full relative text-slate-900 text-2xl md:text-3xl font-extrabold tracking-tight mb-6">
         <span className="relative z-10 bg-white pr-3">Comments</span>
-        <span className="hidden md:block absolute left-0 top-1/2 w-full h-[4px] bg-black -z-0"></span>
       </h3>
 
       {/* Root Composer */}

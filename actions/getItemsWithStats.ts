@@ -262,7 +262,14 @@ export async function getItemWithStats(model: ItemType, id: string) {
     Comment.find({ targetId: id, targetModel: model, parent: null })
       .sort({ createdAt: -1 })
       .limit(3)
-      .populate("user", "_id name image")
+      .populate([
+        { path: "user", select: "_id name image" },
+        {
+          path: "replies",
+          populate: { path: "user", select: "_id name image" },
+          options: { sort: { createdAt: 1 }, limit: 5 },
+        },
+      ])
       .lean()
       .then((res) => serializeComments(res)),
   ]);

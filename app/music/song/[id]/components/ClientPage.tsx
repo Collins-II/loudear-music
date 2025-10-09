@@ -22,6 +22,8 @@ import { SliderCard } from "@/components/sliders/SliderCard";
 import Comments from "@/components/comments/Comments";
 import ChartStatsCard from "@/components/charts/ChartStatsCard";
 import SharePanel from "@/components/SharePanel";
+import InteractiveButtons from "@/components/interactive-buttons";
+import ViewStats from "@/components/stats/ViewStats";
 
 /**
  * Design goals:
@@ -52,6 +54,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
   const [imgError, setImgError] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [downloadOpen, setDownloadOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   // socket: synchronize live counts and userLiked state
   useEffect(() => {
@@ -109,6 +112,29 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
     [data?._id, userId, liked]
   );
 
+    // ✅ Download logic
+  const handleDownload = async () => {
+    if (!data.fileUrl) return;
+    setDownloading(true);
+    try {
+      const response = await fetch(data.fileUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${data.artist} - ${data.title}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      await handleInteraction("download");
+    } catch (err) {
+      console.error("Download failed:", err);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   // share helpers
   const pageUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/music/song/${data._id}`;
 
@@ -149,7 +175,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
         {/* HERO + MAIN: cols 1-8 */}
         <section className="lg:col-span-8 space-y-8">
           {/* Hero */}
-          <div className="bg-white dark:bg-neutral-900 dark:border-white/5 overflow-hidden">
+          <div className="italic bg-white dark:bg-neutral-900 dark:border-white/5 overflow-hidden">
             <div className="md:flex items-center gap-6 py-6 ">
               {/* Cover */}
               <div className="w-full md:w-80 flex-shrink-0">
@@ -281,6 +307,16 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
                 handleInteraction("download");
               }}
             />
+         <div className="flex items-center justify-between flex-wrap">
+          <InteractiveButtons
+            liked={liked}
+            downloading={downloading}
+            handleDownload={handleDownload}
+            handleInteraction={() => handleInteraction("like")}
+          />
+            
+          <ViewStats current={data.viewCount} previous={80} />
+        </div> 
 
           {/* Description / Article */}
           {data.description && (
