@@ -10,7 +10,7 @@ import {
   Eye,
 } from "lucide-react";
 import { getSocket } from "@/lib/socketClient";
-import { VideoSerialized, incrementInteraction } from "@/actions/getItemsWithStats";
+import { VideoSerialized } from "@/actions/getItemsWithStats";
 import { timeAgo } from "@/lib/utils";
 import ShareModal from "@/components/modals/ShareModal";
 import DownloadModal from "@/components/modals/DownloadModal";
