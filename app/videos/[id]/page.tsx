@@ -1,6 +1,5 @@
 
 import ClientPage from "./components/ClientPage";
-import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { getVideoWithStats, incrementInteraction, VideoSerialized } from "@/actions/getItemsWithStats";
 import { getRelatedVideos } from "@/actions/getRelatedVideos";
@@ -45,8 +44,9 @@ export default async function VideoDetailsPage(
     const { id } = await params; // ✅ await params
     const media = await getVideoWithStats(id);
 
-    if (!media || !isBaseSerialized(media)) {
-      notFound();
+    // Show NetworkError or fallback UI instead of breaking the app
+    if (!media) {
+      return <NetworkError message="Unable to fetch this video. Please try again." />;
     }
 
     const vids = await getRelatedVideos(media?.genre as string, media?._id as string);
@@ -57,17 +57,6 @@ export default async function VideoDetailsPage(
     return <ClientPage data={media as VideoSerialized} relatedVideos={vids} />;
   } catch (error: any) {
       console.error("[SongDetailsPage Error]", error);
-  
-      // ✅ Detect MongoDB network issues gracefully
-      if (
-        error?.name === "MongoServerSelectionError" ||
-        error?.message?.includes("ENOTFOUND") ||
-        error?.message?.includes("failed to connect") ||
-        error?.message?.includes("ServerSelectionTimeoutError")
-      ) {
-        return <NetworkError />;
-      }
-  
-      notFound();
-    }
+      return <NetworkError message="Something went wrong loading the video." />;
+}
 }

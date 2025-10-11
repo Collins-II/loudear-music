@@ -16,25 +16,25 @@ export type ItemType = "Song" | "Album" | "Video";
 type InteractionType = "view" | "like" | "download" | "share" | "unlike";
 export type ReactionType = "heart" | "fire" | "laugh" | "up" | "down";
 
-interface ChartItem {
+export interface ChartItem {
   itemId: Types.ObjectId;
   position: number;
   peak?: number;
   weeksOn?: number;
 }
 
-interface ChartHistoryDoc {
+export interface ChartHistoryDoc {
   week: string;
   category: string;
   items: ChartItem[];
 }
 
-type ChartHistoryLean = FlattenMaps<ChartHistoryDoc> & {
+export type ChartHistoryLean = FlattenMaps<ChartHistoryDoc> & {
   _id: Types.ObjectId;
   __v?: number;
 };
 
-interface IInteractionDoc extends Document {
+export interface IInteractionDoc extends Document {
   _id: Types.ObjectId;
   likes: Types.ObjectId[];
   views: Types.ObjectId[];
@@ -61,8 +61,8 @@ export interface CommentSerialized {
   updatedAt: string;
 }
 
-function serializeComments(comments: any[] = []): CommentSerialized[] {
-  return comments.map((c) => ({
+function serializeComments(comments: unknown[] = []): CommentSerialized[] {
+  return (comments as any[]).map((c) => ({
     _id: String(c._id ?? ""),
     user: {
       _id: String(c.user?._id ?? ""),
@@ -74,8 +74,8 @@ function serializeComments(comments: any[] = []): CommentSerialized[] {
     targetId: String(c.targetId ?? ""),
     parent: c.parent ? String(c.parent) : null,
     likes: (c.likes ?? []).map((id: any) => String(id)),
-    likeCount: c.likes?.length ?? 0,
-    replyCount: c.replies?.length ?? 0,
+    likeCount: Array.isArray(c.likes) ? c.likes.length : 0,
+    replyCount: Array.isArray(c.replies) ? c.replies.length : 0,
     reactions: c.reactions ?? {
       heart: 0,
       fire: 0,
@@ -110,6 +110,13 @@ export interface BaseSerialized {
   latestComments: CommentSerialized[];
 }
 
+export interface ChartHistoryEntry {
+  week: string;
+  position: number;
+  peak?: number;
+  weeksOn?: number;
+}
+
 export interface SongSerialized extends BaseSerialized {
   album?: string | null;
   language?: string | null;
@@ -117,7 +124,7 @@ export interface SongSerialized extends BaseSerialized {
   fileUrl: string;
   trendingPosition?: number | null;
   chartPosition?: number | null;
-  chartHistory?: { week: string; position: number; peak?: number; weeksOn?: number }[];
+  chartHistory?: ChartHistoryEntry[];
   trendingScore?: number | null;
 }
 
@@ -126,7 +133,7 @@ export interface AlbumSerialized extends BaseSerialized {
   songs?: SongSerialized[];
   trendingPosition?: number | null;
   chartPosition?: number | null;
-  chartHistory?: { week: string; position: number; peak?: number; weeksOn?: number }[];
+  chartHistory?: ChartHistoryEntry[];
   trendingScore?: number | null;
 }
 
@@ -135,13 +142,16 @@ export interface VideoSerialized extends BaseSerialized {
   videographer: string;
   trendingPosition?: number | null;
   chartPosition?: number | null;
-  chartHistory?: { week: string; position: number; peak?: number; weeksOn?: number }[];
+  chartHistory?: ChartHistoryEntry[];
   trendingScore?: number | null;
   releaseDate?: string | null;
 }
 
+/* ------------------------------------------------------------------ */
+/* SERIALIZE ITEM */
+/* ------------------------------------------------------------------ */
 export function serializeItem<T extends ItemType>(
-  doc: any,
+  doc: Record<string, any>,
   type: T
 ): T extends "Song"
   ? SongSerialized
@@ -192,9 +202,9 @@ export function serializeItem<T extends ItemType>(
   } as any;
 }
 
-export const serializeSong = (doc: any) => serializeItem(doc, "Song") as SongSerialized;
-export const serializeAlbum = (doc: any) => serializeItem(doc, "Album") as AlbumSerialized;
-export const serializeVideo = (doc: any) => serializeItem(doc, "Video") as VideoSerialized;
+export const serializeSong = (doc: unknown) => serializeItem(doc as Record<string, any>, "Song") as SongSerialized;
+export const serializeAlbum = (doc: unknown) => serializeItem(doc as Record<string, any>, "Album") as AlbumSerialized;
+export const serializeVideo = (doc: unknown) => serializeItem(doc as Record<string, any>, "Video") as VideoSerialized;
 
 /* ------------------------------------------------------------------ */
 /* INCREMENT INTERACTION */
@@ -217,131 +227,150 @@ export async function incrementInteraction(
   };
 
   if (type === "unlike") {
-    await Model.updateOne(
-      { _id: id },
-      { $pull: { likes: new Types.ObjectId(userId) } }
-    );
-    return { success: true, action: "unliked" };
+    await Model.updateOne({ _id: id }, { $pull: { likes: new Types.ObjectId(userId) } });
+    return { success: true, action: "unliked" as const };
   }
 
   const field = fieldMap[type];
   if (!field) throw new Error(`Unsupported interaction type: ${type}`);
 
-  await Model.updateOne(
-    { _id: id },
-    { $addToSet: { [field]: new Types.ObjectId(userId) } }
-  );
+  await Model.updateOne({ _id: id }, { $addToSet: { [field]: new Types.ObjectId(userId) } });
 
-  return { success: true, action: type };
+  return { success: true, action: type as Exclude<InteractionType, "unlike"> };
 }
 
 /* ------------------------------------------------------------------ */
 /* DYNAMIC STATS FETCHER */
 /* ------------------------------------------------------------------ */
 export async function getItemWithStats(model: ItemType, id: string) {
-  if (!Types.ObjectId.isValid(id)) throw new Error("Invalid ObjectId");
-  await connectToDatabase();
+  try {
+    if (!Types.ObjectId.isValid(id)) throw new Error("Invalid ObjectId");
+    await connectToDatabase();
 
-  const Model = model === "Song" ? Song : model === "Album" ? Album : Video;
+    const Model = model === "Song" ? Song : model === "Album" ? Album : Video;
 
-  // For albums, populate songs for deeper analytics
-  let query = Model.findById(id);
-  if (model === "Album") {
-    query = query.populate({
-      path: "songs",
-      select: "_id title artist coverUrl fileUrl views likes downloads shares genre releaseDate",
-    });
+    let query = Model.findById(id);
+    if (model === "Album") {
+      query = query.populate({
+        path: "songs",
+        select: "_id title artist coverUrl fileUrl views likes downloads shares genre releaseDate",
+      });
+    }
+
+    const doc = await query.lean<Record<string, any>>();
+    if (!doc) return null;
+
+    /* --------------------------- COMMENTS --------------------------- */
+    const [commentCountRes, latestCommentsRes] = await Promise.allSettled([
+      Comment.countDocuments({ targetId: id, targetModel: model }),
+      Comment.find({ targetId: id, targetModel: model, parent: null })
+        .sort({ createdAt: -1 })
+        .limit(3)
+        .populate([
+          { path: "user", select: "_id name image" },
+          {
+            path: "replies",
+            populate: { path: "user", select: "_id name image" },
+            options: { sort: { createdAt: 1 }, limit: 5 },
+          },
+        ])
+        .lean(),
+    ]);
+
+    const commentCount =
+      commentCountRes.status === "fulfilled" ? commentCountRes.value : 0;
+    const latestComments =
+      latestCommentsRes.status === "fulfilled"
+        ? serializeComments(latestCommentsRes.value)
+        : [];
+
+    /* --------------------------- ANALYTICS --------------------------- */
+    const sinceDate = dayjs().subtract(365, "day").toDate();
+    const recentItems = await Model.find({ createdAt: { $gte: sinceDate } })
+      .select("_id views likes shares downloads")
+      .lean();
+
+    const scored = recentItems
+      .map((i) => ({
+        _id: i._id,
+        trendingScore:
+          (i.views?.length ?? 0) +
+          (i.likes?.length ?? 0) * 2 +
+          (i.shares?.length ?? 0) * 3 +
+          (i.downloads?.length ?? 0) * 1.5,
+      }))
+      .sort((a, b) => b.trendingScore - a.trendingScore);
+
+    const trendingIndex = scored.findIndex((s) => String(s._id) === id);
+    const trendingPosition = trendingIndex >= 0 ? trendingIndex + 1 : null;
+    const trendingScore =
+      trendingIndex >= 0 ? scored[trendingIndex].trendingScore : null;
+
+    const currentWeek = `${dayjs().year()}-W${String(dayjs().isoWeek()).padStart(2, "0")}`;
+    const chartSnapshot = await ChartHistory.findOne({
+      category: model.toLowerCase() + "s",
+      week: currentWeek,
+    })
+      .select("items week category")
+      .lean<ChartHistoryLean | null>();
+
+    const chartPosition =
+      chartSnapshot?.items?.find((i) => String(i.itemId) === id)?.position ?? null;
+
+    const chartHistoryDocs = await ChartHistory.find({
+      "items.itemId": new Types.ObjectId(id),
+    })
+      .sort({ week: -1 })
+      .limit(12)
+      .lean<ChartHistoryLean[]>();
+
+  const chartHistory = chartHistoryDocs
+  .map((snap) => {
+    const item = snap.items.find((it) => String(it.itemId) === id);
+    if (!item) return undefined;
+    return {
+      week: snap.week,
+      position: item.position,
+      peak: item.peak ?? item.position,
+      weeksOn: item.weeksOn ?? 1,
+    } as ChartHistoryEntry;
+  })
+  .filter((entry): entry is ChartHistoryEntry => Boolean(entry));
+
+
+    /* --------------------------- SERIALIZE --------------------------- */
+    const serialized = serializeItem(
+      { ...doc, commentCount, latestComments },
+      model
+    ) as SongSerialized | AlbumSerialized | VideoSerialized;
+
+    return {
+      ...serialized,
+      trendingPosition,
+      chartPosition,
+      chartHistory,
+      trendingScore,
+    };
+  } catch (error: unknown) {
+    console.error("GET_ITEMS_ERROR", error);
+
+    const err = error as Error & { name?: string; message?: string };
+    if (
+      err?.name === "MongoNetworkError" ||
+      err?.message?.includes("ECONNRESET") ||
+      err?.message?.includes("pool was cleared")
+    ) {
+      console.warn("🔁 Retrying database connection...");
+      try {
+        await connectToDatabase();
+        return await getItemWithStats(model, id);
+      } catch (retryError) {
+        console.error("❌ Retry failed:", retryError);
+      }
+    }
+
+    return null;
   }
-
-  const doc = await query.lean();
-  if (!doc) return null;
-
-  // Comments
-  const [commentCount, latestComments] = await Promise.all([
-    Comment.countDocuments({ targetId: id, targetModel: model }),
-    Comment.find({ targetId: id, targetModel: model, parent: null })
-      .sort({ createdAt: -1 })
-      .limit(3)
-      .populate([
-        { path: "user", select: "_id name image" },
-        {
-          path: "replies",
-          populate: { path: "user", select: "_id name image" },
-          options: { sort: { createdAt: 1 }, limit: 5 },
-        },
-      ])
-      .lean()
-      .then((res) => serializeComments(res)),
-  ]);
-
-  // Trending score within recent period
-  const sinceDate = dayjs().subtract(365, "day").toDate();
-  const recentItems = await Model.find({ createdAt: { $gte: sinceDate } })
-    .select("_id views likes shares downloads")
-    .lean();
-
-  const scored = recentItems
-    .map((i) => ({
-      _id: i._id,
-      trendingScore:
-        (i.views?.length ?? 0) +
-        (i.likes?.length ?? 0) * 2 +
-        (i.shares?.length ?? 0) * 3 +
-        (i.downloads?.length ?? 0) * 1.5,
-    }))
-    .sort((a, b) => b.trendingScore - a.trendingScore);
-
-  const trendingIndex = scored.findIndex((s) => String(s._id) === id);
-  const trendingPosition = trendingIndex >= 0 ? trendingIndex + 1 : null;
-
-  // Chart data
-  const currentWeek = `${dayjs().year()}-W${String(dayjs().isoWeek()).padStart(2, "0")}`;
-  const chartSnapshot = (await ChartHistory.findOne({
-    category: model.toLowerCase() + "s",
-    week: currentWeek,
-  })
-    .select("items week category")
-    .lean()) as ChartHistoryLean | null;
-
-  const chartPosition =
-    chartSnapshot?.items?.find((i) => String(i.itemId) === id)?.position ?? null;
-
-  const chartHistoryDocs = (await ChartHistory.find({
-    "items.itemId": new Types.ObjectId(id),
-  })
-    .sort({ week: -1 })
-    .limit(12)
-    .lean()) as ChartHistoryLean[];
-
-  const chartHistory =
-    chartHistoryDocs
-      .map((snap) => {
-        const item = snap.items.find((it) => String(it.itemId) === id);
-        return item
-          ? {
-              week: snap.week,
-              position: item.position,
-              peak: item.peak ?? item.position,
-              weeksOn: item.weeksOn ?? 1,
-            }
-          : null;
-      })
-      .filter(Boolean) ?? [];
-
-  // Serialize
-  const serialized = serializeItem(
-    { ...doc, commentCount, latestComments },
-    model
-  ) as SongSerialized | AlbumSerialized | VideoSerialized;
-
-  return {
-    ...serialized,
-    trendingPosition,
-    chartPosition,
-    chartHistory,
-    trendingScore:
-      trendingIndex >= 0 ? scored[trendingIndex].trendingScore : null,
-  };
 }
 
 /* ------------------------------------------------------------------ */

@@ -20,6 +20,7 @@ import InteractiveButtons from "@/components/interactive-buttons";
 import ViewStats from "@/components/stats/ViewStats";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
+import { handleInteractionUtil } from "@/lib/interactions";
 
 interface AlbumClientPageProps {
   data: AlbumSerialized;
@@ -86,28 +87,21 @@ useEffect(() => {
 }, [data?._id, likeCount, shareCount, downloadCount]);
 
 
+// ✅ use reusable utility
   const handleInteraction = useCallback(
-    async (type: "like" | "share" | "download") => {
-      if (!userId) return alert("Please sign in to interact.");
-
-      try {
-        if (type === "like") {
-          setLiked((v) => !v);
-          setLikeCount((n) => (liked ? Math.max(0, n - 1) : n + 1));
-        } else if (type === "download") {
-          setDownloadCount((n) => n + 1);
-        }
-
-        await fetch(`/api/interactions/${type}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: data._id, model: "Album", userId }),
-        });
-      } catch (err) {
-        console.error("Interaction error", err);
-      }
+    (type: "like" | "unlike" | "share" | "download" | "views") => {
+      handleInteractionUtil({
+        type,
+        model: "Album",
+        itemId: data._id,
+        userId,
+        setLiked,
+        setLikeCount,
+        setDownloadCount,
+        onUnauthorized: () => alert("Please sign in to interact."),
+      });
     },
-    [data?._id, userId, liked]
+    [data?._id, userId]
   );
 
   const pageUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/music/album/${data._id}`;

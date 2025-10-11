@@ -23,6 +23,7 @@ import SharePanel from "@/components/SharePanel";
 import { VideoCard } from "@/components/video/VideoCard";
 import InteractiveButtons from "@/components/interactive-buttons";
 import ViewStats from "@/components/stats/ViewStats";
+import { handleInteractionUtil } from "@/lib/interactions";
 
 interface VideoPageProps {
   data: VideoSerialized;
@@ -70,22 +71,21 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
   }, [data?._id, likeCount, shareCount, downloadCount]);
 
   // ✅ Interactions
+// ✅ use reusable utility
   const handleInteraction = useCallback(
-    async (type: "like" | "share" | "download") => {
-      if (!userId) return alert("Please sign in to interact.");
-      try {
-        if (type === "like") {
-          setLiked((v) => !v);
-          setLikeCount((n) => (liked ? Math.max(0, n - 1) : n + 1));
-        } else if (type === "share") setShareCount((n) => n + 1);
-        else if (type === "download") setDownloadCount((n) => n + 1);
-
-        await incrementInteraction(data._id, "Video", type, userId);
-      } catch (err) {
-        console.error(err);
-      }
+    (type: "like" | "unlike" | "share" | "download" | "views") => {
+      handleInteractionUtil({
+        type,
+        model: "Video",
+        itemId: data._id,
+        userId,
+        setLiked,
+        setLikeCount,
+        setDownloadCount,
+        onUnauthorized: () => alert("Please sign in to interact."),
+      });
     },
-    [data._id, userId, liked]
+    [data?._id, userId]
   );
 
   // ✅ Download logic

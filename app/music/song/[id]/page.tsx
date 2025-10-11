@@ -1,6 +1,5 @@
 import ClientPage from "./components/ClientPage";
 import NetworkError from "@/components/NetworkError";
-import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import { getRelatedSongs } from "@/actions/getRelatedSongs";
 import { getSongWithStats, incrementInteraction, SongSerialized } from "@/actions/getItemsWithStats";
@@ -48,8 +47,9 @@ export default async function SongDetailsPage({ params }: SongDetailsPageProps) 
     const { id } = await params;
     const media = await getSongWithStats(id);
 
-    if (!media || !isBaseSerialized(media)) {
-      notFound();
+    // Show NetworkError or fallback UI instead of breaking the app
+    if (!media) {
+      return <NetworkError message="Unable to fetch this song. Please try again." />;
     }
 
     const relatedSongs = await getRelatedSongs(media?.genre as string, media?._id as string);
@@ -59,17 +59,6 @@ export default async function SongDetailsPage({ params }: SongDetailsPageProps) 
     return <ClientPage data={media as SongSerialized} relatedSongs={relatedSongs} />;
   } catch (error: any) {
     console.error("[SongDetailsPage Error]", error);
-
-    // ✅ Detect MongoDB network issues gracefully
-    if (
-      error?.name === "MongoServerSelectionError" ||
-      error?.message?.includes("ENOTFOUND") ||
-      error?.message?.includes("failed to connect") ||
-      error?.message?.includes("ServerSelectionTimeoutError")
-    ) {
-      return <NetworkError />;
-    }
-
-    notFound();
+    return <NetworkError message="Something went wrong loading the song." />;
   }
 }

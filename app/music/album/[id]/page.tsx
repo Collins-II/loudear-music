@@ -1,6 +1,5 @@
 // app/albums/[id]/page.tsx
 import ClientPage from "./components/ClientPage";
-import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import {
   getAlbumWithStats,
@@ -66,9 +65,9 @@ export default async function AlbumDetailsPage({ params }: AlbumDetailsPageProps
     const media = await getAlbumWithStats(id);
 
     // Narrow / guard: if media is null or missing serialized fields, treat as not found
-    if (!media || !isBaseSerialized(media)) {
-      notFound();
-    }
+     if (!media) {
+          return <NetworkError message="Unable to fetch this album. Please try again." />;
+     }
 
     // At this point TypeScript knows `media` has title/artist/_id fields.
     // We can cast to AlbumSerialized safely if we want more specificity.
@@ -82,18 +81,7 @@ export default async function AlbumDetailsPage({ params }: AlbumDetailsPageProps
 
     return <ClientPage data={album} relatedSongs={relatedSongs} />;
 } catch (error: any) {
-    console.error("[SongDetailsPage Error]", error);
-
-    // ✅ Detect MongoDB network issues gracefully
-    if (
-      error?.name === "MongoServerSelectionError" ||
-      error?.message?.includes("ENOTFOUND") ||
-      error?.message?.includes("failed to connect") ||
-      error?.message?.includes("ServerSelectionTimeoutError")
-    ) {
-      return <NetworkError />;
-    }
-
-    notFound();
-  }
+  console.error("[SongDetailsPage Error]", error);
+  return <NetworkError message="Something went wrong loading the album." />;
+}
 }
