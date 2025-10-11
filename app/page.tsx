@@ -11,7 +11,7 @@ export default async function Home() {
   const videos = await getVideos()
 
   if (!songs || !videos) {
-        return <NetworkError />;
+        return <NetworkError message="Something went wrong fetching data." />;
   }
 
   return (
