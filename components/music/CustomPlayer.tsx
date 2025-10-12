@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { Play, Pause, Volume2, DownloadCloud } from "lucide-react";
+import { Play, Pause, Volume2, DownloadCloud, VolumeX } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 
@@ -27,6 +27,7 @@ export default function CustomPlayer({
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [volume, setVolume] = useState(1);
+  const [muted, setMuted] = useState(false);
 
   // --- Update progress and waveform ---
   useEffect(() => {
@@ -81,6 +82,16 @@ export default function CustomPlayer({
     ctx.globalAlpha = 1;
   }, [progress]);
 
+    const applyVolume = useCallback(() => {
+      if (audioRef.current) {
+        audioRef.current.volume = volume;
+        audioRef.current.muted = muted;
+      }
+    }, [volume, muted]);
+  
+    useEffect(() => applyVolume(), [applyVolume]);
+
+  const toggleMute = () => setMuted((m) => !m);
   // --- Controls ---
   const togglePlay = () => {
     const audio = audioRef.current;
@@ -213,19 +224,25 @@ export default function CustomPlayer({
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1">
-              <Volume2 className="w-4 h-4 text-gray-800" />
-              <input
-                aria-label="range"
-                type="range"
-                min={0}
-                max={1}
-                step={0.01}
-                value={volume}
-                onChange={handleVolume}
-                className="w-full accent-black cursor-pointer"
-              />
-            </div>
+                    <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleMute}
+          className="border border-black hover:bg-black hover:text-white rounded-full"
+        >
+          {muted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+        </Button>
+
+        <input
+          aria-label="range"
+          type="range"
+          min={0}
+          max={1}
+          step={0.05}
+          value={muted ? 0 : volume}
+          onChange={handleVolume}
+          className="w-32 accent-black"
+        />
 
             <Button
               size="icon"

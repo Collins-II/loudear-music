@@ -229,7 +229,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
                     <div className="flex items-center gap-2">
                       <Eye className="w-4 h-4 text-gray-500" />
                       <span className="font-semibold">{data.viewCount ?? 0}</span>
-                      <span className="text-xs text-gray-400">plays</span>
+                      <span className="text-xs text-gray-400">views</span>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -306,7 +306,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
             handleInteraction={() => handleInteraction("like")}
           />
             
-          <ViewStats current={data.viewCount} previous={80} />
+          <ViewStats current={data.viewCount} previous={data.previousViewCount as number} />
         </div> 
 
           {/* Description / Article */}
@@ -353,6 +353,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
           <div className="sticky top-20 space-y-6">
             {/* Share panel */}
             <SharePanel
+              userId={userId as string}
               title={data.title}
               artist={data.artist}
               shareCount={shareCount}

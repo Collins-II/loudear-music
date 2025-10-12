@@ -1,11 +1,12 @@
-// app/actions/getRelatedSongs.ts
+// app/actions/getRelatedAlbums.ts
 import { Types } from "mongoose";
 import { connectToDatabase } from "@/lib/database";
-import { AlbumSerialized, serializeAlbum} from "./getItemsWithStats";
 import { Album } from "@/lib/database/models/album";
+import { AlbumSerialized, serializeAlbum } from "./getItemsWithStats";
 
 /**
- * Fetch related songs based on genre, excluding the current song
+ * Fetch related albums based on genre, excluding the current album,
+ * including aggregated views count.
  */
 export const getRelatedAlbums = async (
   genre: string | undefined,
@@ -17,17 +18,19 @@ export const getRelatedAlbums = async (
     throw new Error("Invalid MongoDB ObjectId");
   }
 
-  // ✅ Ensure DB connection
   await connectToDatabase();
 
-  const songs = await Album.find({
+  const albums = await Album.find({
     genre,
     _id: { $ne: excludeId },
   })
-    .limit(5) // return top 5 related songs
+    .limit(5)
     .lean({ virtuals: true })
     .exec();
 
-  // ✅ Serialize each song for client
-  return songs.map(serializeAlbum).filter(Boolean) as AlbumSerialized[];
+  if (!albums.length) return [];
+
+// Use analytics-based serialization
+  const serialized = await Promise.all(albums.map((s) => serializeAlbum(s)));
+  return serialized.filter(Boolean);
 };

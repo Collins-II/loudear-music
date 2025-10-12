@@ -62,6 +62,8 @@ export async function generateMetadata({ params }: AlbumDetailsPageProps): Promi
 export default async function AlbumDetailsPage({ params }: AlbumDetailsPageProps) {
   try {
     const { id } = await params;
+       // Increment view count (server-side)
+    await incrementInteraction(id, "Album", "view");
     const media = await getAlbumWithStats(id);
 
     // Narrow / guard: if media is null or missing serialized fields, treat as not found
@@ -75,9 +77,6 @@ export default async function AlbumDetailsPage({ params }: AlbumDetailsPageProps
 
     // Related songs: only call when genre and _id are available
     const relatedSongs = await getRelatedAlbums(album.genre, album._id as string);
-
-    // Increment view count (server-side)
-    await incrementInteraction(id, "Album", "view");
 
     return <ClientPage data={album} relatedSongs={relatedSongs} />;
 } catch (error: any) {

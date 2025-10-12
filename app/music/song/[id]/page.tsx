@@ -45,6 +45,7 @@ export async function generateMetadata({
 export default async function SongDetailsPage({ params }: SongDetailsPageProps) {
   try {
     const { id } = await params;
+     await incrementInteraction(id, "Song", "view");
     const media = await getSongWithStats(id);
 
     // Show NetworkError or fallback UI instead of breaking the app
@@ -53,8 +54,6 @@ export default async function SongDetailsPage({ params }: SongDetailsPageProps) 
     }
 
     const relatedSongs = await getRelatedSongs(media?.genre as string, media?._id as string);
-
-    await incrementInteraction(id, "Song", "view");
 
     return <ClientPage data={media as SongSerialized} relatedSongs={relatedSongs} />;
   } catch (error: any) {

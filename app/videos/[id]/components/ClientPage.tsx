@@ -225,7 +225,7 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
             handleInteraction={() => handleInteraction("like")}
           />
 
-          <ViewStats current={data.viewCount} previous={80} />
+          <ViewStats current={data.viewCount} previous={data.previousViewCount as number} />
         </div> 
 
           {/* Related videos */}
@@ -254,7 +254,7 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
         {/* SIDEBAR */}
         <aside className="lg:col-span-4">
           <div className="sticky top-20 space-y-6">
-            <SharePanel title={data.title} artist={data.artist} shareCount={shareCount} onShare={() => handleInteraction("share")} />
+            <SharePanel userId={userId as string} title={data.title} artist={data.artist} shareCount={shareCount} onShare={() => handleInteraction("share")} />
 
             <ChartStatsCard
               data={{

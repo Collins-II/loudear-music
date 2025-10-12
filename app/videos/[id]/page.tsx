@@ -42,6 +42,8 @@ export default async function VideoDetailsPage(
 ) {
   try {
     const { id } = await params; // ✅ await params
+        // Increment view count
+    await incrementInteraction(id, "Video", "view");
     const media = await getVideoWithStats(id);
 
     // Show NetworkError or fallback UI instead of breaking the app
@@ -50,9 +52,6 @@ export default async function VideoDetailsPage(
     }
 
     const vids = await getRelatedVideos(media?.genre as string, media?._id as string);
-
-    // Increment view count
-    await incrementInteraction(id, "Video", "view");
 
     return <ClientPage data={media as VideoSerialized} relatedVideos={vids} />;
   } catch (error: any) {

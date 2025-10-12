@@ -15,6 +15,7 @@ import Image from "next/image";
 import { FaGoogle } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { LogOut, User, LayoutDashboard } from "lucide-react";
+import { HiOutlineChevronUpDown } from "react-icons/hi2";
 
 export default function SignInButton() {
   const { data: session, status } = useSession();
@@ -39,11 +40,11 @@ export default function SignInButton() {
 
   return (
     <DropdownMenu >
-      <DropdownMenuTrigger className="bg-white" asChild>
+      <DropdownMenuTrigger className="bg-transparent" asChild>
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="flex items-center gap-2 rounded-full focus:outline-none"
+          className="flex items-center gap-1 rounded-full focus:outline-none"
         >
           <Image
             src={session.user?.image ?? "/assets/images/avatar-placeholder.png"}
@@ -52,6 +53,7 @@ export default function SignInButton() {
             height={36}
             className="h-9 w-9 rounded-full object-cover"
           />
+          <HiOutlineChevronUpDown className="w-4 h-4 text-gray-500"/>
         </motion.button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="bg-white w-48">

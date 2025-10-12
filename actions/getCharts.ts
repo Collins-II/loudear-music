@@ -10,6 +10,7 @@ import { Song } from "@/lib/database/models/song";
 import { Album } from "@/lib/database/models/album";
 import { Video } from "@/lib/database/models/video";
 import { normalizeDoc } from "@/lib/utils";
+import { ViewAnalytics } from "@/lib/database/models/viewsAnalytics";
 
 export type ItemType = "Song" | "Album" | "Video";
 export type ChartCategory = "songs" | "albums" | "videos";
@@ -41,6 +42,9 @@ export interface ChartItem {
 /* ------------------------------------------------------------------ */
 /* Trending Calculation */
 /* ------------------------------------------------------------------ */
+/**
+ * Calculates trending items with consistent analytics (views, likes, shares, etc.)
+ */
 export async function getTrending({
   model,
   limit = 50,
@@ -51,32 +55,48 @@ export async function getTrending({
   sinceDays?: number;
 }) {
   await connectToDatabase();
+
   const Model = model === "Song" ? Song : model === "Album" ? Album : Video;
 
   const sinceDate = new Date();
   sinceDate.setDate(sinceDate.getDate() - sinceDays);
 
-  // Try fetching recent items first
   let rawItems = await Model.find({ createdAt: { $gte: sinceDate } })
     .lean()
     .exec();
 
-  // 🩵 Fallback: if too few or none, fetch all items
+  // Fallback
   if (!Array.isArray(rawItems) || rawItems.length < 5) {
     console.warn(
-      `[getTrending] Only ${rawItems?.length ?? 0} recent items found, falling back to all records`
+      `[getTrending] Only ${rawItems?.length ?? 0} recent ${model}s found, falling back to all records`
     );
     rawItems = await Model.find().lean().exec();
   }
 
+  const itemIds = rawItems.map((i) => i._id);
+
+  // ✅ Aggregate total views from analytics
+  const viewsData = await ViewAnalytics.aggregate([
+    { $match: { itemId: { $in: itemIds }, model } },
+    { $group: { _id: "$itemId", totalViews: { $sum: "$views" } } },
+  ]);
+
+  const viewMap = new Map(
+    viewsData.map((v) => [String(v._id), v.totalViews])
+  );
+
+  // ✅ Compute scores
   const scored = rawItems.map((it: any) => {
     const n = normalizeDoc(it);
+    const totalViews = viewMap.get(String(n._id)) ?? 0;
+
     const score =
-      (n.viewCount || 0) +
+      totalViews + // now using real view analytics
       (n.likeCount || 0) * 2 +
       (n.shareCount || 0) * 3 +
       (n.downloadCount || 0) * 1.5;
-    return { ...n, trendingScore: score };
+
+    return { ...n, viewCount: totalViews, trendingScore: score };
   });
 
   scored.sort((a, b) => b.trendingScore - a.trendingScore);
@@ -84,7 +104,7 @@ export async function getTrending({
 }
 
 /* ------------------------------------------------------------------ */
-/* Get Charts */
+/* Charts Builder with View Analytics */
 /* ------------------------------------------------------------------ */
 export async function getCharts({
   category,
@@ -105,11 +125,14 @@ export async function getCharts({
   const trending = await getTrending({ model, limit: 200, sinceDays: 365 });
   if (!trending.length) return [];
 
-  const currentWeek = `${dayjs().year()}-W${String(dayjs().isoWeek()).padStart(2, "0")}`;
-  const lastWeek = dayjs().subtract(1, "week").format("YYYY-[W]WW");
+  const thisWeek = `${dayjs().year()}-W${String(dayjs().isoWeek()).padStart(2, "0")}`;
+  const lastWeek = `${dayjs().subtract(1, "week").year()}-W${String(
+    dayjs().subtract(1, "week").isoWeek()
+  ).padStart(2, "0")}`;
 
-  const [currentSnapshot, lastSnapshot] = (await Promise.all([
-    ChartHistory.findOne({ category, week: currentWeek }).lean().exec(),
+  // Fetch chart history
+  const [currentSnapshot, prevSnapshot] = (await Promise.all([
+    ChartHistory.findOne({ category, week: thisWeek }).lean().exec(),
     ChartHistory.findOne({ category, week: lastWeek }).lean().exec(),
   ])) as (IChartHistory | null)[];
 
@@ -123,18 +146,30 @@ export async function getCharts({
     }));
 
   const currentMap = new Map(currentItems.map((i) => [String(i.itemId), i]));
-  const lastMap = new Map((lastSnapshot?.items ?? []).map((i) => [String(i.itemId), i]));
+  const lastMap = new Map((prevSnapshot?.items ?? []).map((i) => [String(i.itemId), i]));
+
+  // Fetch all view analytics for this week in batch
+  const ids = trending.map((t) => t._id);
+  const analytics = await ViewAnalytics.find({
+    itemId: { $in: ids },
+    model,
+    week: thisWeek,
+  }).lean();
+
+  const analyticsMap = new Map(analytics.map((a) => [String(a.itemId), a.views ?? 0]));
 
   const items: ChartItem[] = trending.slice(0, limit).map((t, idx) => {
     const idStr = String(t._id);
     const cur = currentMap.get(idStr);
     const last = lastMap.get(idStr);
 
+    const views = analyticsMap.get(idStr) ?? t.viewCount ?? 0;
+
     return {
       id: idStr,
       title: t.title,
-      artist: t.artist ?? t.artist ?? "Unknown Artist",
-      image: t.coverUrl ?? t.coverUrl ?? "",
+      artist: t.artist ?? "Unknown Artist",
+      image: t.coverUrl ?? "",
       videoUrl: t.videoUrl,
       position: cur?.position ?? idx + 1,
       lastWeek: last?.position ?? null,
@@ -147,14 +182,14 @@ export async function getCharts({
         plays: t.viewCount ?? 0,
         downloads: t.downloadCount ?? 0,
         likes: t.likeCount ?? 0,
-        views: t.viewCount ?? 0,
+        views, // ✅ synced with ViewAnalytics model
         shares: t.shareCount ?? 0,
         comments: t.commentCount ?? 0,
       },
     };
   });
 
-  // Sorting
+  // Sorting options
   if (sort === "this-week") {
     items.sort((a, b) => a.position - b.position);
   } else if (sort === "last-week") {
@@ -163,7 +198,7 @@ export async function getCharts({
     items.sort((a, b) => (b.stats.plays ?? 0) - (a.stats.plays ?? 0));
   }
 
-  // ✅ Emit array updates
+  // Emit real-time updates
   if (Array.isArray(items) && items.length > 1) {
     globalThis.io?.emit("charts:update:category", { category, items });
     items.forEach((item) => {

@@ -7,6 +7,8 @@ import { Video } from "@/lib/database/models/video";
 import { ChartHistory } from "@/lib/database/models/chartHistory";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
+import { IViewAnalytics, ViewAnalytics } from "@/lib/database/models/viewsAnalytics";
+import { getViewCounts } from "@/lib/get-views-analytics";
 dayjs.extend(isoWeek);
 
 /* ------------------------------------------------------------------ */
@@ -126,6 +128,7 @@ export interface SongSerialized extends BaseSerialized {
   chartPosition?: number | null;
   chartHistory?: ChartHistoryEntry[];
   trendingScore?: number | null;
+  previousViewCount?: number;
 }
 
 export interface AlbumSerialized extends BaseSerialized {
@@ -135,11 +138,13 @@ export interface AlbumSerialized extends BaseSerialized {
   chartPosition?: number | null;
   chartHistory?: ChartHistoryEntry[];
   trendingScore?: number | null;
+  previousViewCount?: number;
 }
 
 export interface VideoSerialized extends BaseSerialized {
   fileUrl: string;
   videographer: string;
+  previousViewCount?: number;
   trendingPosition?: number | null;
   chartPosition?: number | null;
   chartHistory?: ChartHistoryEntry[];
@@ -150,16 +155,21 @@ export interface VideoSerialized extends BaseSerialized {
 /* ------------------------------------------------------------------ */
 /* SERIALIZE ITEM */
 /* ------------------------------------------------------------------ */
-export function serializeItem<T extends ItemType>(
+
+export async function serializeItem<T extends ItemType>(
   doc: Record<string, any>,
-  type: T
-): T extends "Song"
-  ? SongSerialized
-  : T extends "Album"
-  ? AlbumSerialized
-  : VideoSerialized | null {
+  type: T,
+  includeAnalytics = true
+): Promise<
+  T extends "Song"
+    ? SongSerialized
+    : T extends "Album"
+    ? AlbumSerialized
+    : VideoSerialized | null
+> {
   if (!doc) return null as any;
 
+  // Base structure
   const base: BaseSerialized = {
     _id: String(doc._id),
     artist: doc.artist ?? "Unknown Artist",
@@ -170,13 +180,26 @@ export function serializeItem<T extends ItemType>(
     coverUrl: doc.coverUrl ?? doc.thumbnailUrl ?? "",
     createdAt: doc.createdAt?.toISOString?.() ?? new Date().toISOString(),
     updatedAt: doc.updatedAt?.toISOString?.() ?? new Date().toISOString(),
-    viewCount: doc.views?.length ?? doc.viewCount ?? 0,
+    viewCount: 0,
     likeCount: doc.likes?.length ?? doc.likeCount ?? 0,
     downloadCount: doc.downloads?.length ?? doc.downloadCount ?? 0,
     shareCount: doc.shares?.length ?? doc.shareCount ?? 0,
     commentCount: doc.commentCount ?? 0,
     latestComments: serializeComments(doc.latestComments ?? []),
   };
+
+  // ✅ Fetch analytics view counts if enabled
+  if (includeAnalytics && doc._id) {
+    try {
+      const { totalViews, previousViewCount } = await getViewCounts(doc._id, type);
+      base.viewCount = totalViews;
+      (base as any).previousViewCount = previousViewCount;
+    } catch (err) {
+      console.error(`Failed to load view analytics for ${type} ${doc._id}`, err);
+    }
+  } else {
+    base.viewCount = doc.views?.length ?? doc.viewCount ?? 0;
+  }
 
   if (type === "Song")
     return {
@@ -187,12 +210,18 @@ export function serializeItem<T extends ItemType>(
       fileUrl: doc.fileUrl ?? "",
     } as any;
 
-  if (type === "Album")
-    return {
-      ...base,
-      curator: doc.curator ?? "Unknown",
-      songs: (doc.songs ?? []).map((s: any) => serializeItem(s, "Song")) as SongSerialized[],
-    } as any;
+if (type === "Album") {
+  const songs =
+    Array.isArray(doc.songs) && doc.songs.length > 0
+      ? await Promise.all(doc.songs.map((s: any) => serializeItem(s, "Song", false)))
+      : [];
+
+  return {
+    ...base,
+    songs,
+  } as any;
+}
+
 
   return {
     ...base,
@@ -202,9 +231,19 @@ export function serializeItem<T extends ItemType>(
   } as any;
 }
 
-export const serializeSong = (doc: unknown) => serializeItem(doc as Record<string, any>, "Song") as SongSerialized;
-export const serializeAlbum = (doc: unknown) => serializeItem(doc as Record<string, any>, "Album") as AlbumSerialized;
-export const serializeVideo = (doc: unknown) => serializeItem(doc as Record<string, any>, "Video") as VideoSerialized;
+
+export const serializeSong = async (doc: unknown): Promise<SongSerialized> => {
+  return serializeItem(doc as Record<string, any>, "Song") as Promise<SongSerialized>;
+};
+
+export const serializeAlbum = async (doc: unknown): Promise<AlbumSerialized> => {
+  return serializeItem(doc as Record<string, any>, "Album") as Promise<AlbumSerialized>;
+};
+
+export const serializeVideo = async (doc: unknown): Promise<VideoSerialized | null> => {
+  return serializeItem(doc as Record<string, any>, "Video") as Promise<VideoSerialized | null>;
+};
+
 
 /* ------------------------------------------------------------------ */
 /* INCREMENT INTERACTION */
@@ -230,6 +269,25 @@ export async function incrementInteraction(
     await Model.updateOne({ _id: id }, { $pull: { likes: new Types.ObjectId(userId) } });
     return { success: true, action: "unliked" as const };
   }
+
+  if (type === "view") {
+  const nowWeek = `${dayjs().year()}-W${String(dayjs().isoWeek()).padStart(2, "0")}`;
+
+  // Increment the main document’s views
+  await Model.updateOne(
+    { _id: id },
+    { $addToSet: { views: new Types.ObjectId(userId) } }
+  );
+
+  // Update or insert analytics entry for the current week
+  await ViewAnalytics.updateOne(
+    { itemId: id, contentModel: model, week: nowWeek },
+    { $inc: { views: 1 } },
+    { upsert: true }
+  );
+
+  return { success: true, action: "view" as const };
+}
 
   const field = fieldMap[type];
   if (!field) throw new Error(`Unsupported interaction type: ${type}`);
@@ -337,9 +395,23 @@ export async function getItemWithStats(model: ItemType, id: string) {
   })
   .filter((entry): entry is ChartHistoryEntry => Boolean(entry));
 
+const thisWeek = `${dayjs().year()}-W${String(dayjs().isoWeek()).padStart(2, "0")}`;
+const prevWeek = `${dayjs().subtract(1, "week").year()}-W${String(
+  dayjs().subtract(1, "week").isoWeek()
+).padStart(2, "0")}`;
+
+// Fetch weekly view analytics
+const [currentWeekData, prevWeekData] = await Promise.all([
+  ViewAnalytics.findOne<IViewAnalytics>({ itemId: id, contentModel: model, week: thisWeek }).lean(),
+  ViewAnalytics.findOne<IViewAnalytics>({ itemId: id, contentModel: model, week: prevWeek }).lean(),
+]);
+
+const currentViewCount = currentWeekData?.views ?? 0;
+const previousViewCount = prevWeekData?.views ?? 0;
+
 
     /* --------------------------- SERIALIZE --------------------------- */
-    const serialized = serializeItem(
+    const serialized = await serializeItem(
       { ...doc, commentCount, latestComments },
       model
     ) as SongSerialized | AlbumSerialized | VideoSerialized;
@@ -350,6 +422,8 @@ export async function getItemWithStats(model: ItemType, id: string) {
       chartPosition,
       chartHistory,
       trendingScore,
+      viewCount: currentViewCount,
+      previousViewCount,
     };
   } catch (error: unknown) {
     console.error("GET_ITEMS_ERROR", error);

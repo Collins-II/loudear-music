@@ -4,16 +4,15 @@ import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Share2, Copy, Check } from "lucide-react";
-import { FaXTwitter } from "react-icons/fa6";
-import { FaFacebook } from "react-icons/fa";
+import { FaXTwitter, FaFacebook } from "react-icons/fa6";
 import { IoLogoWhatsapp } from "react-icons/io";
-import { TiSocialInstagram } from "react-icons/ti";
-import { FaTiktok } from "react-icons/fa6";
+import { FaTelegram } from "react-icons/fa";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 
 interface SharePanelProps {
+  userId?: string;
   title: string;
   artist?: string;
   shareCount?: number;
@@ -21,12 +20,14 @@ interface SharePanelProps {
   onShare?: () => Promise<void> | void;
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL;
+const BASE_URL =
+  process.env.NEXT_PUBLIC_BASE_URL || "https://your-production-domain.com";
 
 /**
- * 🎧 SharePanel — Modern & minimal social sharing panel with motion and vibrant icons.
+ * 🎧 SharePanel — Production-ready, secure, and user-aware social sharing component.
  */
 export default function SharePanel({
+  userId,
   title,
   artist,
   shareCount = 0,
@@ -37,34 +38,55 @@ export default function SharePanel({
   const [copied, setCopied] = useState(false);
 
   const URL = `${BASE_URL}${pathname}`;
+  const displayName = `${title}${artist ? ` — ${artist}` : ""}`;
+  const encodedTitle = encodeURIComponent(displayName);
+  const encodedURL = encodeURIComponent(URL);
+
+  /* -------------------------------------------------------------------------- */
+  /* AUTH + SHARE LOGIC                                                         */
+  /* -------------------------------------------------------------------------- */
+
+  const requireAuth = useCallback(() => {
+    if (!userId) {
+      toast.error("You need to sign in to share content.");
+      return false;
+    }
+    return true;
+  }, [userId]);
 
   const handleShareRecorded = useCallback(async () => {
+    if (!requireAuth()) return;
+
     try {
       if (onShare) await onShare();
     } catch (err) {
       console.error("SharePanel: share tracking failed", err);
     }
-  }, [onShare]);
+  }, [onShare, requireAuth]);
 
   const handleNativeShare = async () => {
+    if (!requireAuth()) return;
+
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${title}${artist ? ` — ${artist}` : ""}`,
-          text: `Listen to ${title}${artist ? ` by ${artist}` : ""}`,
+          title: displayName,
+          text: `Listen to ${displayName}`,
           url: URL,
         });
         toast.success("Shared successfully!");
         await handleShareRecorded();
       } catch {
-        // ignored
+        // User cancelled share
       }
     } else {
-      handleCopyLink();
+      await handleCopyLink();
     }
   };
 
   const handleCopyLink = async () => {
+    if (!requireAuth()) return;
+
     try {
       await navigator.clipboard.writeText(URL);
       setCopied(true);
@@ -76,38 +98,41 @@ export default function SharePanel({
     }
   };
 
-  const socials = [
-    {
-      name: "Twitter",
-      href: `https://twitter.com/intent/tweet?text=${encodeURIComponent(`${title} — ${artist ?? ""}`)}&url=${encodeURIComponent(URL)}`,
-      color: "text-sky-500 hover:bg-sky-500/10",
-      icon: FaXTwitter,
-    },
-    {
-      name: "Facebook",
-      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(URL)}`,
-      color: "text-blue-600 hover:bg-blue-600/10",
-      icon:  FaFacebook,
-    },
-    {
-      name: "Instagram",
-      href: "https://www.instagram.com/",
-      color: "text-pink-500 hover:bg-pink-500/10",
-      icon: TiSocialInstagram,
-    },
-    {
-      name: "WhatsApp",
-      href: `https://api.whatsapp.com/send?text=${encodeURIComponent(`${title} — ${artist ?? ""} ${URL}`)}`,
-      color: "text-green-500 hover:bg-green-500/10",
-      icon: IoLogoWhatsapp,
-    },
-    {
-      name: "TikTok",
-      href: `https://api.tiktok.com/send?text=${encodeURIComponent(`${title} — ${artist ?? ""} ${URL}`)}`,
-      color: "text-red-500 hover:bg-red-500/10",
-      icon: FaTiktok,
-    },
-  ];
+  /* -------------------------------------------------------------------------- */
+  /* PRODUCTION SOCIAL LINKS                                                    */
+  /* -------------------------------------------------------------------------- */
+
+const socials = [
+  {
+    name: "X (Twitter)",
+    href: `https://x.com/intent/tweet?text=${encodedTitle}&url=${encodedURL}`,
+    color: "text-sky-500 hover:bg-sky-500/10",
+    icon: FaXTwitter,
+  },
+  {
+    name: "Facebook",
+    href: `https://www.facebook.com/sharer/sharer.php?u=${encodedURL}`,
+    color: "text-blue-600 hover:bg-blue-600/10",
+    icon: FaFacebook,
+  },
+  {
+    name: "WhatsApp",
+    href: `https://api.whatsapp.com/send?text=${encodeURIComponent(`${displayName} - ${URL}`)}`,
+    color: "text-green-500 hover:bg-green-500/10",
+    icon: IoLogoWhatsapp,
+  },
+  {
+    name: "Telegram",
+    href: `https://t.me/share/url?url=${encodedURL}&text=${encodedTitle}`,
+    color: "text-sky-600 hover:bg-sky-600/10",
+    icon: FaTelegram, // use FaTelegram from react-icons/fa6
+  },
+];
+
+
+  /* -------------------------------------------------------------------------- */
+  /* UI                                                                         */
+  /* -------------------------------------------------------------------------- */
 
   return (
     <motion.div
@@ -132,7 +157,7 @@ export default function SharePanel({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Primary share / copy */}
+        {/* Primary Share Buttons */}
         <div className="flex items-center gap-2">
           <motion.button
             whileTap={{ scale: 0.97 }}
@@ -155,7 +180,7 @@ export default function SharePanel({
           </motion.button>
         </div>
 
-        {/* Social icons grid */}
+        {/* Socials */}
         <div className="grid grid-cols-5 gap-3 pt-2">
           {socials.map((s) => (
             <motion.a
@@ -166,12 +191,19 @@ export default function SharePanel({
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               className={cn(
-                "flex flex-col items-center justify-center p-2.5  dark:border-white/10 transition-all duration-200",
+                "flex flex-col items-center justify-center p-2.5 rounded-xl border border-gray-200 dark:border-white/10 transition-all duration-200",
                 s.color
               )}
+              onClick={(e) => {
+                if (!userId) {
+                  e.preventDefault();
+                  toast.error("Please sign in to share.");
+                  return;
+                }
+                handleShareRecorded();
+              }}
             >
-              <s.icon className="w-6 h-6 text-black" />
-              {/*<span className="text-[11px] mt-1 font-medium">{s.name}</span>*/}
+              <s.icon className="w-6 h-6 text-black dark:text-white" />
             </motion.a>
           ))}
         </div>

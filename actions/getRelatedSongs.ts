@@ -5,7 +5,8 @@ import { Song } from "@/lib/database/models/song";
 import { SongSerialized, serializeSong } from "./getItemsWithStats";
 
 /**
- * Fetch related songs based on genre, excluding the current song
+ * Fetch related songs based on genre, excluding the current song,
+ * including aggregated views count.
  */
 export const getRelatedSongs = async (
   genre: string | undefined,
@@ -20,14 +21,18 @@ export const getRelatedSongs = async (
   // ✅ Ensure DB connection
   await connectToDatabase();
 
+  // Step 1: Fetch related songs
   const songs = await Song.find({
     genre,
     _id: { $ne: excludeId },
   })
-    .limit(5) // return top 5 related songs
+    .limit(5)
     .lean({ virtuals: true })
     .exec();
 
-  // ✅ Serialize each song for client
-  return songs.map(serializeSong).filter(Boolean) as SongSerialized[];
+  if (!songs.length) return [];
+
+  // Use analytics-based serialization
+  const serialized = await Promise.all(songs.map((s) => serializeSong(s)));
+  return serialized.filter(Boolean);
 };
