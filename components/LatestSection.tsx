@@ -5,10 +5,10 @@ import { VideoCard } from "./video/VideoCard";
 import { VideoModal } from "@/components/video/VideoModal";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Card } from "@/components/ui/card";
 import Link from "next/link";;
 import HorizontalSlider from "./sliders/HorizontalSlider";
 import { ChartItem } from "@/actions/getCharts";
+import GoogleAd from "./ads/AdSlot";
 
 interface SectionProps {
   songs: ChartItem[]
@@ -26,8 +26,6 @@ export default function LatestSection({ songs, videos}: SectionProps) {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Main Content */}
         <div className="lg:col-span-3 space-y-12">
-          {/* Example Ad Section 
-        */}
           {/* Latest Music */}
           <div className="px-6 md:px-0 ">
             <h3 className="relative text-slate-900 text-2xl md:text-3xl font-extrabold mb-6 tracking-tight">
@@ -64,10 +62,7 @@ export default function LatestSection({ songs, videos}: SectionProps) {
           </div>
 
           {/* Banner Ad Space */}
-        <div className="bg-blue-200 rounded-xl p-6 text-center shadow-md">
-          <p className="text-gray-700 font-semibold">Ad Space</p>
-          <p className="text-sm text-gray-600">Promote your brand</p>
-        </div>
+        <GoogleAd slot="1234567890" />
 
           {/* Latest Videos */}
           <div className="">
@@ -126,17 +121,8 @@ export default function LatestSection({ songs, videos}: SectionProps) {
                       </div>
                     </motion.div>
                   </div>*/}
-          <Card className="h-94 flex items-center justify-center bg-yellow-500">
-            {/* Google AdSense Vertical Slot */}
-            <span className="text-muted-foreground text-sm">
-              [300x600 Sidebar Ad]
-            </span>
-          </Card>
-          <Card className="h-64 flex items-center justify-center bg-green-500">
-            <span className="text-muted-foreground text-sm">
-              [300x250 Ad Slot]
-            </span>
-          </Card>
+          <GoogleAd slot="1234567890" />
+          <GoogleAd slot="1234567890" />
         </aside>
       </div>
 

@@ -12,9 +12,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Loader2, UploadCloud } from "lucide-react";
+import { Info, Loader2, UploadCloud } from "lucide-react";
 import { toast } from "sonner";
 import Image from "next/image";
+import { Textarea } from "../ui/textarea";
 
 interface UploadProps {
   onSuccess: () => void;
@@ -30,8 +31,10 @@ export default function SingleUploadForm({ onSuccess }: UploadProps) {
   // Metadata fields
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
+  const [features, setFeatures] = useState("");
   const [album, setAlbum] = useState("");
   const [genre, setGenre] = useState("");
+  const [description, setDescription] = useState("");
   const [language, setLanguage] = useState("");
   const [releaseDate, setReleaseDate] = useState("");
   const [explicit, setExplicit] = useState(false);
@@ -80,7 +83,9 @@ export default function SingleUploadForm({ onSuccess }: UploadProps) {
     formData.append("cover", coverFile!);
     formData.append("title", title);
     formData.append("artist", artist);
+    formData.append("features", features);
     formData.append("album", album);
+    formData.append("description", description);
     formData.append("genre", genre);
     formData.append("language", language);
     formData.append("releaseDate", releaseDate);
@@ -135,6 +140,15 @@ export default function SingleUploadForm({ onSuccess }: UploadProps) {
               {errors.artist && <p className="text-red-500 text-sm">{errors.artist}</p>}
             </div>
             <div>
+              <Label className="text-neutral-300">Feature (Optional)</Label>
+              <Input
+                className="bg-neutral-800 border-neutral-700 text-white"
+                value={features}
+                onChange={(e) => setFeatures(e.target.value)}
+                placeholder="Feature names eg. John, Dave"
+              />
+            </div>
+            <div>
               <Label className="text-neutral-300">Album</Label>
               <Input
                 className="bg-neutral-800 border-neutral-700 text-white"
@@ -168,6 +182,16 @@ export default function SingleUploadForm({ onSuccess }: UploadProps) {
                 className="bg-neutral-800 border-neutral-700 text-white"
                 value={releaseDate}
                 onChange={(e) => setReleaseDate(e.target.value)}
+              />
+            </div>
+             <div className="col-span-2">
+              <Label className="flex items-center gap-2 text-neutral-300">
+                <Info className="w-4 h-4" /> Description
+              </Label>
+              <Textarea
+                className="bg-neutral-800 border-neutral-700 text-white"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
               />
             </div>
             <div>

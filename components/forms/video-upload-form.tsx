@@ -24,6 +24,7 @@ export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
   // Fields
   const [title, setTitle] = useState("");
   const [artist, setArtist] = useState("");
+  const [features, setFeatures] = useState("");
   const [videographer, setVideographer] = useState("");
   const [genre, setGenre] = useState("");
   const [releaseDate, setReleaseDate] = useState("");
@@ -98,6 +99,7 @@ if (videoFile) {
       const formData = new FormData();
       formData.append("title", title);
       formData.append("artist", artist);
+      formData.append("features", features);
       formData.append("videographer", videographer);
       formData.append("genre", genre);
       formData.append("releaseDate", releaseDate);
@@ -152,6 +154,15 @@ if (videoFile) {
             <div>
               <Label className="text-neutral-300">Artist *</Label>
               <Input className="bg-neutral-800 border-neutral-700 text-white" value={artist} onChange={(e) => setArtist(e.target.value)} />
+            </div>
+            <div>
+             <Label className="text-neutral-300">Feature (Optional)</Label>
+              <Input
+                className="bg-neutral-800 border-neutral-700 text-white"
+                value={features}
+                onChange={(e) => setFeatures(e.target.value)}
+                placeholder="Feature names eg. John, Dave"
+              />
             </div>
             <div>
               <Label className="text-neutral-300">Genre *</Label>

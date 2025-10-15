@@ -14,7 +14,7 @@ import {
 import Image from "next/image";
 import { FaGoogle } from "react-icons/fa";
 import { motion } from "framer-motion";
-import { LogOut, User, LayoutDashboard } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { HiOutlineChevronUpDown } from "react-icons/hi2";
 
 export default function SignInButton() {
@@ -63,7 +63,7 @@ export default function SignInButton() {
             {session.user?.email}
           </p>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
+        {/*<DropdownMenuSeparator />
         <DropdownMenuItem className="text-gray-700 text-xs font-semibold">
           <User className="mr-2 h-4 w-4" />
           Profile
@@ -71,7 +71,7 @@ export default function SignInButton() {
         <DropdownMenuItem className="text-gray-700 text-xs font-semibold">
           <LayoutDashboard className="mr-2 h-4 w-4" />
           Dashboard
-        </DropdownMenuItem>
+        </DropdownMenuItem>*/}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => signOut()} className="text-red-500">
           <LogOut className="mr-2 h-4 w-4" />

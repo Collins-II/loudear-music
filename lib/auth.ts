@@ -14,6 +14,7 @@ declare module "next-auth" {
       role?: "fan" | "artist";
       bio?: string;
       location?: string;
+      phone?: number;
       genres?: string[];
     };
   }
@@ -66,6 +67,7 @@ export const authOptions: NextAuthOptions = {
           session.user.bio = dbUser.bio;
           session.user.location = dbUser.location;
           session.user.genres = dbUser.genres;
+          session.user.phone = dbUser.phone;
         }
       }
       return session;

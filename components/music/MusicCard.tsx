@@ -106,11 +106,11 @@ export function MusicCard({
 
           {/* Content */}
           <div className="py-4 space-y-1 pl-2 pr-4">
-            <p className="flex justify-start text-[11px] uppercase font-bold text-slate-500 tracking-wide mt-2">
+            <p className="flex justify-start text-[11px] uppercase font-bold text-slate-500 tracking-wide mt-2 truncate">
               {artist} · {timeAgo(publishedAt)}
             </p>
 
-            <h3 className="text-black text-2xl md:text-3xl font-extrabold line-clamp-2">
+            <h3 className="text-black text-2xl font-extrabold line-clamp-2 truncate">
               {title}
             </h3>
 

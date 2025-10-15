@@ -2,36 +2,31 @@
 
 import { useEffect } from "react";
 
-interface AdSlotProps {
+interface GoogleAdProps {
   slot: string;
-  format?: "auto" | "fluid";
-  responsive?: boolean;
   className?: string;
-  style?: React.CSSProperties;
+  format?: string;
+  responsive?: boolean;
 }
 
-export function AdSlot({
+export default function GoogleAd({
   slot,
+  className,
   format = "auto",
   responsive = true,
-  className,
-  style,
-}: AdSlotProps) {
+}: GoogleAdProps) {
   useEffect(() => {
     try {
-      if (typeof window !== "undefined" && window.adsbygoogle) {
-        (window.adsbygoogle = window.adsbygoogle || []).push({});
-      }
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
     } catch (e) {
-      console.error("Adsense error:", e);
+      console.error("AdSense error", e);
     }
   }, []);
 
   return (
     <ins
-      className={`adsbygoogle ${className || ""}`}
-      style={style || { display: "block" }}
-      data-ad-client="ca-pub-xxxxxxxxxx" // replace with your publisher ID
+      className={`adsbygoogle block ${className ?? ""}`}
+      data-ad-client={process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID}
       data-ad-slot={slot}
       data-ad-format={format}
       data-full-width-responsive={responsive ? "true" : "false"}

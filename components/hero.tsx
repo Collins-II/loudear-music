@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Play } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 const img1 = "/assets/images/cleo-01.jpg";
 const img2 = "/assets/images/yomaps-02.jpg";
@@ -15,6 +16,7 @@ interface Slide {
   title: string;
   subtitle: string;
   image: string;
+  link: string;
 }
 
 const slides: Slide[] = [
@@ -23,18 +25,21 @@ const slides: Slide[] = [
     title: "Top Charts 2025",
     subtitle: "Stream the hottest tracks trending right now",
     image: img1,
+    link: "/charts"
   },
   {
     id: 2,
-    title: "Fresh Music Fridays",
+    title: "Fresh Music Always",
     subtitle: "Discover the newest releases every week",
     image: img2,
+    link: "/music"
   },
   {
     id: 3,
-    title: "Global Hits",
+    title: "Global Playlists",
     subtitle: "The biggest songs making waves worldwide",
     image: img3,
+    link: "/playlists"
   },
 ];
 
@@ -95,12 +100,14 @@ export default function Hero() {
                 {slides[index].subtitle}
               </motion.p>
 
+              <Link href={slides[index].link}>
               <Button
                 size="lg"
                 className="gap-2 bg-white text-black hover:bg-gray-200 transition"
               >
                 <Play className="w-5 h-5" /> Listen Now
               </Button>
+              </Link>
             </div>
           </motion.div>
         </AnimatePresence>

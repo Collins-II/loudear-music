@@ -21,6 +21,7 @@ import ViewStats from "@/components/stats/ViewStats";
 import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { handleInteractionUtil } from "@/lib/interactions";
+import { useRouter } from "next/navigation";
 
 interface AlbumClientPageProps {
   data: AlbumSerialized;
@@ -28,6 +29,7 @@ interface AlbumClientPageProps {
 }
 
 export default function AlbumClientPage({ data, relatedSongs }: AlbumClientPageProps) {
+  const router = useRouter()
   const { data: session } = useSession();
   const user = session?.user;
   const userId = session?.user?.id;
@@ -182,7 +184,7 @@ useEffect(() => {
                 </div>
 
                 {/* Stats + actions */}
-                <div className="mt-6 flex items-center gap-4 flex-wrap">
+                <div className="mt-6 flex flex-col items-start gap-4 flex-wrap">
                   {/* Stats row */}
                   <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
                     <div className="flex items-center gap-2">
@@ -203,6 +205,11 @@ useEffect(() => {
                       <span className="text-xs text-gray-400">downloads</span>
                     </div>
 
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    {data.tags?.map((t, i) => (
+                      <Badge onClick={() => router.push(`/search?q=${t.toLocaleLowerCase()}`)} variant="outline" key={i} className="cursor-pointer rounded-full uppercase px-3 py-1 text-xs">{t}</Badge>
+                    ))}
                   </div>
 
                   {/* Action buttons 

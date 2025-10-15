@@ -4,11 +4,12 @@ import { Comment } from "@/lib/database/models/comment";
 import { Song } from "@/lib/database/models/song";
 import { Album } from "@/lib/database/models/album";
 import { Video } from "@/lib/database/models/video";
-import { ChartHistory } from "@/lib/database/models/chartHistory";
+import { ChartHistory, IChartHistory } from "@/lib/database/models/chartHistory";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import { IViewAnalytics, ViewAnalytics } from "@/lib/database/models/viewsAnalytics";
 import { getViewCounts } from "@/lib/get-views-analytics";
+import { updateChartHistory } from "@/lib/update-chart-history";
 dayjs.extend(isoWeek);
 
 /* ------------------------------------------------------------------ */
@@ -18,20 +19,8 @@ export type ItemType = "Song" | "Album" | "Video";
 type InteractionType = "view" | "like" | "download" | "share" | "unlike";
 export type ReactionType = "heart" | "fire" | "laugh" | "up" | "down";
 
-export interface ChartItem {
-  itemId: Types.ObjectId;
-  position: number;
-  peak?: number;
-  weeksOn?: number;
-}
 
-export interface ChartHistoryDoc {
-  week: string;
-  category: string;
-  items: ChartItem[];
-}
-
-export type ChartHistoryLean = FlattenMaps<ChartHistoryDoc> & {
+export type ChartHistoryLean = FlattenMaps<IChartHistory> & {
   _id: Types.ObjectId;
   __v?: number;
 };
@@ -248,6 +237,7 @@ export const serializeVideo = async (doc: unknown): Promise<VideoSerialized | nu
 /* ------------------------------------------------------------------ */
 /* INCREMENT INTERACTION */
 /* ------------------------------------------------------------------ */
+
 export async function incrementInteraction(
   id: string,
   model: ItemType,
@@ -265,37 +255,50 @@ export async function incrementInteraction(
     share: "shares",
   };
 
+  /* ------------------------ UNLIKE HANDLER ------------------------ */
   if (type === "unlike") {
     await Model.updateOne({ _id: id }, { $pull: { likes: new Types.ObjectId(userId) } });
     return { success: true, action: "unliked" as const };
   }
 
+  /* -------------------------- VIEW HANDLER ------------------------ */
   if (type === "view") {
-  const nowWeek = `${dayjs().year()}-W${String(dayjs().isoWeek()).padStart(2, "0")}`;
+    const nowWeek = `${dayjs().year()}-W${String(dayjs().isoWeek()).padStart(2, "0")}`;
 
-  // Increment the main document’s views
-  await Model.updateOne(
-    { _id: id },
-    { $addToSet: { views: new Types.ObjectId(userId) } }
-  );
+    await Model.updateOne(
+      { _id: id },
+      { $addToSet: { views: new Types.ObjectId(userId) } }
+    );
 
-  // Update or insert analytics entry for the current week
-  await ViewAnalytics.updateOne(
-    { itemId: id, contentModel: model, week: nowWeek },
-    { $inc: { views: 1 } },
-    { upsert: true }
-  );
+    await ViewAnalytics.updateOne(
+      { itemId: id, contentModel: model, week: nowWeek },
+      { $inc: { views: 1 } },
+      { upsert: true }
+    );
 
-  return { success: true, action: "view" as const };
-}
+    // ✅ Update chart automatically (songs/albums/videos)
+    await updateChartHistory(model.toLowerCase() + "s" as "songs" | "albums" | "videos");
 
+    return { success: true, action: "view" as const };
+  }
+
+  /* --------------------- LIKE/DOWNLOAD/SHARE ---------------------- */
   const field = fieldMap[type];
   if (!field) throw new Error(`Unsupported interaction type: ${type}`);
 
   await Model.updateOne({ _id: id }, { $addToSet: { [field]: new Types.ObjectId(userId) } });
 
+  // ✅ Optional: trigger chart update only occasionally (to prevent spam)
+  if (["like", "share", "download"].includes(type)) {
+    // Randomize update frequency (only 1 in ~10 requests triggers full rebuild)
+    if (Math.random() < 0.1) {
+      await updateChartHistory(model.toLowerCase() + "s" as "songs" | "albums" | "videos");
+    }
+  }
+
   return { success: true, action: type as Exclude<InteractionType, "unlike"> };
 }
+
 
 /* ------------------------------------------------------------------ */
 /* DYNAMIC STATS FETCHER */
@@ -373,7 +376,7 @@ export async function getItemWithStats(model: ItemType, id: string) {
       .lean<ChartHistoryLean | null>();
 
     const chartPosition =
-      chartSnapshot?.items?.find((i) => String(i.itemId) === id)?.position ?? null;
+      chartSnapshot?.items?.find((i) => String(i.itemId) === id)?.rank ?? null;
 
     const chartHistoryDocs = await ChartHistory.find({
       "items.itemId": new Types.ObjectId(id),
@@ -388,8 +391,8 @@ export async function getItemWithStats(model: ItemType, id: string) {
     if (!item) return undefined;
     return {
       week: snap.week,
-      position: item.position,
-      peak: item.peak ?? item.position,
+      position: item.rank,
+      peak: item.peak ?? item.rank,
       weeksOn: item.weeksOn ?? 1,
     } as ChartHistoryEntry;
   })

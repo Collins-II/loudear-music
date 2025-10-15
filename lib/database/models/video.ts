@@ -4,6 +4,7 @@ export interface IVideo extends Document {
   author: Types.ObjectId;
   title: string;
   artist: string;
+  features?: string[],
   genre?: string;
   releaseDate?: Date;
   description?: string;
@@ -26,6 +27,7 @@ const VideoSchema = new Schema<IVideo>(
     author: { type: Schema.Types.ObjectId, ref: "User" },
     title: { type: String, required: true, trim: true },
     artist: { type: String, required: true, trim: true },
+    features: [{ type: String }],
     genre: { type: String, trim: true },
     releaseDate: { type: Date },
     description: { type: String },

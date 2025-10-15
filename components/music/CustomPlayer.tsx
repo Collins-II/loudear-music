@@ -165,6 +165,7 @@ export default function CustomPlayer({
       <audio ref={audioRef} src={src} preload="metadata" />
 
       {/* Album Art */}
+      {coverUrl && (
       <div className="relative w-28 h-28 sm:w-24 sm:h-24 rounded-xl overflow-hidden shadow-lg flex-shrink-0">
         <Image
           src={coverUrl || "/assets/images/placeholder_cover.jpg"}
@@ -172,7 +173,7 @@ export default function CustomPlayer({
           fill
           className="object-cover"
         />
-      </div>
+      </div> )}
 
       {/* Info + Controls */}
       <div className="flex-1 flex flex-col justify-between w-full">

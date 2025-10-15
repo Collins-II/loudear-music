@@ -101,7 +101,7 @@ export default function Navbar() {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`relative px-2 py-1 text-sm md:text-base font-semibold transition-all ${
+                className={`uppercase relative px-2 py-1 text-sm md:text-base font-semibold transition-all ${
                   isActive
                     ? scrolled
                       ? "text-blue-600 after:absolute after:-bottom-1 after:left-0 after:right-0 after:h-1 after:bg-blue-600 after:rounded-full"
@@ -190,17 +190,17 @@ export default function Navbar() {
               >
                 <DropdownMenuItem
                   onClick={() => router.push("/upload/song")}
-                  className="gap-2"
+                  className="bg-black/80 gap-2"
                 >
-                  <Music className="w-4 h-4" />
+                  <Music className="text-white w-4 h-4" />
                   Upload Song
                 </DropdownMenuItem>
                 <Separator className="bg-neutral-600" />
                 <DropdownMenuItem
                   onClick={() => router.push("/upload/video")}
-                  className="gap-2"
+                  className="bg-black/80 gap-2"
                 >
-                  <VideoIcon className="w-4 h-4" />
+                  <VideoIcon className="text-white w-4 h-4" />
                   Upload Video
                 </DropdownMenuItem>
               </DropdownMenuContent>

@@ -37,6 +37,7 @@ interface SongMetadata {
   file: File;
   title: string;
   artist: string;
+  features: string;
   genre: string;
   explicit: boolean;
   tags: string;
@@ -50,6 +51,7 @@ export default function AlbumUploadForm({ onSuccess }: AlbumUploadFormProps) {
   // Album fields
   const [albumTitle, setAlbumTitle] = useState("");
   const [artist, setArtist] = useState("");
+  const [features, setFeatures] = useState("");
   const [genre, setGenre] = useState("");
   const [releaseDate, setReleaseDate] = useState("");
   const [description, setDescription] = useState("");
@@ -84,6 +86,7 @@ export default function AlbumUploadForm({ onSuccess }: AlbumUploadFormProps) {
           file,
           title: file.name.replace(/\.[^/.]+$/, ""),
           artist,
+          features: "",
           genre: "",
           explicit: false,
           tags: "",
@@ -113,9 +116,11 @@ export default function AlbumUploadForm({ onSuccess }: AlbumUploadFormProps) {
       formData.append(`songs[${idx}][file]`, song.file);
       formData.append(`songs[${idx}][title]`, song.title);
       formData.append(`songs[${idx}][artist]`, song.artist);
-      formData.append(`songs[${idx}][genre]`, song.genre);
+      formData.append(`songs[${idx}][features]`, song.features);
+      formData.append(`songs[${idx}][genre]`, genre);
+      formData.append(`songs[${idx}][description]`, description);
       formData.append(`songs[${idx}][explicit]`, String(song.explicit));
-      formData.append(`songs[${idx}][tags]`, song.tags);
+      formData.append(`songs[${idx}][tags]`, tags);
     });
 
     try {
@@ -156,7 +161,7 @@ export default function AlbumUploadForm({ onSuccess }: AlbumUploadFormProps) {
             <div>
               <Label className="text-neutral-300">Album Title *</Label>
               <Input
-                className="bg-neutral-800 border-neutral-700 text-white"
+                className="bg-neutral-800 border-neutral-700 text-white capitalize"
                 value={albumTitle}
                 onChange={(e) => setAlbumTitle(e.target.value)}
               />
@@ -269,14 +274,14 @@ export default function AlbumUploadForm({ onSuccess }: AlbumUploadFormProps) {
                 >
                   <X className="w-4 h-4" />
                 </button>
-                <h4 className="font-medium text-neutral-200 mb-3">
+                <h4 className="capitalize font-medium text-neutral-200 mb-3">
                   {song.file.name}
                 </h4>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <Label className="text-neutral-300">Title</Label>
                     <Input
-                      className="bg-neutral-800 border-neutral-700 text-white"
+                      className="bg-neutral-800 border-neutral-700 text-white capitalize"
                       value={song.title}
                       onChange={(e) =>
                         setSongs((prev) => {
@@ -301,6 +306,15 @@ export default function AlbumUploadForm({ onSuccess }: AlbumUploadFormProps) {
                       }
                     />
                   </div>
+                   <div>
+                      <Label className="text-neutral-300">Feature (Optional)</Label>
+                      <Input
+                        className="bg-neutral-800 border-neutral-700 text-white"
+                        value={features}
+                        onChange={(e) => setFeatures(e.target.value)}
+                        placeholder="Feature names eg. John, Dave"
+                      />
+                    </div>
                   <div>
                     <Label className="text-neutral-300">Genre</Label>
                     <Input

@@ -7,7 +7,7 @@ import { Facebook, Twitter, Instagram, Youtube } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="bg-white text-gray-800 border-t border-gray-200">
+    <footer className="bg-white italic text-gray-800 border-t border-gray-200">
       {/* Top Grid Section */}
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-12 grid grid-cols-1 md:grid-cols-4 gap-10">
         
@@ -16,7 +16,7 @@ export default function Footer() {
            {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <span
-            className={`italic text-2xl md:text-3xl font-extrabold transition-colors ${
+            className={` text-2xl md:text-3xl font-extrabold transition-colors ${
                "text-primary"
             }`}
           >
@@ -32,10 +32,10 @@ export default function Footer() {
         {/* Explore */}
         <div>
           <h3 className="text-lg font-bold mb-4">Explore</h3>
-          <ul className="space-y-2 text-sm">
+          <ul className="space-y-2 font-semibold text-md">
             <li><Link href="/charts" className="hover:text-blue-600">Charts</Link></li>
+            <li><Link href="/music" className="hover:text-blue-600">Music</Link></li>
             <li><Link href="/videos" className="hover:text-blue-600">Videos</Link></li>
-            <li><Link href="/artists" className="hover:text-blue-600">Artists</Link></li>
             <li><Link href="/playlists" className="hover:text-blue-600">Playlists</Link></li>
           </ul>
         </div>

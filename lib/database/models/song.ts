@@ -5,7 +5,10 @@ export interface ISong extends Document {
   author: Types.ObjectId;
   title: string;
   artist: string;
+  features?: string[];
   genre: string;
+  description: string;
+  tags?: string[];
   fileUrl: string;
   coverUrl: string;
   createdAt: Date;
@@ -23,7 +26,10 @@ const SongSchema = new Schema<ISong>(
     author: { type: Schema.Types.ObjectId, ref: "User" },
     title: { type: String, required: true, trim: true },
     artist: { type: String, required: true, trim: true },
+    features: [{ type: String }],
     genre:  { type: String, trim: true },
+    description:  { type: String, trim: true },
+    tags: [{ type: String }],
     fileUrl: { type: String, required: true },
     coverUrl: { type: String, required: true },
     duration: { type: Number },

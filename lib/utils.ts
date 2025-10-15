@@ -11,6 +11,7 @@ import { saveAs } from "file-saver";
 import { ISong } from "@/lib/database/models/song";
 import { IAlbum } from "@/lib/database/models/album";
 import { IVideo } from "@/lib/database/models/video";
+import { IUser } from "./database/models/user";
 /**
  * Utility to format and handle view counts.
  * Provides helpers to format, increment, and parse view numbers.
@@ -264,4 +265,31 @@ export function formatDatePretty(date: Date | string | number): string {
     //month: "short",
     //day: "numeric",
   });
+}
+
+export function profileComplete(user?: IUser): boolean {
+  if (!user) return false;
+
+ /* // Normalize genres (handle both arrays and comma-separated strings)
+  let genresArray: string[] = [];
+
+  if (Array.isArray(user.genres)) {
+    genresArray = user.genres.flatMap((g) =>
+      typeof g === "string" ? g.split(",").map((x) => x.trim()) : []
+    );
+  } else if (typeof user.genres === "string") {
+    genresArray = user.genres?.map((x) => x.trim());
+  }*/
+
+  // Check required artist fields
+  const requiredFields =
+    user.role === "artist"
+      ? [user.bio, user.location, user.phone]
+      : [user.name, user.email];
+
+  const allFilled = requiredFields.every(
+    (field) => typeof field === "string" && field.trim().length > 0
+  );
+
+  return allFilled;
 }

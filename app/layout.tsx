@@ -35,6 +35,8 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const adsenseId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID;
+
   return (
     <html lang="en" className="scroll-smooth">
       <head>
@@ -43,7 +45,7 @@ export default function RootLayout({
           id="adsense-script"
           async
           strategy="afterInteractive"
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7793275307187854"
+          src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseId}`}
           crossOrigin="anonymous"
         />
 

@@ -8,6 +8,7 @@ export interface IUser extends Document {
   role: "fan" | "artist"; // LoudEar roles
   bio?: string;
   location?: string;
+  phone?: number;
   genres?: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -29,6 +30,7 @@ const UserSchema = new Schema<IUser>(
     // Extra metadata for LoudEar platform
     bio: { type: String },
     location: { type: String },
+    phone: { type: Number },
     genres: [{ type: String }],
   },
   { timestamps: true }

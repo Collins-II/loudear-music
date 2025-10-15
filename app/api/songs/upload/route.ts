@@ -38,6 +38,7 @@ export async function POST(req: Request) {
     const artist = formData.get("artist")?.toString() || "";
     const album = formData.get("album")?.toString() || "";
     const genre = formData.get("genre")?.toString() || "";
+    const description = formData.get("description")?.toString() || "";
     const language = formData.get("language")?.toString() || "";
     const releaseDateStr = formData.get("releaseDate")?.toString();
     const explicit = formData.get("explicit") === "true";
@@ -78,6 +79,7 @@ export async function POST(req: Request) {
       title,
       artist,
       album,
+      description,
       genre,
       language,
       releaseDate: releaseDateStr ? new Date(releaseDateStr) : undefined,
