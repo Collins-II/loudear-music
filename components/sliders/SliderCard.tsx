@@ -98,7 +98,7 @@ export function SliderCard({
           <div className="w-full px-2 pb-4 pt-6 space-y-2">
             {/* Title + Artist */}
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 leading-tight line-clamp-1">
+              <h3 className="capitalize text-lg font-semibold text-gray-900 leading-tight line-clamp-1">
                 {title}
               </h3>
               <p className="text-md text-gray-600 truncate">{artist}</p>

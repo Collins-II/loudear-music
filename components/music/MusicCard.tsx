@@ -110,7 +110,7 @@ export function MusicCard({
               {artist} · {timeAgo(publishedAt)}
             </p>
 
-            <h3 className="text-black text-2xl font-extrabold line-clamp-2 truncate">
+            <h3 className="text-black text-2xl font-extrabold line-clamp-2 truncate capitalize">
               {title}
             </h3>
 

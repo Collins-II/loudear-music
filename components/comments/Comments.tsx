@@ -9,6 +9,7 @@ import { getSocket } from "@/lib/socketClient";
 import type { CommentSerialized } from "@/actions/getItemsWithStats";
 import type { User as UserType } from "next-auth";
 import Image from "next/image";
+import { Separator } from "../ui/separator";
 
 type ReactionType = "heart" | "fire" | "laugh" | "up" | "down";
 
@@ -261,7 +262,10 @@ export default function Comments({
       {/* Comment List */}
       <AnimatePresence>
         {comments.length === 0 ? (
+          <>
           <p className="text-gray-500 text-sm">No comments yet. Be the first!</p>
+          <Separator />
+          </>
         ) : (
           comments.map((c) => (
             <motion.div

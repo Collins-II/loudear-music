@@ -36,6 +36,10 @@ export async function POST(req: Request) {
     const genre = formData.get("genre")?.toString();
     const description = formData.get("description")?.toString();
     const releaseDateStr = formData.get("releaseDate")?.toString();
+    const features = (formData.get("features")?.toString() || "")
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
     const tags = (formData.get("tags")?.toString() || "")
       .split(",")
       .map((t) => t.trim())
@@ -57,6 +61,7 @@ export async function POST(req: Request) {
       author: currentUser?._id,
       title,
       artist,
+      features,
       videographer,
       genre,
       description,

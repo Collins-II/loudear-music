@@ -37,15 +37,22 @@ export async function GET(req: NextRequest) {
       id: String(doc._id),
       title: doc.title || doc.name || "Untitled",
       artist: doc.artist || doc.curator || doc.creator || "Unknown Artist",
+      genre: doc.genre,
+      stats: {
+        plays: doc.views,
+        views:  doc.views,
+        downloads: doc.downloads,
+        likes: doc.likes,
+      },
       image:
         doc.coverUrl ||
         doc.thumbnailUrl ||
         doc.profilePic ||
         doc.image ||
         "/assets/images/placeholder_cover.jpg",
-      category,
+      type: category,
       href: category === "song" ? `/music/${category}/${String(doc._id)}`:category === "album" ? `/music/${category}/${String(doc._id)}` : `/${category}s/${String(doc._id)}`, // ✅ dynamic link
-      createdAt: doc.createdAt,
+      releaseDate: doc.releaseDate,
     });
 
     const results: any[] = [];

@@ -31,4 +31,4 @@ const ChartHistorySchema = new Schema<IChartHistory>({
 });
 
 export const ChartHistory =
-  models.ChartHistory || model<IChartHistory>("ChartHistory", ChartHistorySchema);
+  models?.ChartHistory || model<IChartHistory>("ChartHistory", ChartHistorySchema);

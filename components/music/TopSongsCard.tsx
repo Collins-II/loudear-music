@@ -56,10 +56,10 @@ export function TopSongCard({
     >
       <Link href={href}>
         <div
-          className="flex flex-col overflow-hidden bg-white rounded-2xl hover:shadow-lg transition relative"
+          className="flex flex-col overflow-hidden bg-white rounded-tl-2xl hover:shadow-lg transition relative"
         >
           {/* Thumbnail or snippet */}
-          <div className="relative w-full h-66 sm:h-28 flex-shrink-0">
+          <div className="relative w-full h-48 sm:h-28 flex-shrink-0">
     
                 {loading && <Shimmer />}
                 <Image
@@ -91,18 +91,18 @@ export function TopSongCard({
               #{position}
             </div>
             {/* Genre badge */}
-            <div className="absolute bottom-0 left-0 bg-purple-600 text-white text-[10px] md:text-xs px-2 md:px-3 py-0.5 md:py-1 shadow-lg whitespace-nowrap rounded-tr-md sm:rounded-tr-none sm:rounded-tl-none sm:rounded-bl-none">
+            <div className="absolute bottom-0 left-0 bg-black text-white text-[10px] md:text-xs px-2 md:px-3 py-0.5 md:py-1 shadow-lg whitespace-nowrap rounded-tr-md sm:rounded-tr-none sm:rounded-tl-none sm:rounded-bl-none">
               <h3 className="font-extrabold tracking-tight truncate">{genre}</h3>
             </div>
           </div>
 
           {/* Content */}
-          <CardContent className="flex flex-col justify-between p-3 w-full">
+          <CardContent className="flex flex-col justify-between px-1 py-3 w-full">
             <div className="overflow-hidden pr-2">
               <p className="text-[10px] uppercase tracking-wide text-slate-600 font-medium truncate">
                 {curator}
               </p>
-              <p className="text-sm md:text-base font-bold text-gray-900 truncate">{title}</p>
+              <p className="text-sm md:text-base font-bold text-gray-900 truncate capitalize">{title}</p>
             </div>
             <div className="flex justify-between items-center mt-1">
               <p className="flex items-center gap-1 text-[10px] md:text-xs text-gray-500 tracking-tight">

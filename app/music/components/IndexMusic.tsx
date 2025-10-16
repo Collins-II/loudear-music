@@ -428,7 +428,7 @@ const filteredCharts = useMemo(() => {
                   id={track.id}
                   title={track.title}
                   curator={track.artist ?? ""}
-                  href={`/videos/${track.id}`}
+                  href={`/music/song/${track.id}`}
                   thumbnail={track.image}
                   videoUrl={track.videoUrl as string}
                   genre={track.genre} // correctly using genre now

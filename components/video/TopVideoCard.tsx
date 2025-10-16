@@ -96,7 +96,7 @@ export function TopVideoCard({
     >
       <Link href={href}>
         <div
-          className="flex flex-col overflow-hidden bg-white rounded-2xl hover:shadow-lg transition relative"
+          className="flex flex-col overflow-hidden bg-white hover:shadow-lg transition relative"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
@@ -147,7 +147,7 @@ export function TopVideoCard({
               #{position}
             </div>
             {/* Genre badge */}
-            <div className="absolute bottom-0 left-0 bg-purple-600 text-white text-[10px] md:text-xs px-2 md:px-3 py-0.5 md:py-1 shadow-lg whitespace-nowrap rounded-tr-md sm:rounded-tr-none sm:rounded-tl-none sm:rounded-bl-none">
+            <div className="absolute bottom-0 left-0 bg-black text-white text-[10px] md:text-xs px-2 md:px-3 py-0.5 md:py-1 shadow-lg whitespace-nowrap rounded-tr-md sm:rounded-tr-none sm:rounded-tl-none sm:rounded-bl-none">
               <h3 className="font-extrabold tracking-tight truncate">{genre}</h3>
             </div>
           </div>

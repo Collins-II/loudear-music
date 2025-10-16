@@ -42,6 +42,10 @@ export async function POST(req: Request) {
     const language = formData.get("language")?.toString() || "";
     const releaseDateStr = formData.get("releaseDate")?.toString();
     const explicit = formData.get("explicit") === "true";
+    const features = (formData.get("features")?.toString() || "")
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
     const tags = (formData.get("tags")?.toString() || "")
       .split(",")
       .map((t) => t.trim())
@@ -78,6 +82,7 @@ export async function POST(req: Request) {
       author: currentUser?._id,
       title,
       artist,
+      features,
       album,
       description,
       genre,

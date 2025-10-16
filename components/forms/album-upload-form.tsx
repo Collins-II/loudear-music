@@ -51,7 +51,7 @@ export default function AlbumUploadForm({ onSuccess }: AlbumUploadFormProps) {
   // Album fields
   const [albumTitle, setAlbumTitle] = useState("");
   const [artist, setArtist] = useState("");
-  const [features, setFeatures] = useState("");
+  //const [features, setFeatures] = useState("");
   const [genre, setGenre] = useState("");
   const [releaseDate, setReleaseDate] = useState("");
   const [description, setDescription] = useState("");
@@ -310,8 +310,14 @@ export default function AlbumUploadForm({ onSuccess }: AlbumUploadFormProps) {
                       <Label className="text-neutral-300">Feature (Optional)</Label>
                       <Input
                         className="bg-neutral-800 border-neutral-700 text-white"
-                        value={features}
-                        onChange={(e) => setFeatures(e.target.value)}
+                        value={song.features}
+                        onChange={(e) =>
+                        setSongs((prev) => {
+                          const copy = [...prev];
+                          copy[idx].features = e.target.value;
+                          return copy;
+                        })
+                      }
                         placeholder="Feature names eg. John, Dave"
                       />
                     </div>

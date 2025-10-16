@@ -330,9 +330,9 @@ useEffect(() => {
               chartPosition: data.chartPosition,
               peak: data.chartHistory?.[0]?.peak,
               plays: data.viewCount,
-              likes: data.likeCount,
+              likes: likeCount,
               shares: shareCount,
-              downloads: data.downloadCount,
+              downloads: downloadCount,
             }}
            />
           </div>

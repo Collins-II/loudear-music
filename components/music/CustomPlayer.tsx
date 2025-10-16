@@ -178,7 +178,7 @@ export default function CustomPlayer({
       {/* Info + Controls */}
       <div className="flex-1 flex flex-col justify-between w-full">
         <div className="flex flex-col text-center sm:text-left mb-2">
-          <span className="text-base font-semibold tracking-wide">{title}</span>
+          <span className="text-base font-semibold tracking-wide capitalize">{title}</span>
           <span className="text-sm text-gray-600">{artist}</span>
         </div>
 

@@ -205,7 +205,7 @@ export default function AlbumPlayer({
         </div>
 
         <div className="flex-1">
-          <h3 className="text-2xl font-extrabold tracking-tight">{albumTitle}</h3>
+          <h3 className="capitalize text-2xl font-extrabold tracking-tight">{albumTitle}</h3>
           <p className="text-sm text-gray-700">{albumArtist}</p>
 
           {/* Controls */}

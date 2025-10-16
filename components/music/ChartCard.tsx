@@ -56,7 +56,7 @@ export function ChartCard({
       className="group relative w-full max-w-md cursor-pointer"
     >
       <Link href={href}>
-        <div className="flex flex-col sm:flex-row overflow-hidden bg-white dark:bg-black/90 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300">
+        <div className="flex flex-col sm:flex-row overflow-hidden bg-white dark:bg-black/90 shadow-sm hover:shadow-xl transition-all duration-300">
           {/* Rank Badge */}
           <div className="flex items-center justify-center h-12 sm:h-auto sm:w-14 bg-black text-white text-lg sm:text-2xl font-extrabold shrink-0">
             #{rank}
@@ -110,7 +110,7 @@ export function ChartCard({
           {/* Content */}
           <div className="flex flex-col justify-between flex-1 p-3 sm:p-4">
             <div>
-              <h4 className="text-base sm:text-lg font-extrabold text-gray-900 dark:text-white leading-snug line-clamp-1">
+              <h4 className="capitalize text-base sm:text-lg font-extrabold text-gray-900 dark:text-white leading-snug line-clamp-1">
                 {title}
               </h4>
               <p className="text-sm text-gray-500 dark:text-gray-400 truncate">

@@ -86,6 +86,7 @@ function serializeComments(comments: unknown[] = []): CommentSerialized[] {
 export interface BaseSerialized {
   _id: string;
   artist: string;
+  features: string[];
   title: string;
   genre: string;
   description?: string;
@@ -163,6 +164,7 @@ export async function serializeItem<T extends ItemType>(
     _id: String(doc._id),
     artist: doc.artist ?? "Unknown Artist",
     title: doc.title ?? "Untitled",
+    features: Array.isArray(doc.features) ? doc.features : [],
     genre: doc.genre ?? "Unknown",
     description: doc.description ?? "",
     tags: Array.isArray(doc.tags) ? doc.tags : [],

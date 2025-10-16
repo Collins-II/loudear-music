@@ -47,6 +47,8 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
   const user = session?.user;
   const userId = session?.user?.id;
 
+  console.log("SONG_DATA",data)
+
   // local UI state
   const [liked, setLiked] = useState<boolean>(false);
   const [likeCount, setLikeCount] = useState<number>(data.likeCount ?? 0);
@@ -115,7 +117,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${data.artist} - ${data.title}.mp4`;
+      a.download = `${data.artist} - ${data.title}`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -205,7 +207,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
 
               {/* Metadata */}
               <div className="mt-4 md:mt-0 flex-1">
-                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight leading-tight">
+                <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight leading-tight capitalize">
                   {data.title}
                 </h1>
 
@@ -214,8 +216,20 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
                     <p className="text-sm text-gray-600 dark:text-gray-300">
                       By <span className="font-semibold text-black dark:text-white">{data.artist}</span>
                     </p>
+                    {data.features && data.features?.length > 0 && (
+                     <p className="text-sm text-gray-500 mt-1">
+                        <span className="font-medium text-gray-600">Features • </span>
+                          {data.features.map((t: string, i: number) => (
+                        <span key={i} className="text-xs text-gray-500">
+                          {t}
+                          {i < data.features.length - 1 && <span className="text-gray-400">, </span>}
+                        </span>
+                        ))}
+                     </p>
+                    )}
+
                     <p className="text-sm text-gray-500 mt-1">
-                      {data.genre} • <span className="text-xs text-gray-500">{timeAgo(data.createdAt)}</span>
+                      <span className="font-medium text-gray-600">{data.genre}</span> • <span className="text-xs text-gray-500">{timeAgo(data.createdAt)}</span>
                     </p>
                   </div>
 

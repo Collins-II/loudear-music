@@ -153,7 +153,7 @@ export function ChartRow({
 
       {/* Info */}
       <div className="flex-1 overflow-hidden">
-        <p className="text-black font-bold truncate">{title}</p>
+        <p className="capitalize text-black font-bold truncate">{title}</p>
         <p className="text-sm text-gray-600 truncate">{artist}</p>
       </div>
 

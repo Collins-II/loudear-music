@@ -5,14 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  X as XIcon,
-  ArrowRight,
-  PlayCircle,
-  Music2,
-  Disc,
-  Video,
+  X as XIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import SearchCard from "@/components/search/SearchCard";
 
 /* ---------------------------
    Types
@@ -24,7 +20,7 @@ interface SearchResultBase {
   id: string;
   type: ResultType;
   title: string;
-  subtitle?: string;
+  artist?: string;
   image?: string;
   genre?: string;
   href: string;
@@ -68,17 +64,6 @@ function useDebounced<T>(value: T, delay = 350) {
   return v;
 }
 
-/* ---------------------------
-   Small UI Components
-----------------------------*/
-const IconForType = ({ t }: { t: ResultType }) =>
-  t === "song" ? (
-    <Music2 size={14} />
-  ) : t === "album" ? (
-    <Disc size={14} />
-  ) : (
-    <Video size={14} />
-  );
 
 const SkeletonCard = () => (
   <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-neutral-900 border border-black/5 dark:border-white/5 shadow">
@@ -92,105 +77,10 @@ const SkeletonCard = () => (
   </div>
 );
 
-function PreviewLayer({ previewUrl, playing }: { previewUrl?: string; playing: boolean }) {
-  if (!previewUrl) return null;
-  return (
-    <video
-      src={previewUrl}
-      className="absolute inset-0 w-full h-full object-cover rounded-lg"
-      muted
-      playsInline
-      autoPlay={playing}
-      loop
-      aria-hidden
-    />
-  );
-}
-
 function ResultTile({ item, rank }: { item: SearchResultBase; rank?: number }) {
-  const [hover, setHover] = useState(false);
-  const [playingPreview, setPlayingPreview] = useState(false);
-
- useEffect(() => {
-  let t: number | undefined;
-
-  if (hover && item.extra?.previewUrl) {
-    t = window.setTimeout(() => setPlayingPreview(true), 180);
-  } else {
-    setPlayingPreview(false);
-  }
-
-  return () => {
-    if (t !== undefined) {
-      window.clearTimeout(t);
-    }
-  };
-}, [hover, item.extra?.previewUrl]);
-
-
-
 
   return (
-    <motion.article
-      layout
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -6 }}
-      className="relative rounded-2xl bg-white dark:bg-neutral-900 border border-black/5 dark:border-white/5 overflow-hidden shadow hover:shadow-lg transition"
-    >
-      <div className="relative w-full h-56 md:h-48 lg:h-56">
-        {item.extra?.previewUrl && hover ? (
-          <>
-            <PreviewLayer previewUrl={item.extra.previewUrl} playing={playingPreview} />
-            <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
-              <PlayCircle className="text-white" size={48} />
-            </div>
-          </>
-        ) : item.image ? (
-          <Image src={item.image} alt={item.title} fill className="object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400">
-            <IconForType t={item.type} />
-          </div>
-        )}
-      </div>
-
-      <div className="p-4 flex flex-col gap-2">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="text-sm md:text-base font-semibold text-slate-900 dark:text-white truncate">
-              {rank ? `#${rank} ${item.title}` : item.title}
-            </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-              {item.subtitle ?? (item.type === "song" ? "Song" : item.type)}
-            </div>
-          </div>
-          <div className="text-right text-xs text-gray-400">
-            {item.releaseDate ? new Date(item.releaseDate).getFullYear() : ""}
-          </div>
-        </div>
-        <div className="flex items-center justify-between mt-2">
-          <div className="flex items-center gap-2 text-xs text-gray-500">
-            {item.genre && (
-              <span className="px-2 py-0.5 rounded-full bg-gray-100 dark:bg-neutral-800 text-xs">
-                {item.genre}
-              </span>
-            )}
-            {item.stats?.plays !== undefined && (
-              <span>{item.stats.plays.toLocaleString()} plays</span>
-            )}
-          </div>
-          <a
-            href={item.href}
-            className="inline-flex items-center gap-2 text-indigo-600 dark:text-indigo-400 text-sm font-medium"
-          >
-            Open <ArrowRight size={14} />
-          </a>
-        </div>
-      </div>
-    </motion.article>
+    <SearchCard item={item} rank={rank} />
   );
 }
 
@@ -204,7 +94,7 @@ function TrendingLeaderboard({ list }: { list: TrendingItem[] }) {
         <h3 className="text-lg font-extrabold">Global Trends</h3>
         <div className="text-xs opacity-90">Updated weekly</div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3">
         {list.slice(0, 6).map((t) => (
           <div key={t.id} className="bg-white/10 rounded-xl p-3 flex items-center gap-3">
             <div className="w-12 h-12 relative flex-shrink-0">
@@ -217,7 +107,7 @@ function TrendingLeaderboard({ list }: { list: TrendingItem[] }) {
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-semibold truncate">{t.title}</div>
+              <div className="capitalize text-sm font-semibold truncate">{t.title}</div>
               <div className="text-xs opacity-90">{t.artist ?? "Various"}</div>
             </div>
             <div className="text-right">
@@ -406,7 +296,7 @@ export default function InteractiveSearchPage(): JSX.Element {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mt-10">
           <div className="lg:col-span-8">
             <h2 className="text-2xl font-bold mb-4">Search Results</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <AnimatePresence>
                 {loading
                   ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)

@@ -66,6 +66,9 @@ export async function POST(req: Request) {
       const songArtist = formData.get(`songs[${idx}][artist]`) as string;
       const songGenre = formData.get(`songs[${idx}][genre]`) as string;
       const explicit = formData.get(`songs[${idx}][explicit]`) === "true";
+      const songFeatures = (formData.get(`songs[${idx}][features]`) as string)
+        ?.split(",")
+        .map((t) => t.trim()) || [];
       const songTags = (formData.get(`songs[${idx}][tags]`) as string)
         ?.split(",")
         .map((t) => t.trim()) || [];
@@ -85,6 +88,7 @@ export async function POST(req: Request) {
         author: currentUser?._id,
         title: songTitle,
         artist: songArtist,
+        features: songFeatures,
         genre: songGenre,
         album: title,
         explicit,
