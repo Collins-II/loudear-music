@@ -42,7 +42,7 @@ export default function LatestSection({ songs, videos}: SectionProps) {
                   href={`/music/song/${track.id}`}
                   cover={track.image}
                   downloads={track.stats.downloads}
-                  views={track.stats.views}
+                  views={track.stats.totalViews}
                   genre={track.genre as string}
                   publishedAt={track.releaseDate as string}
                 
@@ -77,7 +77,7 @@ export default function LatestSection({ songs, videos}: SectionProps) {
                     cover={video.image}
                     downloads={video.stats.downloads}
                     category={video.genre}
-                    views={video.stats.views}
+                    views={video.stats.totalViews}
                     videoUrl={video.videoUrl as string}
                   />
                 ))}

@@ -13,6 +13,7 @@ const nextConfig = {
   reactStrictMode: true,
   images: {
     domains: [
+      "cdn-images.dzcdn.net",
       "i.ytimg.com",
       "img.youtube.com",
       "images.unsplash.com",

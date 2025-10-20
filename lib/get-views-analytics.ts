@@ -5,16 +5,18 @@ import { ViewAnalytics } from "./database/models/viewsAnalytics";
  * Fetch total and previous week view counts for an item
  */
 export async function getViewCounts(itemId: Types.ObjectId, model: "Song" | "Album" | "Video") {
-  const analytics = await ViewAnalytics.find({ itemId, model }).lean();
+  const analytics = await ViewAnalytics.find({
+    itemId,
+    $or: [{ contentModel: model }, { model }],
+  }).lean();
 
   const totalViews = analytics.reduce((sum, entry) => sum + (entry.views || 0), 0);
-
-  // Sort by week to find last week's stats
   const sorted = analytics.sort((a, b) => (a.week < b.week ? 1 : -1));
   const previousViewCount = sorted[1]?.views ?? 0;
 
   return { totalViews, previousViewCount };
 }
+
 
 /**
  * Get ISO week string (e.g., "2025-W41")

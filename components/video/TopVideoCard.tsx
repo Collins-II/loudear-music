@@ -152,19 +152,21 @@ export function TopVideoCard({
             </div>
           </div>
 
-          {/* Content */}
-          <CardContent className="flex flex-col justify-between p-3 w-full">
+        {/* Content */}
+          <CardContent className="flex flex-col justify-between px-1 py-3 w-full">
             <div className="overflow-hidden pr-2">
               <p className="text-[10px] uppercase tracking-wide text-slate-600 font-medium truncate">
                 {curator}
               </p>
-              <p className="text-sm md:text-base font-bold text-gray-900 truncate">{title}</p>
+              <p className="text-sm md:text-base font-bold text-gray-900 truncate capitalize">{title}</p>
             </div>
+            {views && (
             <div className="flex justify-between items-center mt-1">
               <p className="flex items-center gap-1 text-[10px] md:text-xs text-gray-500 tracking-tight">
                 {views} views
               </p>
             </div>
+            )}        
           </CardContent>
         </div>
       </Link>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useDeferredValue } from "react";
 import { PlaylistCard } from "@/components/playlists/PlaylistCard";
 import { TopPlaylist } from "@/components/playlists/TopPlaylist";
-import { fetchPlaylists } from "@/lib/spotify";
+import { fetchPlaylists } from "@/lib/deezer";
 import { Button } from "@/components/ui/button";
 import { DropdownRadio } from "@/components/DropdownRadio";
 

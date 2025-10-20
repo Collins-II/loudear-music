@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 
 import { DropdownRadio } from "@/components/DropdownRadio";
 import { ChartRow } from "@/components/music/ChartRow";
-import { ChartCard } from "@/components/music/ChartCard";
 import { TopVideoCard } from "@/components/video/TopVideoCard";
 import { ChartItem } from "@/actions/getCharts";
+import { VideoCard } from "@/components/video/VideoCard";
 
 const genres = ["All", "Pop", "R&B", "Hip Hop", "Afrobeat"];
 const alphabet = ["All", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"] as const;
@@ -37,7 +37,7 @@ export default function IndexVideo({ videos }: IndexVideoProps) {
 
   // --- Top 10 by views ---
   const trendingVideos = useMemo(
-    () => [...videos].sort((a, b) => b.stats.views - a.stats.views).slice(0, 10),
+    () => [...videos].sort((a, b) => b.stats.totalViews - a.stats.totalViews).slice(0, 10),
     [videos]
   );
 
@@ -69,7 +69,7 @@ export default function IndexVideo({ videos }: IndexVideoProps) {
     }
 
     if (filters.filter === "trending") {
-      list = list.sort((a, b) => b.stats.views - a.stats.views).slice(0, 20);
+      list = list.sort((a, b) => b.stats.totalViews - a.stats.totalViews).slice(0, 20);
     }
 
     return list;
@@ -227,19 +227,18 @@ export default function IndexVideo({ videos }: IndexVideoProps) {
                 <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {filteredVideos.slice(0, visibleItems).map((item) => (
-                  <ChartCard
+                  <VideoCard
                     key={item.id}
                     id={item.id}
-                    href={`/videos/${item.id}`}
                     title={item.title}
-                    artist={item.artist ?? ""}
+                    artist={item.artist as string}
                     cover={item.image}
-                    isTrending={item.position <= 10}
-                    rank={item.position}
-                    peak={item.peak ?? 1}
-                    weeksOn={item.weeksOn}
+                    downloads={item.stats.downloads}
+                    category={item.genre}
+                    views={item.stats.totalViews}
+                    videoUrl={item.videoUrl as string}
                   />
                 ))}
               </div>
@@ -275,7 +274,7 @@ export default function IndexVideo({ videos }: IndexVideoProps) {
                   thumbnail={video.image}
                   videoUrl={video.videoUrl ?? ""}
                   genre={video.genre}
-                  views={video.stats.views}
+                  views={video.stats.totalViews}
                 />
               ))}
             </div>

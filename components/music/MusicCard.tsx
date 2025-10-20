@@ -116,10 +116,10 @@ export function MusicCard({
 
             <div className="flex justify-between items-center mt-3 text-xs md:text-sm text-gray-600 font-medium">
               <span className="flex items-center gap-1">
-                <DownloadCloud size={14} /> {downloads.toLocaleString()}
+                <DownloadCloud size={14} /> {downloads}
               </span>
               <span className="flex items-center gap-1">
-                <Eye size={14} /> {views.toLocaleString()}
+                <Eye size={14} /> {views}
               </span>
             </div>
           </div>

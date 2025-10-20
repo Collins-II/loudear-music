@@ -47,8 +47,6 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
   const user = session?.user;
   const userId = session?.user?.id;
 
-  console.log("SONG_DATA",data)
-
   // local UI state
   const [liked, setLiked] = useState<boolean>(false);
   const [likeCount, setLikeCount] = useState<number>(data.likeCount ?? 0);
@@ -216,7 +214,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
                     <p className="text-sm text-gray-600 dark:text-gray-300">
                       By <span className="font-semibold text-black dark:text-white">{data.artist}</span>
                     </p>
-                    {data.features && data.features?.length > 0 && (
+                    {data.features && data.features.filter(f => f.trim() !== '').length > 0 && (
                      <p className="text-sm text-gray-500 mt-1">
                         <span className="font-medium text-gray-600">Features • </span>
                           {data.features.map((t: string, i: number) => (

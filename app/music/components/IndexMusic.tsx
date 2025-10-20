@@ -38,7 +38,7 @@ export default function IndexMusicWrapper() {
 
         const trendingVideos = await getTrending({
           model: "Song",
-          limit: 10,
+          limit: 30,
           sinceDays: 30,
         });
 
@@ -57,6 +57,8 @@ export default function IndexMusicWrapper() {
           genre: v.genre ?? "Unknown",
           releaseDate: v.releaseDate,
           stats: {
+            weeklyViews: v.stats?.weeklyViews,
+            totalViews: v.stats?.totalViews,
             plays: v.viewCount ?? 0,
             downloads: v.downloadCount ?? 0,
             likes: v.likeCount ?? 0,
@@ -111,7 +113,7 @@ function IndexMusic({ initialData, topVideos }: { initialData: ChartItem[], topV
   const [charts, setCharts] = useState<ChartItem[]>(initialData);
   const [loading, setLoading] = useState(false);
 
-  const itemsPerPage = 9;
+  const itemsPerPage = 15;
   const [visibleItems, setVisibleItems] = useState(itemsPerPage);
   const loaderRef = useRef<HTMLDivElement | null>(null);
 
@@ -387,7 +389,7 @@ const filteredCharts = useMemo(() => {
                     isTrending={item.position <= 10}
                     genre={item.genre}
                     downloads={item.stats.downloads}
-                    views={item.stats.views}
+                    views={item.stats.totalViews}
                     publishedAt={item.releaseDate}
                   />
                 ))}
@@ -432,7 +434,7 @@ const filteredCharts = useMemo(() => {
                   thumbnail={track.image}
                   videoUrl={track.videoUrl as string}
                   genre={track.genre} // correctly using genre now
-                  views={track.stats.views}
+                  views={track.stats.totalViews}
                 />
               ))}
             </div>

@@ -18,6 +18,7 @@ const dayjs_1 = __importDefault(require("dayjs"));
 const isoWeek_1 = __importDefault(require("dayjs/plugin/isoWeek"));
 const viewsAnalytics_1 = require("@/lib/database/models/viewsAnalytics");
 const get_views_analytics_1 = require("@/lib/get-views-analytics");
+const update_chart_history_1 = require("@/lib/update-chart-history");
 dayjs_1.default.extend(isoWeek_1.default);
 function serializeComments(comments = []) {
     return comments.map((c) => {
@@ -61,6 +62,7 @@ async function serializeItem(doc, type, includeAnalytics = true) {
         _id: String(doc._id),
         artist: (_a = doc.artist) !== null && _a !== void 0 ? _a : "Unknown Artist",
         title: (_b = doc.title) !== null && _b !== void 0 ? _b : "Untitled",
+        features: Array.isArray(doc.features) ? doc.features : [],
         genre: (_c = doc.genre) !== null && _c !== void 0 ? _c : "Unknown",
         description: (_d = doc.description) !== null && _d !== void 0 ? _d : "",
         tags: Array.isArray(doc.tags) ? doc.tags : [],
@@ -124,22 +126,32 @@ async function incrementInteraction(id, model, type, userId) {
         download: "downloads",
         share: "shares",
     };
+    /* ------------------------ UNLIKE HANDLER ------------------------ */
     if (type === "unlike") {
         await Model.updateOne({ _id: id }, { $pull: { likes: new mongoose_1.Types.ObjectId(userId) } });
         return { success: true, action: "unliked" };
     }
+    /* -------------------------- VIEW HANDLER ------------------------ */
     if (type === "view") {
         const nowWeek = `${(0, dayjs_1.default)().year()}-W${String((0, dayjs_1.default)().isoWeek()).padStart(2, "0")}`;
-        // Increment the main document’s views
         await Model.updateOne({ _id: id }, { $addToSet: { views: new mongoose_1.Types.ObjectId(userId) } });
-        // Update or insert analytics entry for the current week
         await viewsAnalytics_1.ViewAnalytics.updateOne({ itemId: id, contentModel: model, week: nowWeek }, { $inc: { views: 1 } }, { upsert: true });
+        // ✅ Update chart automatically (songs/albums/videos)
+        await (0, update_chart_history_1.updateChartHistory)(model.toLowerCase() + "s");
         return { success: true, action: "view" };
     }
+    /* --------------------- LIKE/DOWNLOAD/SHARE ---------------------- */
     const field = fieldMap[type];
     if (!field)
         throw new Error(`Unsupported interaction type: ${type}`);
     await Model.updateOne({ _id: id }, { $addToSet: { [field]: new mongoose_1.Types.ObjectId(userId) } });
+    // ✅ Optional: trigger chart update only occasionally (to prevent spam)
+    if (["like", "share", "download"].includes(type)) {
+        // Randomize update frequency (only 1 in ~10 requests triggers full rebuild)
+        if (Math.random() < 0.1) {
+            await (0, update_chart_history_1.updateChartHistory)(model.toLowerCase() + "s");
+        }
+    }
     return { success: true, action: type };
 }
 /* ------------------------------------------------------------------ */
@@ -209,7 +221,7 @@ async function getItemWithStats(model, id) {
         })
             .select("items week category")
             .lean();
-        const chartPosition = (_c = (_b = (_a = chartSnapshot === null || chartSnapshot === void 0 ? void 0 : chartSnapshot.items) === null || _a === void 0 ? void 0 : _a.find((i) => String(i.itemId) === id)) === null || _b === void 0 ? void 0 : _b.position) !== null && _c !== void 0 ? _c : null;
+        const chartPosition = (_c = (_b = (_a = chartSnapshot === null || chartSnapshot === void 0 ? void 0 : chartSnapshot.items) === null || _a === void 0 ? void 0 : _a.find((i) => String(i.itemId) === id)) === null || _b === void 0 ? void 0 : _b.rank) !== null && _c !== void 0 ? _c : null;
         const chartHistoryDocs = await chartHistory_1.ChartHistory.find({
             "items.itemId": new mongoose_1.Types.ObjectId(id),
         })
@@ -224,8 +236,8 @@ async function getItemWithStats(model, id) {
                 return undefined;
             return {
                 week: snap.week,
-                position: item.position,
-                peak: (_a = item.peak) !== null && _a !== void 0 ? _a : item.position,
+                position: item.rank,
+                peak: (_a = item.peak) !== null && _a !== void 0 ? _a : item.rank,
                 weeksOn: (_b = item.weeksOn) !== null && _b !== void 0 ? _b : 1,
             };
         })

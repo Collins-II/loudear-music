@@ -43,20 +43,23 @@ export default function ChartsPageWrapper() {
         });
 
         // 🔑 Normalize trending videos into ChartItem shape
-        const videos: ChartItem[] = trendingVideos.map((v: any, idx: number) => ({
+  // 🔑 Normalize trending videos into ChartItem shape
+        const videos: ChartItem[] = trendingVideos.map((v: any) => ({
           id: String(v._id),
           title: v.title,
           artist: v.artist ?? "",
           image: v.coverUrl ?? "",
           videoUrl: v.videoUrl,
-          position: idx + 1,
+          position: v.position,
           lastWeek: null,
-          peak: idx + 1,
-          weeksOn: 1,
+          peak: v.peak,
+          weeksOn: v.weeksOn,
           region: "global",
           genre: v.genre ?? "Unknown",
           releaseDate: v.releaseDate,
           stats: {
+            weeklyViews: v.stats?.weeklyViews,
+            totalViews: v.stats?.totalViews,
             plays: v.viewCount ?? 0,
             downloads: v.downloadCount ?? 0,
             likes: v.likeCount ?? 0,
@@ -431,7 +434,7 @@ useEffect(() => {
                   thumbnail={track.image}
                   videoUrl={track.videoUrl as string}
                   genre={track.genre} // correctly using genre now
-                  views={track.stats.views}
+                  views={track.stats.totalViews}
                 />
               ))}
             </div>

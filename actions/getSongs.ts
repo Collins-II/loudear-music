@@ -9,17 +9,12 @@ import { ChartItem, getCharts } from "./getCharts";
 
 
 export const getSongs = async (limit = 16): Promise<ChartItem[]> => {
-  try {
     return await getCharts({
       category: "songs",
       limit,
       sort: "all-time",
       region: "global",
     });
-  } catch (error) {
-    console.log("[GET_SONGS_ERR]", error);
-    throw new Error("Failed to fetch trending songs");
-  }
 };
 
 

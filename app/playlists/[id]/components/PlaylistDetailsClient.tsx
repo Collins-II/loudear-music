@@ -6,6 +6,7 @@ import { TopPlaylist } from "@/components/playlists/TopPlaylist";
 import { Playlist } from "../../page";
 import Image from "next/image";
 import { LazySpotifyIframe } from "./LazySpotifyIframe";
+import { DeezerPlaylist } from "@/lib/deezer";
 
 interface Track {
   id: string;
@@ -15,7 +16,7 @@ interface Track {
   duration: string;
 }
 
-interface PlaylistDetail {
+export interface PlaylistDetail {
   id: string;
   title: string;
   curator: string;
@@ -26,7 +27,7 @@ interface PlaylistDetail {
 }
 
 interface Props {
-  playlist: PlaylistDetail;
+  playlist: DeezerPlaylist;
   relatedPlaylist: Playlist[];
 }
 
@@ -87,7 +88,7 @@ export default function PlaylistDetailsClient({
             className="mt-8"
           >
             <LazySpotifyIframe 
-               playlistId={playlist.id}
+               playlistId={playlist.id?.toString()}
                title={`${playlist.curator} - ${playlist.title}`}
              />
           </motion.div>

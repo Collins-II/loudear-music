@@ -104,11 +104,13 @@ export function TopSongCard({
               </p>
               <p className="text-sm md:text-base font-bold text-gray-900 truncate capitalize">{title}</p>
             </div>
+            {views && (
             <div className="flex justify-between items-center mt-1">
               <p className="flex items-center gap-1 text-[10px] md:text-xs text-gray-500 tracking-tight">
                 {views} views
               </p>
             </div>
+            )}        
           </CardContent>
         </div>
       </Link>

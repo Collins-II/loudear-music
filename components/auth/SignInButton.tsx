@@ -14,10 +14,12 @@ import {
 import Image from "next/image";
 import { FaGoogle } from "react-icons/fa";
 import { motion } from "framer-motion";
-import { LogOut } from "lucide-react";
+import { LayoutDashboard, LogOut, User } from "lucide-react";
 import { HiOutlineChevronUpDown } from "react-icons/hi2";
+import { useRouter } from "next/navigation";
 
 export default function SignInButton() {
+  const router = useRouter();
   const { data: session, status } = useSession();
 
   if (status === "loading") {
@@ -63,15 +65,15 @@ export default function SignInButton() {
             {session.user?.email}
           </p>
         </DropdownMenuLabel>
-        {/*<DropdownMenuSeparator />
-        <DropdownMenuItem className="text-gray-700 text-xs font-semibold">
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => router.push("/profile")} className="text-gray-700 text-xs font-semibold">
           <User className="mr-2 h-4 w-4" />
           Profile
         </DropdownMenuItem>
-        <DropdownMenuItem className="text-gray-700 text-xs font-semibold">
+        <DropdownMenuItem onClick={() => router.push("/dashboard")} className="text-gray-700 text-xs font-semibold">
           <LayoutDashboard className="mr-2 h-4 w-4" />
           Dashboard
-        </DropdownMenuItem>*/}
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => signOut()} className="text-red-500">
           <LogOut className="mr-2 h-4 w-4" />

@@ -14,7 +14,7 @@ declare module "next-auth" {
       role?: "fan" | "artist";
       bio?: string;
       location?: string;
-      phone?: number;
+      phone?: string;
       genres?: string[];
     };
   }
@@ -62,6 +62,7 @@ export const authOptions: NextAuthOptions = {
         await connectToDatabase();
         const dbUser = await User.findOne({ email: session.user.email });
         if (dbUser) {
+          session.user.image = dbUser.image
           session.user.id = dbUser._id as string;
           session.user.role = dbUser.role;
           session.user.bio = dbUser.bio;

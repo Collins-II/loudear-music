@@ -5,6 +5,7 @@ import { getSongs } from "@/actions/getSongs";
 import { getVideos } from "@/actions/getVideos";
 import BlogSection from "@/components/blog_section";
 import NetworkError from "@/components/NetworkError";
+import Footer from "@/components/footer";
 
 export default async function Home() {
   const songs = await getSongs();
@@ -21,6 +22,8 @@ export default async function Home() {
       <LatestSection songs={songs} videos={videos} />
   
       <BlogSection/>
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

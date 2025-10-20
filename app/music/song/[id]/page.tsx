@@ -47,6 +47,7 @@ export default async function SongDetailsPage({ params }: SongDetailsPageProps) 
     const { id } = await params;
      await incrementInteraction(id, "Song", "view");
     const media = await getSongWithStats(id);
+    console.log('MEDIA_SONG', media)
 
     // Show NetworkError or fallback UI instead of breaking the app
     if (!media) {

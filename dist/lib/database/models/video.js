@@ -6,6 +6,7 @@ const VideoSchema = new mongoose_1.Schema({
     author: { type: mongoose_1.Schema.Types.ObjectId, ref: "User" },
     title: { type: String, required: true, trim: true },
     artist: { type: String, required: true, trim: true },
+    features: [{ type: String }],
     genre: { type: String, trim: true },
     releaseDate: { type: Date },
     description: { type: String },

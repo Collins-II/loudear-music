@@ -166,6 +166,17 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
                     <p className="text-sm text-gray-600 dark:text-gray-300">
                       By <span className="font-semibold text-black dark:text-white">{data.artist}</span>
                     </p>
+                    {data.features && data.features.filter(f => f.trim() !== '').length > 0 && (
+                     <p className="text-sm text-gray-500 mt-1">
+                        <span className="font-medium text-gray-600">Features • </span>
+                          {data.features.map((t: string, i: number) => (
+                        <span key={i} className="text-xs text-gray-500">
+                          {t}
+                          {i < data.features.length - 1 && <span className="text-gray-400">, </span>}
+                        </span>
+                        ))}
+                     </p>
+                    )}
                     <p className="text-sm text-gray-500 mt-1">
                       {data.genre} • <span className="text-xs text-gray-500">{timeAgo(data.createdAt)}</span>
                     </p>

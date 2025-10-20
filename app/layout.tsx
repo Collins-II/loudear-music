@@ -4,7 +4,6 @@ import "./globals.css";
 import Navbar from "@/components/navbar";
 import NextTopLoader from "nextjs-toploader";
 import ReduxProvider from "@/lib/provider/redux_provider";
-import Footer from "@/components/footer";
 import GlobalAudioPlayer from "@/components/global_audio_player";
 import Script from "next/script";
 import GoogleProvider from "@/lib/provider/google_provider";
@@ -63,6 +62,7 @@ export default function RootLayout({
         <Toaster />
         <NextTopLoader color="#fff" showSpinner={false} />
         <GoogleProvider>
+        
         <ReduxProvider>
           <div className="relative min-h-screen flex flex-col overflow-hidden">
             {/* Decorative Billboard-inspired Backgrounds */}
@@ -74,29 +74,11 @@ export default function RootLayout({
             {/* Navbar */}
             <Navbar />
 
-            {/* Optional AdSense Banner
-            <div className="my-4 flex justify-center">
-              <ins
-                className="adsbygoogle"
-                style={{ display: "block" }}
-                data-ad-client="ca-pub-XXXXXXXXXXXXXXX"
-                data-ad-slot="1234567890"
-                data-ad-format="auto"
-                data-full-width-responsive="true"
-              />
-              <Script id="adsense-init" strategy="afterInteractive">
-                {`(adsbygoogle = window.adsbygoogle || []).push({});`}
-              </Script>
-            </div> */}
-
             {/* Main Content */}
             <main className="flex-1">{children}</main>
 
             {/* Global Audio Player (always pinned bottom) */}
             <GlobalAudioPlayer />
-
-            {/* Footer */}
-            <Footer />
           </div>
         </ReduxProvider>
         </GoogleProvider>
