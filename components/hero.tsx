@@ -103,7 +103,7 @@ export default function Hero() {
               <Link href={slides[index].link}>
               <Button
                 size="sm"
-                className="rounded-full gap-2 shadow-md cursor-pointer bg-white text-blue-700 hover:scale-90 hover:bg-gray-200 transition"
+                className="rounded-full gap-2 hover:shadow-lg cursor-pointer bg-white text-black hover:scale-90 hover:bg-gray-200 transition"
               >
                 <Play className="w-5 h-5" /> Listen Now
               </Button>

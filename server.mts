@@ -47,18 +47,53 @@ app.prepare().then(() => {
       }
     );
 
+    // 🔹 Broadcast media updates
+    socket.on(
+      "media:create",
+      (payload: { type: "song" | "album" | "video"; data: any }) => {
+        console.log(`🎵 Media created: ${payload.type} -> ${payload.data.title}`);
+        io.emit("media:create", payload);
+      }
+    );
 
-  // Category update
-  socket.on("charts:update:category", (payload) => {
-    console.log(`📊 Category update -> ${payload.category}`);
-    io.emit("charts:update:category", payload);
-  });
+    socket.on(
+      "media:update",
+      (payload: { type: "song" | "album" | "video"; data: any }) => {
+        console.log(`🎵 Media updated: ${payload.type} -> ${payload.data.title}`);
+        io.emit("media:update", payload);
+      }
+    );
 
-  // Item update
-  socket.on("charts:update:item", (payload) => {
-    console.log(`📊 Item update -> ${payload.id} → pos ${payload.newPos}`);
-    io.emit("charts:update:item", payload);
-  });
+    socket.on(
+      "media:delete",
+      (payload: { type: "song" | "album" | "video"; id: string }) => {
+        console.log(`🎵 Media deleted: ${payload.type} -> ${payload.id}`);
+        io.emit("media:delete", payload);
+      }
+    );
+
+    // Category update
+    socket.on("charts:update:category", (payload) => {
+      console.log(`📊 Category update -> ${payload.category}`);
+      io.emit("charts:update:category", payload);
+    });
+
+    // Item update
+    socket.on("charts:update:item", (payload) => {
+      console.log(`📊 Item update -> ${payload.id} → pos ${payload.newPos}`);
+      io.emit("charts:update:item", payload);
+    });
+
+  // 🧡 Handle real-time stan updates
+  socket.on("stan:update", (payload) => {
+    const { artistId, stanCount, userHasStanned } = payload
+    io.to(`artist:${artistId}`).emit("stan:update", {
+      artistId,
+      stanCount,
+      userHasStanned,
+    })
+  })
+
 
     socket.on("leave", (room: string) => {
       socket.leave(room);

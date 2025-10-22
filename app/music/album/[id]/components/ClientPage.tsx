@@ -22,6 +22,7 @@ import JSZip from "jszip";
 import { saveAs } from "file-saver";
 import { handleInteractionUtil } from "@/lib/interactions";
 import { useRouter } from "next/navigation";
+import { StanButton } from "@/components/auth/StanButton";
 
 interface AlbumClientPageProps {
   data: AlbumSerialized;
@@ -189,7 +190,7 @@ useEffect(() => {
                   <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
                     <div className="flex items-center gap-2">
                       <Eye className="w-4 h-4 text-gray-500" />
-                      <span className="font-semibold">{data.viewCount ?? 0}</span>
+                      <span className="font-semibold">{data.totalViews ?? 0}</span>
                       <span className="text-xs text-gray-400">views</span>
                     </div>
 
@@ -211,6 +212,7 @@ useEffect(() => {
                       <Badge onClick={() => router.push(`/search?q=${t.toLocaleLowerCase()}`)} variant="outline" key={i} className="cursor-pointer rounded-full uppercase px-3 py-1 text-xs">{t}</Badge>
                     ))}
                   </div>
+                  <StanButton artistId={data._id} />
 
                   {/* Action buttons 
                   <div className="flex flex-wrap items-center gap-3">

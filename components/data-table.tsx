@@ -18,7 +18,6 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 import {
   useReactTable,
   getCoreRowModel,
@@ -32,9 +31,9 @@ import {
   type Row,
 } from "@tanstack/react-table";
 import { toast } from "sonner";
-import { z } from "zod";
 import Image from "next/image";
-import {  useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { z } from "zod";
+
 import {
   Table,
   TableHeader,
@@ -49,11 +48,10 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuCheckboxItem,
   DropdownMenuSeparator,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent } from "@/components/ui/tabs";
-//import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import {
   Dialog,
   DialogContent,
@@ -81,6 +79,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "./ui/badge";
 import { TrashIcon } from "@heroicons/react/24/solid";
 import { Edit } from "lucide-react";
+import { getSocket } from "@/lib/socketClient";
+import { CSS } from "@dnd-kit/utilities";
 
 // -------------------------
 // Schema
@@ -104,9 +104,6 @@ export const baseSchema = z.object({
 export type BaseItem = z.infer<typeof baseSchema>;
 
 // -------------------------
-// Fetch items
-
-// -------------------------
 // Drag Handle
 // -------------------------
 function DragHandle({ id }: { id: UniqueIdentifier }) {
@@ -125,39 +122,7 @@ function DragHandle({ id }: { id: UniqueIdentifier }) {
 }
 
 // -------------------------
-// Editable Field
-// -------------------------
-function EditableField({
-  value,
-  onSave,
-}: {
-  value: string | number | undefined;
-  onSave: (v: string) => void;
-}) {
-  const [val, setVal] = React.useState(value?.toString() ?? "");
-  const [editing, setEditing] = React.useState(false);
-
-  return editing ? (
-    <input
-      aria-label="edit-input"
-      value={val}
-      autoFocus
-      onChange={(e) => setVal(e.target.value)}
-      onBlur={() => {
-        setEditing(false);
-        if (val !== value?.toString()) onSave(val);
-      }}
-      className="bg-transparent border-b border-muted w-16 text-right text-sm focus:outline-none"
-    />
-  ) : (
-    <span className="cursor-pointer hover:underline" onClick={() => setEditing(true)}>
-      {value ?? "—"}
-    </span>
-  );
-}
-
-// -------------------------
-// Edit Modal Drawer
+// Edit Drawer
 // -------------------------
 function EditModalDrawer({
   open,
@@ -267,7 +232,7 @@ function EditModalDrawer({
             </Select>
           </div>
 
-          {/* Cover image */}
+          {/* Cover */}
           <div className="flex flex-col gap-2">
             <Label>Cover</Label>
             <div className="flex items-center gap-3">
@@ -323,16 +288,8 @@ function DraggableRow({ row }: { row: Row<BaseItem> }) {
   );
 }
 
-// Fetcher
 // -------------------------
-const fetchItems = async (type: "song" | "album" | "video") => {
-  const res = await fetch(`/api/${type}s/upload`, { cache: "no-store" });
-  if (!res.ok) throw new Error("Failed to fetch items");
-  return res.json();
-};
-
-// -------------------------
-// Main DataTable
+// Main Table Component
 // -------------------------
 export function DataTable({
   type,
@@ -341,99 +298,109 @@ export function DataTable({
   type: "song" | "album" | "video";
   initialData?: BaseItem[];
 }) {
-  const queryClient = useQueryClient();
-
-  // ✅ UseQuery for live data fetching
-  const { data: items = initialData, isFetching } = useQuery({
-    queryKey: ["media", type],
-    queryFn: () => fetchItems(type),
-    initialData,
-    refetchInterval: 5000, // 🔁 optional polling (every 5s)
-  });
-
+  const [items, setItems] = React.useState<BaseItem[]>(initialData);
+  const socket = React.useMemo(() => getSocket(), []);
   const [editItem, setEditItem] = React.useState<BaseItem | null>(null);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({});
+
+  // pagination state is kept by react-table; use it when rendering controls
+  // -------------------------
+  // Socket setup — subscribe once
+  // -------------------------
+  React.useEffect(() => {
+    if (!socket) return;
+    const onConnect = () => console.log("🟢 Connected to socket server");
+    const onUpdate = (payload: { type: string; data: BaseItem }) => {
+      if (payload.type !== type) return;
+      setItems((prev) => prev.map((i) => (i.id === payload.data.id ? payload.data : i)));
+      toast.success(`${payload.data.title} updated`);
+    };
+    const onDelete = (payload: { type: string; id: string }) => {
+      if (payload.type !== type) return;
+      setItems((prev) => prev.filter((i) => i.id !== payload.id));
+      toast.info(`Item deleted`);
+    };
+    const onCreate = (payload: { type: string; data: BaseItem }) => {
+      if (payload.type !== type) return;
+      setItems((prev) => [payload.data, ...prev]);
+      toast.success(`${payload.data.title} added`);
+    };
+
+    socket.on("connect", onConnect);
+    socket.on("media:update", onUpdate);
+    socket.on("media:delete", onDelete);
+    socket.on("media:create", onCreate);
+
+    return () => {
+      socket.off("connect", onConnect);
+      socket.off("media:update", onUpdate);
+      socket.off("media:delete", onDelete);
+      socket.off("media:create", onCreate);
+      // do NOT disconnect global socket here — getSocket likely returns shared instance
+    };
+  }, [socket, type]);
 
   // -------------------------
-  // Mutations
+  // API Mutations (call server; server will emit socket events)
   // -------------------------
-  const mutation = useMutation({
-    mutationFn: async (payload: Partial<BaseItem>) => {
-      const hasFile = Object.values(payload).some(
-        (v: any) => v instanceof File || v instanceof Blob
-      );
-
-      let body: BodyInit;
-      const headers: HeadersInit = {};
-
-      if (hasFile) {
-        const formData = new FormData();
-        Object.entries(payload).forEach(([key, value]) => {
-          if (value !== undefined && value !== null)
-            formData.append(key, value as any);
-        });
-        body = formData;
-      } else {
-        headers["Content-Type"] = "application/json";
-        body = JSON.stringify(payload);
-      }
-
-      const res = await fetch(`/api/${type}s/upload`, {
-        method: "PUT",
-        headers,
-        body,
-      });
-      if (!res.ok) throw new Error("Update failed");
-      return res.json();
-    },
-    onSuccess: () => {
-      toast.success("Item updated");
-      queryClient.invalidateQueries({ queryKey: ["media", type] });
-    },
-    onError: (err: any) => toast.error(err.message || "Update failed"),
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/${type}s/upload?id=${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Delete failed");
-      return id;
-    },
-    onSuccess: () => {
-      toast.success("Deleted");
-      queryClient.invalidateQueries({ queryKey: ["media", type] });
-    },
-  });
-
-  // -------------------------
-  // Drag & Drop
-  // -------------------------
-  const sensors = useSensors(
-    useSensor(MouseSensor),
-    useSensor(TouchSensor),
-    useSensor(KeyboardSensor)
+  const updateItem = async (payload: Partial<BaseItem>) => {
+  const hasFile = Object.values(payload).some(
+    (v: any) => v instanceof File || v instanceof Blob
   );
 
-  const onDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (active && over && active.id !== over.id) {
-      const oldIndex = items.findIndex((i: any) => i.id === active.id);
-      const newIndex = items.findIndex((i: any) => i.id === over.id);
-      const reordered = arrayMove(items, oldIndex, newIndex);
-      toast.success("Order updated");
+  let res: Response;
+  if (hasFile) {
+    const fd = new FormData();
+    Object.entries(payload).forEach(([k, v]) => {
+      if (v !== undefined && v !== null) fd.append(k, v as any);
+    });
+    res = await fetch(`/api/${type}s/upload`, { method: "PUT", body: fd });
+  } else {
+    res = await fetch(`/api/${type}s/upload`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  }
 
-      // optionally send to server here
-      queryClient.setQueryData(["media", type], reordered);
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || "Failed to update");
+  }
+
+  const updated = await res.json();
+
+  // ✅ Optimistic UI update
+  setItems((prev) =>
+    prev.map((i) => (i.id === updated.id || i.itemId === updated._id ? { ...i, ...updated } : i))
+  );
+
+  toast.success(`${updated.title ?? "Item"} updated`);
+};
+
+
+ const deleteItem = React.useCallback(
+  async (id: string) => {
+    try {
+      const res = await fetch(`/api/${type}s/upload?id=${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || "Failed to delete");
+      }
+
+      setItems((prev) => prev.filter((i) => i.id !== id && i.itemId !== id));
+      toast.success("Item deleted");
+    } catch (err: any) {
+      toast.error(err.message || "Delete failed");
+      throw err;
     }
-  };
-
+  },
+  [type] // dependency for type since the route depends on it
+);
   // -------------------------
-  // Columns
+  // Columns (includes actions)
   // -------------------------
   const columns = React.useMemo<ColumnDef<BaseItem>[]>(() => [
     {
@@ -457,9 +424,7 @@ export function DataTable({
           )}
           <div className="flex flex-col">
             <span className="font-medium">{row.original.title}</span>
-            <span className="text-xs text-muted-foreground capitalize">
-              {row.original.type}
-            </span>
+            <span className="text-xs text-muted-foreground capitalize">{row.original.type}</span>
           </div>
         </div>
       ),
@@ -472,60 +437,32 @@ export function DataTable({
     {
       accessorKey: "genre",
       header: "Genre",
-      cell: ({ row }) => (
-        <Badge variant="secondary">{row.original.genre}</Badge>
-      ),
+      cell: ({ row }) => <Badge variant="secondary">{row.original.genre}</Badge>,
     },
     {
       accessorKey: "plays",
       header: "Plays",
-      cell: ({ row }) => (
-        <EditableField
-          value={row.original.plays}
-          onSave={(v) =>
-            mutation.mutate({ id: row.original.id, plays: +v })
-          }
-        />
-      ),
+      cell: ({ row }) => <span>{row.original.plays ?? "—"}</span>,
     },
     {
       accessorKey: "downloads",
       header: "Downloads",
-      cell: ({ row }) => (
-        <EditableField
-          value={row.original.downloads}
-          onSave={(v) =>
-            mutation.mutate({ id: row.original.id, downloads: +v })
-          }
-        />
-      ),
+      cell: ({ row }) => <span>{row.original.downloads ?? "—"}</span>,
     },
     {
       accessorKey: "duration",
       header: "Duration",
-      cell: ({ row }) =>
-        row.original.duration
-          ? formatDuration(row.original.duration)
-          : "—",
+      cell: ({ row }) => (row.original.duration ? formatDuration(row.original.duration) : "—"),
     },
     {
       accessorKey: "releaseDate",
       header: "Year",
-      cell: ({ row }) =>
-        row.original.releaseDate
-          ? formatDatePretty(row.original.releaseDate)
-          : "—",
+      cell: ({ row }) => (row.original.releaseDate ? formatDatePretty(row.original.releaseDate) : "—"),
     },
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => (
-        <Badge
-          variant={row.original.status ? "outline" : "secondary"}
-        >
-          {row.original.status ? "Published" : "Draft"}
-        </Badge>
-      ),
+      cell: ({ row }) => <Badge variant={row.original.status ? "outline" : "secondary"}>{row.original.status ? "Published" : "Draft"}</Badge>,
     },
     {
       id: "actions",
@@ -537,10 +474,7 @@ export function DataTable({
               <IconDotsVertical />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent
-            align="end"
-            className="bg-white text-slate-900 border-none"
-          >
+          <DropdownMenuContent align="end" className="bg-white text-slate-900 border-none">
             <DropdownMenuItem
               onClick={() => {
                 setEditItem(row.original);
@@ -552,21 +486,34 @@ export function DataTable({
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
+              onClick={() => {
+                deleteItem(row.original.itemId).catch((err) => toast.error(err.message || "Delete failed"));
+              }}
               className="flex items-center justify-between"
-              onClick={() => deleteMutation.mutate(row.original.id)}
             >
-              <span className="text-xs">Delete</span>{" "}
+              <span className="text-xs">Delete</span>
               <TrashIcon className="text-red-400 text-lg" />
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
     },
-  ], [mutation, deleteMutation]);
+  ], [ deleteItem ]);
 
-  // -------------------------
-  // Table Instance
-  // -------------------------
+  const sensors = useSensors(useSensor(MouseSensor), useSensor(TouchSensor), useSensor(KeyboardSensor));
+
+  const onDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (active && over && active.id !== over.id) {
+      const oldIndex = items.findIndex((i) => i.id === active.id);
+      const newIndex = items.findIndex((i) => i.id === over.id);
+      setItems(arrayMove(items, oldIndex, newIndex));
+      toast.success("Order updated");
+      // optional: send order to server; server can then re-broadcast if needed
+      // socket.emit('charts:update:item', { type, id: active.id, newPos: newIndex })
+    }
+  };
+
   const table = useReactTable({
     data: items,
     columns,
@@ -585,7 +532,8 @@ export function DataTable({
   return (
     <>
       <Tabs defaultValue="data" className="w-full">
-        <div className="flex justify-end items-center gap-2">
+        <div className="flex justify-end items-center gap-2 mb-2">
+          {/* Customize columns */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="hover:text-white">
@@ -595,25 +543,16 @@ export function DataTable({
                 <IconChevronDown />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-              align="end"
-              className="w-56 bg-white text-slate-900 border-none"
-            >
+            <DropdownMenuContent align="end" className="w-56 bg-white text-slate-900 border-none">
               {table
                 .getAllColumns()
-                .filter(
-                  (column) =>
-                    typeof column.accessorFn !== "undefined" &&
-                    column.getCanHide()
-                )
+                .filter((c) => typeof c.accessorFn !== "undefined" && c.getCanHide())
                 .map((column) => (
                   <DropdownMenuCheckboxItem
                     key={column.id}
                     className="capitalize"
                     checked={column.getIsVisible()}
-                    onCheckedChange={(value) =>
-                      column.toggleVisibility(!!value)
-                    }
+                    onCheckedChange={(value) => column.toggleVisibility(!!value)}
                   >
                     {column.id}
                   </DropdownMenuCheckboxItem>
@@ -624,45 +563,30 @@ export function DataTable({
 
         <TabsContent value="data">
           <div className="overflow-hidden rounded-lg border bg-card">
-            <DndContext
-              collisionDetection={closestCenter}
-              modifiers={[]}
-              sensors={sensors}
-              onDragEnd={onDragEnd}
-            >
+            <DndContext collisionDetection={closestCenter} sensors={sensors} onDragEnd={onDragEnd}>
               <Table>
                 <TableHeader className="bg-muted/50">
                   {table.getHeaderGroups().map((hg) => (
                     <TableRow key={hg.id}>
                       {hg.headers.map((header) => (
                         <TableHead key={header.id}>
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          {flexRender(header.column.columnDef.header, header.getContext())}
                         </TableHead>
                       ))}
                     </TableRow>
                   ))}
                 </TableHeader>
+
                 <TableBody>
                   {table.getRowModel().rows.length ? (
-                    <SortableContext
-                      items={table
-                        .getRowModel()
-                        .rows.map((row) => row.original.id)}
-                      strategy={verticalListSortingStrategy}
-                    >
+                    <SortableContext items={table.getRowModel().rows.map((r) => r.original.id)} strategy={verticalListSortingStrategy}>
                       {table.getRowModel().rows.map((row) => (
                         <DraggableRow key={row.id} row={row} />
                       ))}
                     </SortableContext>
                   ) : (
                     <TableRow>
-                      <TableCell
-                        colSpan={columns.length}
-                        className="text-center"
-                      >
+                      <TableCell colSpan={columns.length} className="text-center">
                         No records found.
                       </TableCell>
                     </TableRow>
@@ -670,77 +594,49 @@ export function DataTable({
                 </TableBody>
               </Table>
 
-              {/* Pagination */}
-              <div className="flex items-center justify-between px-4 py-2">
-                <div className="hidden flex-1 text-sm text-muted-foreground lg:flex">
-                  {table.getFilteredSelectedRowModel().rows.length} of{" "}
-                  {table.getFilteredRowModel().rows.length} row(s) selected.
+              {/* Pagination + row-per-page */}
+              <div className="flex items-center justify-between px-4 py-3">
+                <div className="text-muted-foreground hidden lg:flex text-sm">
+                  {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s) selected.
                 </div>
-                <div className="flex w-full items-center gap-8 lg:w-fit">
-                  <div className="hidden items-center gap-2 lg:flex">
-                    <Label htmlFor="rows-per-page" className="text-sm font-medium">
-                      Rows per page
-                    </Label>
+
+                <div className="flex items-center gap-4">
+                  <div className="hidden lg:flex items-center gap-2">
+                    <Label htmlFor="rows-per-page" className="text-sm font-medium">Rows per page</Label>
                     <Select
                       value={`${table.getState().pagination.pageSize}`}
-                      onValueChange={(value) =>
-                        table.setPageSize(Number(value))
-                      }
+                      onValueChange={(value) => table.setPageSize(Number(value))}
                     >
                       <SelectTrigger size="sm" className="w-20" id="rows-per-page">
-                        <SelectValue
-                          placeholder={table.getState().pagination.pageSize}
-                        />
+                        <SelectValue placeholder={`${table.getState().pagination.pageSize}`} />
                       </SelectTrigger>
                       <SelectContent side="top">
-                        {[10, 20, 30, 40, 50].map((pageSize) => (
-                          <SelectItem key={pageSize} value={`${pageSize}`}>
-                            {pageSize}
-                          </SelectItem>
+                        {[5, 10, 20, 30, 50].map((s) => (
+                          <SelectItem key={s} value={`${s}`}>{s}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="flex w-fit items-center justify-center text-sm font-medium">
-                    Page {table.getState().pagination.pageIndex + 1} of{" "}
-                    {table.getPageCount()}
+
+                  <div className="text-sm">
+                    Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
                   </div>
-                  <div className="ml-auto flex items-center gap-2 lg:ml-0">
-                    <Button
-                      variant="outline"
-                      className="hidden h-8 w-8 p-0 lg:flex"
-                      onClick={() => table.setPageIndex(0)}
-                      disabled={!table.getCanPreviousPage()}
-                    >
+
+                  <div className="ml-auto flex items-center gap-2">
+                    <Button variant="outline" className="hidden h-8 w-8 p-0 lg:flex" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
+                      <span className="sr-only">Go to first page</span>
                       <IconChevronsLeft />
                     </Button>
-                    <Button
-                      variant="outline"
-                      className="size-8"
-                      size="icon"
-                      onClick={() => table.previousPage()}
-                      disabled={!table.getCanPreviousPage()}
-                    >
+                    <Button variant="outline" size="icon" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+                      <span className="sr-only">Previous</span>
                       <IconChevronLeft />
                     </Button>
-                    <Button
-                      variant="outline"
-                      className="size-8"
-                      size="icon"
-                      onClick={() => table.nextPage()}
-                      disabled={!table.getCanNextPage()}
-                    >
+                    <Button variant="outline" size="icon" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+                      <span className="sr-only">Next</span>
                       <IconChevronRight />
                     </Button>
-                    <Button
-                      variant="outline"
-                      className="hidden size-8 lg:flex"
-                      size="icon"
-                      onClick={() =>
-                        table.setPageIndex(table.getPageCount() - 1)
-                      }
-                      disabled={!table.getCanNextPage()}
-                    >
+                    <Button variant="outline" className="hidden size-8 lg:flex" size="icon" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
+                      <span className="sr-only">Go to last page</span>
                       <IconChevronsRight />
                     </Button>
                   </div>
@@ -751,14 +647,22 @@ export function DataTable({
         </TabsContent>
       </Tabs>
 
-      {/* ✅ Edit Modal Drawer */}
-      <EditModalDrawer
-        open={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        item={editItem}
-        type={type}
-        onSave={(payload) => mutation.mutate(payload)}
-      />
+     <EditModalDrawer
+  open={isModalOpen}
+  onClose={() => setIsModalOpen(false)}
+  item={editItem}
+  type={type}
+  onSave={(data) => {
+    const payload: Partial<BaseItem> = { ...(editItem ?? {}), ...data };
+    updateItem(payload)
+      .then(() => {
+        setIsModalOpen(false);
+        setEditItem(null);
+      })
+      .catch((err) => toast.error(err.message || "Update failed"));
+  }}
+/>
+
     </>
   );
 }

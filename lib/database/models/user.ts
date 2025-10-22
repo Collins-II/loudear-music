@@ -1,4 +1,4 @@
-import mongoose, { Schema, Document, Model } from "mongoose";
+import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
 
 // Production-ready tweaks:
@@ -16,6 +16,7 @@ bio?: string;
 location?: string;
 phone?: string;
 genres?: string[];
+stan?: Types.ObjectId[];
 createdAt: Date;
 updatedAt: Date;
 }
@@ -42,6 +43,7 @@ bio: { type: String, maxlength: 2000 },
 location: { type: String, maxlength: 200 },
 phone: { type: String },
 genres: [{ type: String }],
+stan: [{ type: Schema.Types.ObjectId, ref: "User" }],
 },
 { timestamps: true }
 );

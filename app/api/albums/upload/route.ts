@@ -13,7 +13,7 @@ function corsResponse(data: any, status = 200) {
     status,
     headers: {
       "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, PATCH, DELETE, OPTIONS",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, Authorization",
     },
   });
@@ -32,12 +32,15 @@ async function uploadToCloudinary(buffer: Buffer, options: Record<string, any>):
   });
 }
 
+// =====================================================
+// OPTIONS: CORS preflight
+// =====================================================
 export async function OPTIONS() {
   return corsResponse({}, 200);
 }
 
 // =====================================================
-// GET: List all albums (optionally filter by user or visibility)
+// GET: Fetch albums (optional filters)
 // =====================================================
 export async function GET(req: Request) {
   try {
@@ -62,7 +65,7 @@ export async function GET(req: Request) {
 }
 
 // =====================================================
-// POST: Create album with songs
+// POST: Create album and upload songs
 // =====================================================
 export async function POST(req: Request) {
   try {
@@ -71,32 +74,41 @@ export async function POST(req: Request) {
     if (!currentUser) return corsResponse({ error: "Unauthorized" }, 401);
 
     const formData = await req.formData();
-    const title = formData.get("albumTitle")?.toString() || "";
+
+    const title = formData.get("title")?.toString() || "";
     const artist = formData.get("artist")?.toString() || "";
     const genre = formData.get("genre")?.toString() || "";
     const description = formData.get("description")?.toString() || "";
     const releaseDateStr = formData.get("releaseDate")?.toString() || "";
     const visibility = formData.get("visibility")?.toString() || "private";
+    const label = formData.get("label")?.toString() || "";
+    const mood = formData.get("mood")?.toString() || "";
+    const copyright = formData.get("copyright")?.toString() || "";
 
     const cover = formData.get("cover") as File | null;
     if (!title || !artist || !cover)
       return corsResponse({ error: "Missing required fields: title, artist, or cover" }, 400);
 
-    const coverBuffer = await bufferFromFile(cover);
-    const uploadedCover = await uploadToCloudinary(coverBuffer, {
+    // Upload cover
+    const uploadedCover = await uploadToCloudinary(await bufferFromFile(cover), {
       folder: "albums",
       resource_type: "image",
     });
 
-    // Upload songs
+    // Parse array fields
+    const tags = formData.get("tags") ? JSON.parse(formData.get("tags") as string) : [];
+    const producers = formData.get("producers") ? JSON.parse(formData.get("producers") as string) : [];
+    const collaborators = formData.get("collaborators") ? JSON.parse(formData.get("collaborators") as string) : [];
+
+    // Upload songs dynamically
     const songDocs: any[] = [];
     let index = 0;
     while (formData.get(`songs[${index}][file]`)) {
-      const file = formData.get(`songs[${index}][file]`) as File;
+      const songFile = formData.get(`songs[${index}][file]`) as File;
       const songTitle = formData.get(`songs[${index}][title]`)?.toString() || `Track ${index + 1}`;
+      const songArtist = formData.get(`songs[${index}][artist]`)?.toString() || artist;
 
-      const songBuffer = await bufferFromFile(file);
-      const uploadedSong = await uploadToCloudinary(songBuffer, {
+      const uploadedSong = await uploadToCloudinary(await bufferFromFile(songFile), {
         folder: "songs",
         resource_type: "video",
       });
@@ -104,6 +116,7 @@ export async function POST(req: Request) {
       const songDoc = await Song.create({
         author: currentUser._id,
         title: songTitle,
+        artist: songArtist,
         album: title,
         fileUrl: uploadedSong.secure_url,
         coverUrl: uploadedCover.secure_url,
@@ -114,12 +127,19 @@ export async function POST(req: Request) {
       index++;
     }
 
+    // Create album
     const album = await Album.create({
       author: currentUser._id,
       title,
       artist,
       genre,
       description,
+      label,
+      mood,
+      copyright,
+      tags,
+      producers,
+      collaborators,
       releaseDate: releaseDateStr ? new Date(releaseDateStr) : undefined,
       visibility,
       songs: songDocs,
@@ -127,6 +147,7 @@ export async function POST(req: Request) {
       totalSongs: songDocs.length,
     });
 
+    globalThis.io?.emit("media:create", { type: "album", data: album });
     return corsResponse({ success: true, album }, 201);
   } catch (error: any) {
     console.error("Error uploading album:", error);
@@ -135,14 +156,11 @@ export async function POST(req: Request) {
 }
 
 // =====================================================
-// PATCH: Update album metadata
+// PUT: Update album metadata or cover
 // =====================================================
-export const runtime = "nodejs"; // Hybrid-ready
-
 export async function PUT(req: Request) {
   try {
     await connectToDatabase();
-
     const currentUser = await getCurrentUser();
     if (!currentUser) return corsResponse({ error: "Unauthorized" }, 401);
 
@@ -152,11 +170,10 @@ export async function PUT(req: Request) {
 
     const album = await Album.findById(id);
     if (!album) return corsResponse({ error: "Album not found" }, 404);
-    if (album.author.toString() !== currentUser._id.toString())
-      return corsResponse({ error: "Forbidden" }, 403);
+    if (album.author.toString() !== currentUser._id.toString()) return corsResponse({ error: "Forbidden" }, 403);
 
     const updates: any = {};
-    const fields = ["title", "artist", "genre", "description", "visibility"];
+    const fields = ["title", "artist", "genre", "description", "visibility", "label", "mood", "copyright"];
     for (const field of fields) {
       const val = formData.get(field)?.toString();
       if (val !== undefined) updates[field] = val;
@@ -165,11 +182,9 @@ export async function PUT(req: Request) {
     const releaseDateStr = formData.get("releaseDate")?.toString();
     if (releaseDateStr) updates.releaseDate = new Date(releaseDateStr);
 
-    // 🔹 Optional cover upload
     const coverFile = formData.get("cover") as File | null;
     if (coverFile && coverFile.size > 0) {
-      const coverBuffer = await bufferFromFile(coverFile);
-      const uploadedCover = await uploadToCloudinary(coverBuffer, {
+      const uploadedCover = await uploadToCloudinary(await bufferFromFile(coverFile), {
         folder: "albums",
         resource_type: "image",
       });
@@ -179,19 +194,16 @@ export async function PUT(req: Request) {
     Object.assign(album, updates);
     await album.save();
 
+    globalThis.io?.emit("media:update", { type: "album", data: album });
     return corsResponse({ success: true, album });
   } catch (error: any) {
     console.error("Error updating album:", error);
-    return corsResponse(
-      { error: "Failed to update album", details: error.message },
-      500
-    );
+    return corsResponse({ error: "Failed to update album", details: error.message }, 500);
   }
 }
 
-
 // =====================================================
-// DELETE: Remove album (and optionally songs)
+// DELETE: Remove album and its songs
 // =====================================================
 export async function DELETE(req: Request) {
   try {
@@ -205,17 +217,15 @@ export async function DELETE(req: Request) {
 
     const album = await Album.findById(id).populate("songs");
     if (!album) return corsResponse({ error: "Album not found" }, 404);
-    if (album.author.toString() !== currentUser._id.toString())
-      return corsResponse({ error: "Forbidden" }, 403);
+    if (album.author.toString() !== currentUser._id.toString()) return corsResponse({ error: "Forbidden" }, 403);
 
-    // Optionally delete all songs from Cloudinary and DB
+    // Delete songs
     for (const song of album.songs as any[]) {
-      // Cloudinary delete (optional, requires public_id)
-      // await cloudinary.uploader.destroy(song.public_id, { resource_type: "video" });
       await Song.findByIdAndDelete(song._id);
     }
 
     await Album.findByIdAndDelete(id);
+    globalThis.io?.emit("media:delete", { type: "album", id });
 
     return corsResponse({ success: true, message: "Album and songs deleted successfully" });
   } catch (error: any) {

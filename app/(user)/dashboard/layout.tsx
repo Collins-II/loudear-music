@@ -4,7 +4,6 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { cn } from "@/lib/utils"; // utility for merging classes (if you have this helper)
-import { QueryProvider } from "@/lib/provider/query-provider";
 
 export const metadata: Metadata = {
   title: "Artist - Portal",
@@ -37,9 +36,7 @@ export default function UserLayout({
 
           {/* Page Content */}
           <main className="flex-1 p-6 md:p-8 lg:p-10 overflow-y-auto scrollbar-hide bg-background/80 text-foreground">
-          <QueryProvider>
             {children}
-          </QueryProvider>
           </main>
         </SidebarInset>
       </SidebarProvider>

@@ -12,7 +12,7 @@ export interface ISong extends Document {
   fileUrl: string;
   coverUrl: string;
   duration?: number;
-  album?: string | Types.ObjectId;
+  album?: string;
 
   explicit?: boolean;
   bpm?: number;
@@ -45,7 +45,7 @@ const SongSchema = new Schema<ISong>(
     duration: { type: Number },
 
     // ➕ New fields for better metadata
-    album: { type: Schema.Types.ObjectId, ref: "Album" },
+    album: { type: String },
     explicit: { type: Boolean, default: false },
     bpm: { type: Number },
     key: { type: String, trim: true },

@@ -5,11 +5,12 @@ import { Song } from "@/lib/database/models/song";
 import { Album } from "@/lib/database/models/album";
 import { Video } from "@/lib/database/models/video";
 import { ChartHistory, IChartHistory } from "@/lib/database/models/chartHistory";
-import dayjs from "dayjs";
-import isoWeek from "dayjs/plugin/isoWeek";
 import { IViewAnalytics, ViewAnalytics } from "@/lib/database/models/viewsAnalytics";
 import { getViewCounts } from "@/lib/get-views-analytics";
 import { updateChartHistory } from "@/lib/update-chart-history";
+import dayjs from "dayjs";
+import isoWeek from "dayjs/plugin/isoWeek";
+import User from "@/lib/database/models/user";
 dayjs.extend(isoWeek);
 
 /* ------------------------------------------------------------------ */
@@ -18,7 +19,6 @@ dayjs.extend(isoWeek);
 export type ItemType = "Song" | "Album" | "Video";
 type InteractionType = "view" | "like" | "download" | "share" | "unlike";
 export type ReactionType = "heart" | "fire" | "laugh" | "up" | "down";
-
 
 export type ChartHistoryLean = FlattenMaps<IChartHistory> & {
   _id: Types.ObjectId;
@@ -31,6 +31,14 @@ export interface IInteractionDoc extends Document {
   views: Types.ObjectId[];
   downloads: Types.ObjectId[];
   shares: Types.ObjectId[];
+}
+
+interface Author {
+  _id: string;
+  name: string;
+  image: string;
+  role: string;
+  stan: number;
 }
 
 /* ------------------------------------------------------------------ */
@@ -85,6 +93,7 @@ function serializeComments(comments: unknown[] = []): CommentSerialized[] {
 /* ------------------------------------------------------------------ */
 export interface BaseSerialized {
   _id: string;
+  author: Author;
   artist: string;
   features: string[];
   title: string;
@@ -94,6 +103,7 @@ export interface BaseSerialized {
   coverUrl: string;
   createdAt: string;
   updatedAt: string;
+  totalViews: number;
   viewCount: number;
   likeCount: number;
   downloadCount: number;
@@ -122,7 +132,7 @@ export interface SongSerialized extends BaseSerialized {
 }
 
 export interface AlbumSerialized extends BaseSerialized {
-  curator: string;
+  curator?: string;
   songs?: SongSerialized[];
   trendingPosition?: number | null;
   chartPosition?: number | null;
@@ -145,7 +155,6 @@ export interface VideoSerialized extends BaseSerialized {
 /* ------------------------------------------------------------------ */
 /* SERIALIZE ITEM */
 /* ------------------------------------------------------------------ */
-
 export async function serializeItem<T extends ItemType>(
   doc: Record<string, any>,
   type: T,
@@ -159,9 +168,19 @@ export async function serializeItem<T extends ItemType>(
 > {
   if (!doc) return null as any;
 
-  // Base structure
   const base: BaseSerialized = {
     _id: String(doc._id),
+    author: {
+    _id: String(doc.author?._id ?? ""),
+    name: doc.author?.name ?? "Unknown",
+    image: doc.author?.image ?? "",
+    role: doc.author?.role ?? "artist",
+    stan: typeof doc.author?.stanCount === "number"
+      ? doc.author.stanCount
+      : Array.isArray(doc.author?.stan)
+      ? doc.author.stan.length
+      : 0,
+    },
     artist: doc.artist ?? "Unknown Artist",
     title: doc.title ?? "Untitled",
     features: Array.isArray(doc.features) ? doc.features : [],
@@ -171,6 +190,7 @@ export async function serializeItem<T extends ItemType>(
     coverUrl: doc.coverUrl ?? doc.thumbnailUrl ?? "",
     createdAt: doc.createdAt?.toISOString?.() ?? new Date().toISOString(),
     updatedAt: doc.updatedAt?.toISOString?.() ?? new Date().toISOString(),
+    totalViews: 0,
     viewCount: 0,
     likeCount: doc.likes?.length ?? doc.likeCount ?? 0,
     downloadCount: doc.downloads?.length ?? doc.downloadCount ?? 0,
@@ -179,7 +199,6 @@ export async function serializeItem<T extends ItemType>(
     latestComments: serializeComments(doc.latestComments ?? []),
   };
 
-  // ✅ Fetch analytics view counts if enabled
   if (includeAnalytics && doc._id) {
     try {
       const { totalViews, previousViewCount } = await getViewCounts(doc._id, type);
@@ -201,18 +220,13 @@ export async function serializeItem<T extends ItemType>(
       fileUrl: doc.fileUrl ?? "",
     } as any;
 
-if (type === "Album") {
-  const songs =
-    Array.isArray(doc.songs) && doc.songs.length > 0
-      ? await Promise.all(doc.songs.map((s: any) => serializeItem(s, "Song", false)))
-      : [];
-
-  return {
-    ...base,
-    songs,
-  } as any;
-}
-
+  if (type === "Album") {
+    const songs =
+      Array.isArray(doc.songs) && doc.songs.length > 0
+        ? await Promise.all(doc.songs.map((s: any) => serializeItem(s, "Song", false)))
+        : [];
+    return { ...base, songs } as any;
+  }
 
   return {
     ...base,
@@ -235,11 +249,9 @@ export const serializeVideo = async (doc: unknown): Promise<VideoSerialized | nu
   return serializeItem(doc as Record<string, any>, "Video") as Promise<VideoSerialized | null>;
 };
 
-
 /* ------------------------------------------------------------------ */
-/* INCREMENT INTERACTION */
+/* INTERACTIONS + ANALYTICS */
 /* ------------------------------------------------------------------ */
-
 export async function incrementInteraction(
   id: string,
   model: ItemType,
@@ -257,42 +269,29 @@ export async function incrementInteraction(
     share: "shares",
   };
 
-  /* ------------------------ UNLIKE HANDLER ------------------------ */
   if (type === "unlike") {
     await Model.updateOne({ _id: id }, { $pull: { likes: new Types.ObjectId(userId) } });
     return { success: true, action: "unliked" as const };
   }
 
-  /* -------------------------- VIEW HANDLER ------------------------ */
   if (type === "view") {
     const nowWeek = `${dayjs().year()}-W${String(dayjs().isoWeek()).padStart(2, "0")}`;
-
-    await Model.updateOne(
-      { _id: id },
-      { $addToSet: { views: new Types.ObjectId(userId) } }
-    );
-
+    await Model.updateOne({ _id: id }, { $addToSet: { views: new Types.ObjectId(userId) } });
     await ViewAnalytics.updateOne(
       { itemId: id, contentModel: model, week: nowWeek },
       { $inc: { views: 1 } },
       { upsert: true }
     );
-
-    // ✅ Update chart automatically (songs/albums/videos)
     await updateChartHistory(model.toLowerCase() + "s" as "songs" | "albums" | "videos");
-
     return { success: true, action: "view" as const };
   }
 
-  /* --------------------- LIKE/DOWNLOAD/SHARE ---------------------- */
   const field = fieldMap[type];
   if (!field) throw new Error(`Unsupported interaction type: ${type}`);
 
   await Model.updateOne({ _id: id }, { $addToSet: { [field]: new Types.ObjectId(userId) } });
 
-  // ✅ Optional: trigger chart update only occasionally (to prevent spam)
   if (["like", "share", "download"].includes(type)) {
-    // Randomize update frequency (only 1 in ~10 requests triggers full rebuild)
     if (Math.random() < 0.1) {
       await updateChartHistory(model.toLowerCase() + "s" as "songs" | "albums" | "videos");
     }
@@ -300,7 +299,6 @@ export async function incrementInteraction(
 
   return { success: true, action: type as Exclude<InteractionType, "unlike"> };
 }
-
 
 /* ------------------------------------------------------------------ */
 /* DYNAMIC STATS FETCHER */
@@ -312,7 +310,10 @@ export async function getItemWithStats(model: ItemType, id: string) {
 
     const Model = model === "Song" ? Song : model === "Album" ? Album : Video;
 
-    let query = Model.findById(id);
+    let query = Model.findById(id).populate({
+      path: "author",
+      select: "_id name image role stan",
+    });
     if (model === "Album") {
       query = query.populate({
         path: "songs",
@@ -323,7 +324,6 @@ export async function getItemWithStats(model: ItemType, id: string) {
     const doc = await query.lean<Record<string, any>>();
     if (!doc) return null;
 
-    /* --------------------------- COMMENTS --------------------------- */
     const [commentCountRes, latestCommentsRes] = await Promise.allSettled([
       Comment.countDocuments({ targetId: id, targetModel: model }),
       Comment.find({ targetId: id, targetModel: model, parent: null })
@@ -347,7 +347,6 @@ export async function getItemWithStats(model: ItemType, id: string) {
         ? serializeComments(latestCommentsRes.value)
         : [];
 
-    /* --------------------------- ANALYTICS --------------------------- */
     const sinceDate = dayjs().subtract(365, "day").toDate();
     const recentItems = await Model.find({ createdAt: { $gte: sinceDate } })
       .select("_id views likes shares downloads")
@@ -387,39 +386,53 @@ export async function getItemWithStats(model: ItemType, id: string) {
       .limit(12)
       .lean<ChartHistoryLean[]>();
 
-  const chartHistory = chartHistoryDocs
-  .map((snap) => {
-    const item = snap.items.find((it) => String(it.itemId) === id);
-    if (!item) return undefined;
-    return {
-      week: snap.week,
-      position: item.rank,
-      peak: item.peak ?? item.rank,
-      weeksOn: item.weeksOn ?? 1,
-    } as ChartHistoryEntry;
-  })
-  .filter((entry): entry is ChartHistoryEntry => Boolean(entry));
+    const chartHistory = chartHistoryDocs
+      .map((snap) => {
+        const item = snap.items.find((it) => String(it.itemId) === id);
+        if (!item) return undefined;
+        return {
+          week: snap.week,
+          position: item.rank,
+          peak: item.peak ?? item.rank,
+          weeksOn: item.weeksOn ?? 1,
+        } as ChartHistoryEntry;
+      })
+      .filter((entry): entry is ChartHistoryEntry => Boolean(entry));
 
-const thisWeek = `${dayjs().year()}-W${String(dayjs().isoWeek()).padStart(2, "0")}`;
-const prevWeek = `${dayjs().subtract(1, "week").year()}-W${String(
-  dayjs().subtract(1, "week").isoWeek()
-).padStart(2, "0")}`;
+    const thisWeek = `${dayjs().year()}-W${String(dayjs().isoWeek()).padStart(2, "0")}`;
+    const prevWeek = `${dayjs().subtract(1, "week").year()}-W${String(
+      dayjs().subtract(1, "week").isoWeek()
+    ).padStart(2, "0")}`;
 
-// Fetch weekly view analytics
-const [currentWeekData, prevWeekData] = await Promise.all([
-  ViewAnalytics.findOne<IViewAnalytics>({ itemId: id, contentModel: model, week: thisWeek }).lean(),
-  ViewAnalytics.findOne<IViewAnalytics>({ itemId: id, contentModel: model, week: prevWeek }).lean(),
-]);
+    const { totalViews } = await getViewCounts(id, model)
 
-const currentViewCount = currentWeekData?.views ?? 0;
-const previousViewCount = prevWeekData?.views ?? 0;
+    const [currentWeekData, prevWeekData] = await Promise.all([
+      ViewAnalytics.findOne<IViewAnalytics>({
+        itemId: id,
+        contentModel: model,
+        week: thisWeek,
+      }).lean(),
+      ViewAnalytics.findOne<IViewAnalytics>({
+        itemId: id,
+        contentModel: model,
+        week: prevWeek,
+      }).lean(),
+    ]);
 
+    const currentViewCount = currentWeekData?.views ?? 0;
+    const previousViewCount = prevWeekData?.views ?? 0;
 
-    /* --------------------------- SERIALIZE --------------------------- */
-    const serialized = await serializeItem(
-      { ...doc, commentCount, latestComments },
-      model
-    ) as SongSerialized | AlbumSerialized | VideoSerialized;
+// ✅ Compute artist's total stans (followers)
+let stanCount = 0;
+if (doc.author?._id) {
+  stanCount = await User.countDocuments({ stan: doc.author._id });
+}
+
+const serialized = (await serializeItem(
+  { ...doc, commentCount, latestComments, author: { ...doc.author, stanCount } },
+  model
+)) as SongSerialized | AlbumSerialized | VideoSerialized;
+
 
     return {
       ...serialized,
@@ -427,27 +440,12 @@ const previousViewCount = prevWeekData?.views ?? 0;
       chartPosition,
       chartHistory,
       trendingScore,
+      totalViews,
       viewCount: currentViewCount,
       previousViewCount,
     };
   } catch (error: unknown) {
     console.error("GET_ITEMS_ERROR", error);
-
-    const err = error as Error & { name?: string; message?: string };
-    if (
-      err?.name === "MongoNetworkError" ||
-      err?.message?.includes("ECONNRESET") ||
-      err?.message?.includes("pool was cleared")
-    ) {
-      console.warn("🔁 Retrying database connection...");
-      try {
-        await connectToDatabase();
-        return await getItemWithStats(model, id);
-      } catch (retryError) {
-        console.error("❌ Retry failed:", retryError);
-      }
-    }
-
     return null;
   }
 }

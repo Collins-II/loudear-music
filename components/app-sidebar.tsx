@@ -28,7 +28,6 @@ import {
 } from "@/components/ui/sidebar"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
-import { IUser } from "@/lib/database/models/user"
 import { Separator } from "./ui/separator"
 
 const data = {
@@ -115,6 +114,7 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
   const user = session?.user;
+
   return (
     <Sidebar collapsible="offcanvas" {...props} className="pt-20">
       {/* Branding */}
@@ -188,7 +188,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       {/* Footer */}
       {user && (
        <SidebarFooter>
-        <NavUser user={user as IUser} />
+        <NavUser />
       </SidebarFooter>
       )}  
     </Sidebar>

@@ -26,6 +26,7 @@ import InteractiveButtons from "@/components/interactive-buttons";
 import ViewStats from "@/components/stats/ViewStats";
 import { handleInteractionUtil } from "@/lib/interactions";
 import { useRouter } from "next/navigation";
+import { StanButton } from "@/components/auth/StanButton";
 
 /**
  * Design goals:
@@ -232,7 +233,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
                   </div>
 
                   <div className="mt-3 sm:mt-0 flex items-center gap-2">
-                    <Badge className="uppercase px-3 py-1 text-xs">Single</Badge>
+                    <Badge className="uppercase px-3 py-1 text-xs">Song</Badge>
                   </div>
                 </div>
 
@@ -242,7 +243,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
                   <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
                     <div className="flex items-center gap-2">
                       <Eye className="w-4 h-4 text-gray-500" />
-                      <span className="font-semibold">{data.viewCount ?? 0}</span>
+                      <span className="font-semibold">{data.totalViews ?? 0}</span>
                       <span className="text-xs text-gray-400">views</span>
                     </div>
 
@@ -264,6 +265,10 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
                       <Badge onClick={() => router.push(`/search?q=${t.toLocaleLowerCase()}`)} variant="outline" key={i} className="cursor-pointer rounded-full uppercase px-3 py-1 text-xs">{t}</Badge>
                     ))}
                   </div>
+                  <StanButton
+                    artistId={data.author._id}
+                    initialStanCount={data.author.stan}
+                  />
 
                   {/* Action buttons 
                   <div className="flex flex-wrap items-center gap-3">

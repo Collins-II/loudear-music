@@ -1,11 +1,11 @@
 "use client"
 
 import {
-  IconCreditCard,
+  //IconCreditCard,
   IconDotsVertical,
   IconLogout,
-  IconNotification,
-  IconUserCircle,
+  //IconNotification,
+  //IconUserCircle,
 } from "@tabler/icons-react"
 
 import {
@@ -16,7 +16,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
+  //DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -29,13 +29,11 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { IUser } from "@/lib/database/models/user"
-import { signOut } from "next-auth/react"
+import { signOut, useSession } from "next-auth/react"
 
-export function NavUser({
-  user,
-}: {
-  user: IUser
-}) {
+export function NavUser() {
+  const { data: session } = useSession();
+  const userLayout = session?.user as IUser;
   const { isMobile } = useSidebar()
 
   return (
@@ -48,13 +46,13 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-full grayscale">
-                <AvatarImage src={user?.image} alt={user?.name} />
+                <AvatarImage src={userLayout?.image} alt={userLayout?.name} />
                 <AvatarFallback className="rounded-lg">CN</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user?.name}</span>
+                <span className="truncate font-medium">{userLayout?.name}</span>
                 <span className="text-muted-foreground truncate text-xs">
-                  {user?.email}
+                  {userLayout?.email}
                 </span>
               </div>
               <IconDotsVertical className="ml-auto size-4" />
@@ -69,13 +67,13 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-full">
-                  <AvatarImage src={user?.image} alt={user?.name} />
+                  <AvatarImage src={userLayout?.image} alt={userLayout?.name} />
                   <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="text-black/80 truncate font-medium">{user?.name}</span>
+                  <span className="text-black/80 truncate font-medium">{userLayout?.name}</span>
                   <span className="text-muted-foreground truncate text-xs">
-                    {user?.email}
+                    {userLayout?.email}
                   </span>
                 </div>
               </div>

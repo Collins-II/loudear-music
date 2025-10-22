@@ -25,6 +25,7 @@ import InteractiveButtons from "@/components/interactive-buttons";
 import ViewStats from "@/components/stats/ViewStats";
 import { handleInteractionUtil } from "@/lib/interactions";
 import { useRouter } from "next/navigation";
+import { StanButton } from "@/components/auth/StanButton";
 
 interface VideoPageProps {
   data: VideoSerialized;
@@ -191,7 +192,7 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
                   <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
                     <div className="flex items-center gap-2">
                       <Eye className="w-4 h-4 text-gray-500" />
-                      <span className="font-semibold">{data.viewCount ?? 0}</span>
+                      <span className="font-semibold">{data.totalViews ?? 0}</span>
                       <span className="text-xs text-gray-400">views</span>
                     </div>
                     <div className="flex items-center gap-2">
@@ -210,7 +211,7 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
                         <Badge onClick={() => router.push(`/search?q=${t.toLocaleLowerCase()}`)} variant="outline" key={i} className="cursor-pointer rounded-full uppercase px-3 py-1 text-xs">{t}</Badge>
                       ))}
                   </div>
-
+                  <StanButton artistId={data._id} />
                  {/* */}
                 </div>
               </div>
