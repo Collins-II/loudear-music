@@ -21,6 +21,11 @@ import { IUser } from "./database/models/user";
  * and number formatting for music / media / auction platforms.
  */
 
+export async function bufferFromFile(file: File): Promise<Buffer> {
+  const arrayBuffer = await file.arrayBuffer();
+  return Buffer.from(arrayBuffer);
+}
+
 /** --- 📊 Basic Formatting --- */
 export function formatViews(views: number): string {
   if (isNaN(views) || views < 0) return "0";

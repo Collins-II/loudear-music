@@ -1,3 +1,4 @@
+// app/api/albums/upload/route.ts
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/database";
 import { Album } from "@/lib/database/models/album";
@@ -5,9 +6,13 @@ import { Song } from "@/lib/database/models/song";
 import cloudinary from "@/lib/cloudinary";
 import { getCurrentUser } from "@/actions/getCurrentUser";
 
-// =====================================================
-// Utility Helpers
-// =====================================================
+// Helper: Convert File → Buffer
+async function bufferFromFile(file: File): Promise<Buffer> {
+  const arr = await file.arrayBuffer();
+  return Buffer.from(arr);
+}
+
+// Helper: JSON + CORS
 function corsResponse(data: any, status = 200) {
   return NextResponse.json(data, {
     status,
@@ -19,145 +24,173 @@ function corsResponse(data: any, status = 200) {
   });
 }
 
-async function bufferFromFile(file: File): Promise<Buffer> {
-  const arrayBuffer = await file.arrayBuffer();
-  return Buffer.from(arrayBuffer);
-}
-
-async function uploadToCloudinary(buffer: Buffer, options: Record<string, any>): Promise<any> {
-  return new Promise((resolve, reject) => {
-    cloudinary.uploader.upload_stream(options, (err, result) =>
-      err ? reject(err) : resolve(result)
-    ).end(buffer);
-  });
-}
-
-// =====================================================
-// OPTIONS: CORS preflight
-// =====================================================
 export async function OPTIONS() {
   return corsResponse({}, 200);
 }
 
-// =====================================================
-// GET: Fetch albums (optional filters)
-// =====================================================
-export async function GET(req: Request) {
-  try {
-    await connectToDatabase();
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get("user");
-    const visibility = searchParams.get("visibility");
-
-    const filter: any = {};
-    if (userId) filter.author = userId;
-    if (visibility) filter.visibility = visibility;
-
-    const albums = await Album.find(filter)
-      .populate("songs")
-      .sort({ createdAt: -1 });
-
-    return corsResponse({ success: true, count: albums.length, albums });
-  } catch (error: any) {
-    console.error("Error fetching albums:", error);
-    return corsResponse({ error: "Failed to fetch albums", details: error.message }, 500);
-  }
-}
-
-// =====================================================
-// POST: Create album and upload songs
-// =====================================================
 export async function POST(req: Request) {
   try {
     await connectToDatabase();
+    const io = (globalThis as any).io;
+
     const currentUser = await getCurrentUser();
     if (!currentUser) return corsResponse({ error: "Unauthorized" }, 401);
 
     const formData = await req.formData();
 
-    const title = formData.get("title")?.toString() || "";
-    const artist = formData.get("artist")?.toString() || "";
-    const genre = formData.get("genre")?.toString() || "";
-    const description = formData.get("description")?.toString() || "";
-    const releaseDateStr = formData.get("releaseDate")?.toString() || "";
-    const visibility = formData.get("visibility")?.toString() || "private";
-    const label = formData.get("label")?.toString() || "";
+    // ─── Basic Fields ─────────────────────────────
+    const title = formData.get("title")?.toString();
+    const artist = formData.get("artist")?.toString();
+    const genre = formData.get("genre")?.toString();
+    const releaseDate = formData.get("releaseDate")?.toString();
+    const description = formData.get("description")?.toString();
+    const tags = (formData.get("tags")?.toString() || "")
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+    const producers = (formData.get("producers")?.toString() || "")
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
+    const collaborators = (formData.get("collaborators")?.toString() || "")
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
     const mood = formData.get("mood")?.toString() || "";
+    const label = formData.get("label")?.toString() || "";
     const copyright = formData.get("copyright")?.toString() || "";
+    const visibility = (formData.get("visibility")?.toString() ||
+      "private") as "public" | "private" | "unlisted";
 
     const cover = formData.get("cover") as File | null;
-    if (!title || !artist || !cover)
-      return corsResponse({ error: "Missing required fields: title, artist, or cover" }, 400);
-
-    // Upload cover
-    const uploadedCover = await uploadToCloudinary(await bufferFromFile(cover), {
-      folder: "albums",
-      resource_type: "image",
-    });
-
-    // Parse array fields
-    const tags = formData.get("tags") ? JSON.parse(formData.get("tags") as string) : [];
-    const producers = formData.get("producers") ? JSON.parse(formData.get("producers") as string) : [];
-    const collaborators = formData.get("collaborators") ? JSON.parse(formData.get("collaborators") as string) : [];
-
-    // Upload songs dynamically
-    const songDocs: any[] = [];
-    let index = 0;
-    while (formData.get(`songs[${index}][file]`)) {
-      const songFile = formData.get(`songs[${index}][file]`) as File;
-      const songTitle = formData.get(`songs[${index}][title]`)?.toString() || `Track ${index + 1}`;
-      const songArtist = formData.get(`songs[${index}][artist]`)?.toString() || artist;
-
-      const uploadedSong = await uploadToCloudinary(await bufferFromFile(songFile), {
-        folder: "songs",
-        resource_type: "video",
-      });
-
-      const songDoc = await Song.create({
-        author: currentUser._id,
-        title: songTitle,
-        artist: songArtist,
-        album: title,
-        fileUrl: uploadedSong.secure_url,
-        coverUrl: uploadedCover.secure_url,
-        visibility,
-      });
-
-      songDocs.push(songDoc._id);
-      index++;
+    if (!title || !artist || !cover) {
+      return corsResponse({ error: "Missing required fields" }, 400);
     }
 
-    // Create album
+    // ─── Upload Album Cover ───────────────────────
+    const coverBuffer = await bufferFromFile(cover);
+    const uploadedCover: any = await new Promise((resolve, reject) => {
+      cloudinary.uploader
+        .upload_stream(
+          { folder: "albums/covers", resource_type: "image" },
+          (err, result) => (err ? reject(err) : resolve(result))
+        )
+        .end(coverBuffer);
+    });
+
+    // ─── Upload Songs ─────────────────────────────
+    let idx = 0;
+    const songIds: string[] = [];
+    let totalDuration = 0;
+
+    while (formData.get(`songs[${idx}][file]`)) {
+      const file = formData.get(`songs[${idx}][file]`) as File;
+      const songTitle = formData.get(`songs[${idx}][title]`)?.toString() || "";
+      const songArtist = formData.get(`songs[${idx}][artist]`)?.toString() || "";
+      const songGenre = formData.get(`songs[${idx}][genre]`)?.toString() || "";
+      const explicit =
+        (formData.get(`songs[${idx}][explicit]`)?.toString() || "") === "true";
+      const songTags = (formData.get(`songs[${idx}][tags]`)?.toString() || "")
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+
+      const songBuffer = await bufferFromFile(file);
+
+      // 🔵 Emit starting progress to client
+      io?.emit("uploadProgress", { fileName: songTitle, progress: 0 });
+
+      const uploadResult: any = await new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+          {
+            resource_type: "video",
+            folder: "songs",
+            chunk_size: 6_000_000, // ~6MB per chunk
+            eager_async: true,
+          },
+          (err, result) => (err ? reject(err) : resolve(result))
+        );
+        stream.write(songBuffer);
+        stream.end();
+      });
+
+      totalDuration += uploadResult.duration || 0;
+
+      const newSong = await Song.create({
+        author: currentUser._id,
+        title: songTitle || file.name,
+        artist: songArtist || artist,
+        genre: songGenre || genre,
+        album: title,
+        explicit,
+        tags: songTags,
+        fileUrl: uploadResult.secure_url,
+        coverUrl: uploadedCover.secure_url,
+        duration: uploadResult.duration,
+      });
+
+      songIds.push(newSong._id.toString());
+
+      // 🔵 Emit completion
+      io?.emit("uploadProgress", { fileName: songTitle, progress: 100 });
+      idx++;
+    }
+
+    // ─── Save Album ───────────────────────────────
     const album = await Album.create({
       author: currentUser._id,
       title,
       artist,
       genre,
+      releaseDate: releaseDate ? new Date(releaseDate) : undefined,
       description,
-      label,
-      mood,
-      copyright,
       tags,
       producers,
       collaborators,
-      releaseDate: releaseDateStr ? new Date(releaseDateStr) : undefined,
+      mood,
+      label,
+      copyright,
       visibility,
-      songs: songDocs,
+      totalSongs: songIds.length,
+      duration: totalDuration,
+      songs: songIds,
       coverUrl: uploadedCover.secure_url,
-      totalSongs: songDocs.length,
     });
 
-    globalThis.io?.emit("media:create", { type: "album", data: album });
+    io?.emit("uploadComplete", { albumId: album._id, title });
+
     return corsResponse({ success: true, album }, 201);
   } catch (error: any) {
-    console.error("Error uploading album:", error);
-    return corsResponse({ error: "Failed to upload album", details: error.message }, 500);
+    console.error("Album upload error:", error);
+    return corsResponse({ error: error.message || "Failed to upload album" }, 500);
+  }
+}
+// ------------------------------
+// 🔵 READ (GET)
+// ------------------------------
+export async function GET(req: Request) {
+  try {
+    await connectToDatabase();
+    const url = new URL(req.url);
+    const id = url.searchParams.get("id");
+
+    if (id) {
+      const album = await Album.findById(id).populate("songs");
+      if (!album) return corsResponse({ error: "Album not found" }, 404);
+      return corsResponse({ album });
+    }
+
+    const albums = await Album.find().populate("songs").sort({ createdAt: -1 });
+    return corsResponse({ albums });
+  } catch (error) {
+    console.error("Album GET Error:", error);
+    return corsResponse({ error: "Failed to fetch albums" }, 500);
   }
 }
 
-// =====================================================
-// PUT: Update album metadata or cover
-// =====================================================
+// ------------------------------
+// 🟠 UPDATE (PUT)
+// ------------------------------
 export async function PUT(req: Request) {
   try {
     await connectToDatabase();
@@ -165,71 +198,83 @@ export async function PUT(req: Request) {
     if (!currentUser) return corsResponse({ error: "Unauthorized" }, 401);
 
     const formData = await req.formData();
-    const id = formData.get("itemId")?.toString();
-    if (!id) return corsResponse({ error: "Missing album ID" }, 400);
+    const albumId = formData.get("albumId") as string;
+    if (!albumId) return corsResponse({ error: "Missing albumId" }, 400);
 
-    const album = await Album.findById(id);
-    if (!album) return corsResponse({ error: "Album not found" }, 404);
-    if (album.author.toString() !== currentUser._id.toString()) return corsResponse({ error: "Forbidden" }, 403);
+    const existingAlbum = await Album.findById(albumId);
+    if (!existingAlbum) return corsResponse({ error: "Album not found" }, 404);
 
-    const updates: any = {};
-    const fields = ["title", "artist", "genre", "description", "visibility", "label", "mood", "copyright"];
-    for (const field of fields) {
-      const val = formData.get(field)?.toString();
-      if (val !== undefined) updates[field] = val;
-    }
+    // Update basic fields
+    existingAlbum.title = formData.get("title")?.toString() || existingAlbum.title;
+    existingAlbum.artist = formData.get("artist")?.toString() || existingAlbum.artist;
+    existingAlbum.genre = formData.get("genre")?.toString() || existingAlbum.genre;
+    existingAlbum.description = formData.get("description")?.toString() || existingAlbum.description;
+    existingAlbum.tags = (formData.get("tags") as string)?.split(",").map((t) => t.trim()) || existingAlbum.tags;
 
-    const releaseDateStr = formData.get("releaseDate")?.toString();
-    if (releaseDateStr) updates.releaseDate = new Date(releaseDateStr);
-
-    const coverFile = formData.get("cover") as File | null;
-    if (coverFile && coverFile.size > 0) {
-      const uploadedCover = await uploadToCloudinary(await bufferFromFile(coverFile), {
-        folder: "albums",
-        resource_type: "image",
+    // Optional cover update
+    const cover = formData.get("cover") as File | null;
+    if (cover) {
+      const buffer = await bufferFromFile(cover);
+      const uploadRes = await new Promise((resolve, reject) => {
+        cloudinary.uploader.upload_stream(
+          { folder: "albums/covers", resource_type: "image" },
+          (err, result) => (err ? reject(err) : resolve(result))
+        ).end(buffer);
       });
-      updates.coverUrl = uploadedCover.secure_url;
+      const uploadedCover = uploadRes as any;
+      existingAlbum.coverUrl = uploadedCover.secure_url;
     }
 
-    Object.assign(album, updates);
-    await album.save();
-
-    globalThis.io?.emit("media:update", { type: "album", data: album });
-    return corsResponse({ success: true, album });
-  } catch (error: any) {
-    console.error("Error updating album:", error);
-    return corsResponse({ error: "Failed to update album", details: error.message }, 500);
+    await existingAlbum.save();
+    return corsResponse({ success: true, album: existingAlbum });
+  } catch (error) {
+    console.error("Album PUT Error:", error);
+    return corsResponse({ error: "Failed to update album" }, 500);
   }
 }
 
-// =====================================================
-// DELETE: Remove album and its songs
-// =====================================================
+// ------------------------------
+// 🔴 DELETE (DELETE)
+// ------------------------------
 export async function DELETE(req: Request) {
   try {
     await connectToDatabase();
     const currentUser = await getCurrentUser();
     if (!currentUser) return corsResponse({ error: "Unauthorized" }, 401);
 
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
-    if (!id) return corsResponse({ error: "Missing album ID" }, 400);
+    const url = new URL(req.url);
+    const id = url.searchParams.get("id");
+    if (!id) return corsResponse({ error: "Missing album id" }, 400);
 
     const album = await Album.findById(id).populate("songs");
     if (!album) return corsResponse({ error: "Album not found" }, 404);
-    if (album.author.toString() !== currentUser._id.toString()) return corsResponse({ error: "Forbidden" }, 403);
 
-    // Delete songs
-    for (const song of album.songs as any[]) {
+    // Delete all associated songs
+    for (const song of album.songs) {
+      try {
+        await cloudinary.uploader.destroy(song.public_id, { resource_type: "video" });
+      } catch {
+        console.warn("Failed to delete song from Cloudinary:", song._id);
+      }
       await Song.findByIdAndDelete(song._id);
     }
 
-    await Album.findByIdAndDelete(id);
-    globalThis.io?.emit("media:delete", { type: "album", id });
+    // Delete album cover from Cloudinary
+    if (album.coverUrl) {
+      const publicId = album.coverUrl.split("/").pop()?.split(".")[0];
+      if (publicId) {
+        try {
+          await cloudinary.uploader.destroy(`albums/covers/${publicId}`, { resource_type: "image" });
+        } catch {
+          console.warn("Failed to delete album cover from Cloudinary");
+        }
+      }
+    }
 
-    return corsResponse({ success: true, message: "Album and songs deleted successfully" });
-  } catch (error: any) {
-    console.error("Error deleting album:", error);
-    return corsResponse({ error: "Failed to delete album", details: error.message }, 500);
+    await Album.findByIdAndDelete(id);
+    return corsResponse({ success: true, message: "Album deleted successfully" });
+  } catch (error) {
+    console.error("Album DELETE Error:", error);
+    return corsResponse({ error: "Failed to delete album" }, 500);
   }
 }

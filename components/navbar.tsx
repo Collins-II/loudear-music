@@ -24,6 +24,7 @@ import { Separator } from "./ui/separator";
 import SignInButton from "./auth/SignInButton";
 import { toast } from "sonner";
 import Sidebar from "./sidebar";
+import Image from "next/image";
 
 export default function Navbar() {
   const router = useRouter();
@@ -89,7 +90,7 @@ export default function Navbar() {
               scrolled ? "text-primary" : "text-white"
             }`}
           >
-            LoudEar
+            <Image src="/assets/logo/logo-blu.jpg" alt="Loudear-Logo" width={50} height={50} className="rounded-full object-cover shadow-lg"/>
           </span>
         </Link>
 

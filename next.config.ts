@@ -28,6 +28,11 @@ const nextConfig = {
       "i.scdn.co",
     ],
   },
+  api: {
+    bodyParser: {
+      sizeLimit: "200mb", // or higher if needed
+    },
+  },
   // ✅ This ensures .next/trace is not locked during build
   experimental: {
     outputFileTracingRoot: process.cwd(),

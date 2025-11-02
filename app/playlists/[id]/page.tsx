@@ -1,5 +1,5 @@
 // app/playlists/[id]/page.tsx
-import { DeezerPlaylist, fetchPlaylistById, fetchPlaylists } from "@/lib/deezer";
+import { DeezerPlaylist, fetchPlaylistById, fetchPlaylists } from "@/lib/youtube";
 import PlaylistDetailsClient from "./components/PlaylistDetailsClient";
 
 interface Props {

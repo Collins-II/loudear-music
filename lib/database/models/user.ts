@@ -57,7 +57,7 @@ return this.findOne({ email: email.toLowerCase() });
 
 // Prevent recompilation errors in dev hot reload
 export const User: Model<IUser> =
-mongoose.models.User || mongoose.model<IUser>("User", UserSchema);
+mongoose.models?.User || mongoose.model<IUser>("User", UserSchema);
 
 
 export default User;

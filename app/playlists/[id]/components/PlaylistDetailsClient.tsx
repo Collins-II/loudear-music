@@ -6,7 +6,7 @@ import { TopPlaylist } from "@/components/playlists/TopPlaylist";
 import { Playlist } from "../../page";
 import Image from "next/image";
 import { LazySpotifyIframe } from "./LazySpotifyIframe";
-import { DeezerPlaylist } from "@/lib/deezer";
+import { DeezerPlaylist } from "@/lib/youtube";
 
 interface Track {
   id: string;

@@ -10,7 +10,7 @@ export interface IAlbum extends Document {
   description?: string;
   tags?: string[];
   songs: Types.ObjectId[] | ISong[];
-  coverUrl: string;
+  coverUrl?: string;
   duration?: number;
 
   // ➕ Newly added fields
@@ -44,7 +44,7 @@ const AlbumSchema = new Schema<IAlbum>(
 
     // Relationships
     songs: [{ type: Schema.Types.ObjectId, ref: "Song" }],
-    coverUrl: { type: String, required: true },
+    coverUrl: { type: String },
     duration: { type: Number },
 
     // ➕ Added fields

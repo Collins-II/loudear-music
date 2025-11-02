@@ -1,321 +1,327 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDropzone } from "react-dropzone";
 import { motion } from "framer-motion";
-import Image from "next/image";
-import { toast } from "sonner";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Upload,
   Video,
   ImageIcon,
   CheckCircle2,
   Loader2,
-  Info,
   ChevronLeft,
   ChevronRight,
-  Shield,
 } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import Image from "next/image";
 import { uploadToCloudinary } from "@/lib/helpers";
 
-// ---------- Types ----------
 interface VideoUploadFormProps {
   onSuccess?: () => void;
-  existingVideo?: Partial<FormState>;
-  isEdit?: boolean;
 }
 
-interface FormState {
-  _id?: string;
-  title: string;
-  artist: string;
-  features: string[];
-  genre: string;
-  releaseDate?: string;
-  description?: string;
-  tags: string[];
-  videographer?: string;
-  label?: string;
-  copyright?: string;
-  mood?: string;
-  visibility: "public" | "private" | "unlisted";
-  thumbnailUrl?: string;
-  videoUrl?: string;
-}
-
-// ---------- Component ----------
-export default function VideoUploadForm({
-  onSuccess,
-  existingVideo,
-  isEdit = false,
-}: VideoUploadFormProps) {
+export default function VideoUploadForm({ onSuccess }: VideoUploadFormProps) {
   const [step, setStep] = useState(1);
-  const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploading, setUploading] = useState(false);
 
-  // ✅ Initialize form
-  const [form, setForm] = useState<FormState>({
-    title: existingVideo?.title || "",
-    artist: existingVideo?.artist || "",
-    features: existingVideo?.features || [],
-    genre: existingVideo?.genre || "",
-    releaseDate: existingVideo?.releaseDate || "",
-    description: existingVideo?.description || "",
-    tags: existingVideo?.tags || [],
-    videographer: existingVideo?.videographer || "",
-    label: existingVideo?.label || "",
-    copyright: existingVideo?.copyright || "",
-    mood: existingVideo?.mood || "",
-    visibility: existingVideo?.visibility || "private",
-    thumbnailUrl: existingVideo?.thumbnailUrl || "",
-    videoUrl: existingVideo?.videoUrl || "",
-  });
+  // --- Metadata fields ---
+  const [title, setTitle] = useState("");
+  const [artist, setArtist] = useState("");
+  const [videographer, setVideographer] = useState("");
+  const [genre, setGenre] = useState("");
+  const [features, setFeatures] = useState("");
+  const [description, setDescription] = useState("");
+  const [releaseDate, setReleaseDate] = useState("");
+  const [tags, setTags] = useState("");
+  const [label, setLabel] = useState("");
+  const [mood, setMood] = useState("");
+  const [copyright, setCopyright] = useState("");
+  const [visibility, setVisibility] = useState<"public" | "private" | "unlisted">("private");
 
+  // --- Files ---
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [thumbnail, setThumbnail] = useState<File | null>(null);
-  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(
-    existingVideo?.thumbnailUrl || null
-  );
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
 
-  // ✅ Dropzones
-  const { getRootProps: getVideoRoot, getInputProps: getVideoInput } =
-    useDropzone({
-      accept: { "video/*": [] },
-      multiple: false,
-      onDrop: (files) => setVideoFile(files[0]),
-    });
+  // --- Upload Control ---
+  const controllerRef = useRef<AbortController | null>(null);
 
-  const { getRootProps: getThumbRoot, getInputProps: getThumbInput } =
-    useDropzone({
-      accept: { "image/*": [] },
-      multiple: false,
-      onDrop: (files) => {
-        const file = files[0];
-        if (file) {
-          setThumbnail(file);
-          setThumbnailPreview(URL.createObjectURL(file));
-        }
-      },
-    });
+  const { getRootProps: getVideoRoot, getInputProps: getVideoInput } = useDropzone({
+    accept: { "video/*": [] },
+    multiple: false,
+    onDrop: (files) => setVideoFile(files[0]),
+  });
 
-  // Cleanup
+  const { getRootProps: getThumbRoot, getInputProps: getThumbInput } = useDropzone({
+    accept: { "image/*": [] },
+    multiple: false,
+    onDrop: (files) => {
+      if (files[0]) {
+        setThumbnail(files[0]);
+        setThumbnailPreview(URL.createObjectURL(files[0]));
+      }
+    },
+  });
+
   useEffect(() => {
     return () => {
-      if (thumbnailPreview?.startsWith("blob:")) URL.revokeObjectURL(thumbnailPreview);
+      if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview);
     };
   }, [thumbnailPreview]);
 
-  // ✅ Handle input change
-  const handleChange = (key: keyof FormState, value: any) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const handleArrayInput = (key: "features" | "tags", value: string) => {
-    const arr = value.split(",").map((v) => v.trim()).filter(Boolean);
-    setForm((prev) => ({ ...prev, [key]: arr }));
-  };
-
-  // ✅ Upload handler
+  // --- Upload Function ---
   const handleUpload = async () => {
-    if (!form.title || !form.artist || !form.genre) {
+    if (!title || !artist || !videographer || !videoFile || !thumbnail) {
       toast.error("Please fill in all required fields.");
       return;
     }
 
-    if (!isEdit && (!videoFile || !thumbnail)) {
-      toast.error("Please upload both a thumbnail and video file.");
-      return;
-    }
+    setUploading(true);
+    setUploadProgress(0);
+
+     let thumbResult: string | undefined;
+let videoUrl: string | undefined;
+
+setUploading(true);
+
+if (thumbnail) {
+  const thumbUpload = await uploadToCloudinary(
+    thumbnail,
+    "videos/thumbnails",
+    "image"
+  );
+  thumbResult = thumbUpload.secure_url;
+}
+
+if (videoFile) {
+  const videoUpload = await uploadToCloudinary(
+    videoFile,
+    "videos/files",
+    "video"
+  );
+  videoUrl = videoUpload.secure_url;
+}
+  
 
     try {
-      setUploading(true);
-      setUploadProgress(10);
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("artist", artist);
+      formData.append("videographer", videographer);
+      formData.append("genre", genre);
+      formData.append("description", description);
+      formData.append("features", features);
+      formData.append("releaseDate", releaseDate);
+      formData.append("tags", tags);
+      formData.append("label", label);
+      formData.append("mood", mood);
+      formData.append("copyright", copyright);
+      formData.append("visibility", visibility);
+      formData.append("video", videoUrl as string);
+      formData.append("thumbnail", thumbResult as string);
 
-      let thumbnailUrl = form.thumbnailUrl;
-      let videoUrl = form.videoUrl;
+      controllerRef.current = new AbortController();
 
-      // Upload thumbnail
-      if (thumbnail) {
-        setUploadProgress(30);
-        const uploadRes = await uploadToCloudinary(thumbnail, "videos/thumbnails", "image");
-        thumbnailUrl = uploadRes.secure_url;
-      }
-
-      // Upload video
-      if (videoFile) {
-        setUploadProgress(65);
-        const uploadRes = await uploadToCloudinary(videoFile, "videos/files", "video");
-        videoUrl = uploadRes.secure_url;
-      }
-
-      setUploadProgress(85);
-
-      const payload = {
-        ...form,
-        thumbnailUrl,
-        videoUrl,
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/videos/upload");
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          setUploadProgress(Math.round((event.loaded / event.total) * 100));
+        }
       };
-
-      const method = isEdit ? "PUT" : "POST";
-      const endpoint = isEdit
-        ? `/api/videos/upload?id=${existingVideo?._id}`
-        : `/api/videos/upload`;
-
-      const res = await fetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
-
-      setUploadProgress(100);
-      toast.success(isEdit ? "Video updated successfully!" : "Video uploaded successfully!");
-      onSuccess?.();
-      resetForm();
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          toast.success("Video uploaded successfully!");
+          onSuccess?.();
+          resetForm();
+        } else {
+          toast.error("Upload failed: " + xhr.statusText);
+        }
+        setUploading(false);
+      };
+      xhr.onerror = () => {
+        toast.error("Upload failed. Network error.");
+        setUploading(false);
+      };
+      xhr.send(formData);
     } catch (err: any) {
-      toast.error(err.message || "Error uploading video");
-    } finally {
+      toast.error(err.message || "Upload error");
       setUploading(false);
-      setUploadProgress(0);
     }
   };
 
-  // ✅ Reset form
+  const handleCancelUpload = () => {
+    controllerRef.current?.abort();
+    setUploading(false);
+    setUploadProgress(0);
+    toast.info("Upload canceled.");
+  };
+
   const resetForm = () => {
     setStep(1);
-    setForm({
-      title: "",
-      artist: "",
-      features: [],
-      genre: "",
-      releaseDate: "",
-      description: "",
-      tags: [],
-      videographer: "",
-      label: "",
-      copyright: "",
-      mood: "",
-      visibility: "private",
-    });
+    setTitle("");
+    setArtist("");
+    setVideographer("");
+    setGenre("");
+    setReleaseDate("");
+    setDescription("");
+    setTags("");
+    setLabel("");
+    setMood("");
+    setCopyright("");
+    setVisibility("private");
     setVideoFile(null);
     setThumbnail(null);
+    if (thumbnailPreview) URL.revokeObjectURL(thumbnailPreview);
     setThumbnailPreview(null);
   };
 
-  // ✅ Step renderer
   const renderStep = () => {
     switch (step) {
       case 1:
         return (
           <div className="grid md:grid-cols-2 gap-6">
-            <TextField label="Title *" value={form.title} onChange={(v) => handleChange("title", v)} />
-            <TextField label="Artist *" value={form.artist} onChange={(v) => handleChange("artist", v)} />
-            <TextField label="Features (comma-separated)" value={form.features.join(", ")} onChange={(v) => handleArrayInput("features", v)} />
-            <TextField label="Genre *" value={form.genre} onChange={(v) => handleChange("genre", v)} />
-            <TextField label="Videographer" value={form.videographer || ""} onChange={(v) => handleChange("videographer", v)} />
-            <TextField label="Label" value={form.label || ""} onChange={(v) => handleChange("label", v)} />
-            <TextField label="Copyright" value={form.copyright || ""} onChange={(v) => handleChange("copyright", v)} />
-            <TextField label="Mood" value={form.mood || ""} onChange={(v) => handleChange("mood", v)} />
             <div>
-              <Label className="text-neutral-300">Release Date</Label>
-              <Input
-                type="date"
-                className="bg-neutral-800 border-neutral-700 text-white"
-                value={form.releaseDate || ""}
-                onChange={(e) => handleChange("releaseDate", e.target.value)}
-              />
+              <Label>Title *</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
             <div>
-              <Label className="text-neutral-300 flex gap-2 items-center">
-                <Shield className="w-4 h-4" /> Visibility
-              </Label>
-              <Select
-                value={form.visibility}
-                onValueChange={(v: "public" | "private" | "unlisted") => handleChange("visibility", v)}
+              <Label>Artist *</Label>
+              <Input value={artist} onChange={(e) => setArtist(e.target.value)} />
+            </div>
+            <div>
+              <Label>Videographer *</Label>
+              <Input value={videographer} onChange={(e) => setVideographer(e.target.value)} />
+            </div>
+            <div>
+              <Label>Genre</Label>
+              <Input value={genre} onChange={(e) => setGenre(e.target.value)} />
+            </div>
+            <div>
+              <Label>Label</Label>
+              <Input value={label} onChange={(e) => setLabel(e.target.value)} />
+            </div>
+            <div>
+              <Label>Copyright</Label>
+              <Input value={copyright} onChange={(e) => setCopyright(e.target.value)} />
+            </div>
+            <div>
+              <Label>Mood</Label>
+              <Input value={mood} onChange={(e) => setMood(e.target.value)} />
+            </div>
+            <div>
+              <Label>Visibility</Label>
+              <select
+                aria-label="visibility-select"
+                className="bg-neutral-800 border border-neutral-700 rounded-md p-2 w-full text-white"
+                value={visibility}
+                onChange={(e) => setVisibility(e.target.value as any)}
               >
-                <SelectTrigger className="bg-neutral-800 border-neutral-700 text-white">
-                  <SelectValue placeholder="Select visibility" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="public">Public</SelectItem>
-                  <SelectItem value="private">Private</SelectItem>
-                  <SelectItem value="unlisted">Unlisted</SelectItem>
-                </SelectContent>
-              </Select>
+                <option value="private">Private</option>
+                <option value="public">Public</option>
+                <option value="unlisted">Unlisted</option>
+              </select>
             </div>
             <div className="col-span-2">
-              <Label className="flex items-center gap-2 text-neutral-300">
-                <Info className="w-4 h-4" /> Description
-              </Label>
+              <Label>Description</Label>
               <Textarea
-                className="bg-neutral-800 border-neutral-700 text-white"
-                value={form.description || ""}
-                onChange={(e) => handleChange("description", e.target.value)}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
               />
             </div>
-            <TextField
-              label="Tags (comma-separated)"
-              value={form.tags.join(", ")}
-              onChange={(v) => handleArrayInput("tags", v)}
-            />
+            <div>
+              <Label>Tags</Label>
+              <Input value={tags} onChange={(e) => setTags(e.target.value)} />
+            </div>
+            <div>
+              <Label>Features</Label>
+              <Input value={features} onChange={(e) => setFeatures(e.target.value)} />
+            </div>
           </div>
         );
-
       case 2:
         return (
-          <FileDropZone
-            label="Thumbnail *"
-            accept="image"
-            filePreview={thumbnailPreview}
-            getRootProps={getThumbRoot}
-            getInputProps={getThumbInput}
-            icon={<ImageIcon className="w-10 h-10 text-neutral-400" />}
-          />
+          <div>
+            <Label>Thumbnail *</Label>
+            <div
+              {...getThumbRoot()}
+              className="border-2 border-dashed border-neutral-700 p-6 rounded-xl text-center cursor-pointer hover:border-blue-500"
+            >
+              <input {...getThumbInput()} />
+              {thumbnailPreview ? (
+                <Image
+                  src={thumbnailPreview}
+                  alt="Preview"
+                  width={120}
+                  height={80}
+                  className="rounded-lg mx-auto"
+                />
+              ) : (
+                <div className="text-neutral-400 flex flex-col items-center">
+                  <ImageIcon className="w-12 h-12 mb-2" />
+                  <p>Click or drag to upload thumbnail</p>
+                </div>
+              )}
+            </div>
+          </div>
         );
-
       case 3:
         return (
-          <FileDropZone
-            label="Video *"
-            accept="video"
-            filePreview={videoFile?.name}
-            getRootProps={getVideoRoot}
-            getInputProps={getVideoInput}
-            icon={<Upload className="w-10 h-10 text-neutral-400" />}
-          />
+          <div>
+            <Label>Video *</Label>
+            <div
+              {...getVideoRoot()}
+              className="border-2 border-dashed border-neutral-700 p-6 rounded-xl text-center cursor-pointer hover:border-green-500"
+            >
+              <input {...getVideoInput()} />
+              {videoFile ? (
+                <p className="text-neutral-200">{videoFile.name}</p>
+              ) : (
+                <div className="text-neutral-400 flex flex-col items-center">
+                  <Upload className="w-12 h-12 mb-2" />
+                  <p>Click or drag to upload video</p>
+                </div>
+              )}
+            </div>
+          </div>
         );
-
       case 4:
         return (
-          <div className="space-y-3 text-neutral-200">
-            <h3 className="text-lg font-semibold">Review Details</h3>
-            {Object.entries(form).map(
-              ([key, val]) =>
-                val && (
-                  <p key={key}>
-                    <span className="capitalize font-medium">{key}:</span>{" "}
-                    {Array.isArray(val) ? val.join(", ") : val}
-                  </p>
-                )
-            )}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-lg">Review Details</h3>
+            <p><strong>Title:</strong> {title}</p>
+            <p><strong>Artist:</strong> {artist}</p>
+            <p><strong>Videographer:</strong> {videographer}</p>
+            <p><strong>Genre:</strong> {genre}</p>
+            <p><strong>Visibility:</strong> {visibility}</p>
             {thumbnailPreview && (
               <Image
-                width={200}
-                height={120}
                 src={thumbnailPreview}
                 alt="Thumbnail"
-                className="rounded-lg object-cover shadow-md"
+                width={150}
+                height={100}
+                className="rounded-lg"
               />
             )}
-            {videoFile && <p>{videoFile.name}</p>}
+            {videoFile && <p><strong>Video File:</strong> {videoFile.name}</p>}
+            {uploading && (
+              <div className="w-full bg-neutral-700 rounded-full h-3 mt-3">
+                <div
+                  className={`w-${uploadProgress}% bg-blue-600 h-3 rounded-full transition-all duration-300`}
+                />
+              </div>
+            )}
           </div>
         );
       default:
@@ -323,142 +329,85 @@ export default function VideoUploadForm({
     }
   };
 
-  // ---------- UI ----------
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-      <Card className="rounded-2xl bg-neutral-900/80 text-white border border-neutral-800 shadow-lg">
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <Card className="bg-neutral-900 border-neutral-800 text-white rounded-2xl">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-2xl font-bold text-white">
-            <Video className="w-6 h-6 text-blue-500" />
-            {isEdit ? "Edit Video" : "Upload New Video"}
+          <CardTitle className="flex items-center gap-2">
+            <Video className="text-blue-500" /> Upload Video
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Stepper */}
-          <Stepper current={step} />
-          {renderStep()}
-
-          {uploading && (
-            <div className="w-full bg-neutral-800 h-2 rounded-full overflow-hidden">
-              <div
-                className={`bg-blue-500 h-2 transition-all w-${uploadProgress}%}`}
-              />
+        <CardContent>
+          <div className="space-y-6">
+            {/* Step indicator */}
+            <div className="flex justify-between text-sm mb-4">
+              {[1, 2, 3, 4].map((s) => (
+                <div
+                  key={s}
+                  className={`flex-1 text-center ${
+                    step === s
+                      ? "text-blue-500 font-bold"
+                      : step > s
+                      ? "text-green-500"
+                      : "text-neutral-600"
+                  }`}
+                >
+                  {step > s ? (
+                    <CheckCircle2 className="mx-auto w-5 h-5 mb-1" />
+                  ) : (
+                    <span className="inline-flex items-center justify-center w-6 h-6 border border-neutral-700 rounded-full mb-1">
+                      {s}
+                    </span>
+                  )}
+                  Step {s}
+                </div>
+              ))}
             </div>
-          )}
 
-          <div className="flex justify-between pt-4">
-            {step > 1 && (
-              <Button
-                variant="outline"
-                onClick={() => setStep((s) => s - 1)}
-                className="flex items-center gap-1 bg-neutral-800 border-neutral-700 text-neutral-300 hover:text-white"
-              >
-                <ChevronLeft className="w-4 h-4" /> Back
-              </Button>
-            )}
-            {step < 4 ? (
-              <Button
-                onClick={() => setStep((s) => s + 1)}
-                className="ml-auto bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1"
-              >
-                Next <ChevronRight className="w-4 h-4" />
-              </Button>
-            ) : (
-              <Button
-                onClick={handleUpload}
-                disabled={uploading}
-                className="ml-auto bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-2"
-              >
-                {uploading && <Loader2 className="w-4 h-4 animate-spin" />}
-                {uploading ? "Uploading..." : isEdit ? "Update Video" : "Upload Video"}
-              </Button>
-            )}
+            {renderStep()}
+
+            <div className="flex justify-between mt-6">
+              {step > 1 && (
+                <Button
+                  variant="outline"
+                  onClick={() => setStep((s) => s - 1)}
+                  className="bg-neutral-800 text-neutral-300 hover:bg-neutral-700"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" /> Back
+                </Button>
+              )}
+              {step < 4 ? (
+                <Button
+                  onClick={() => setStep((s) => s + 1)}
+                  className="ml-auto bg-blue-600 hover:bg-blue-700"
+                >
+                  Next <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              ) : (
+                <div className="flex gap-2 ml-auto">
+                  {uploading && (
+                    <Button
+                      variant="outline"
+                      onClick={handleCancelUpload}
+                      className="text-red-400 border-red-600 hover:bg-red-900/20"
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                  <Button
+                    disabled={uploading}
+                    onClick={handleUpload}
+                    className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
+                  >
+                    {uploading && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {uploading ? "Uploading..." : "Upload Video"}
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
     </motion.div>
   );
 }
-
-// ---------- Helper Components ----------
-const TextField = ({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-}) => (
-  <div>
-    <Label className="text-neutral-300">{label}</Label>
-    <Input
-      className="bg-neutral-800 border-neutral-700 text-white"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-    />
-  </div>
-);
-
-const Stepper = ({ current }: { current: number }) => (
-  <div className="flex justify-between text-sm">
-    {[1, 2, 3, 4].map((s) => (
-      <div
-        key={s}
-        className={`flex-1 flex flex-col items-center ${
-          current === s
-            ? "text-blue-500 font-semibold"
-            : current > s
-            ? "text-green-500"
-            : "text-neutral-600"
-        }`}
-      >
-        {current > s ? (
-          <CheckCircle2 className="w-5 h-5 mb-1" />
-        ) : (
-          <span className="w-5 h-5 flex items-center justify-center rounded-full border border-neutral-600 mb-1">
-            {s}
-          </span>
-        )}
-        Step {s}
-      </div>
-    ))}
-  </div>
-);
-
-const FileDropZone = ({
-  label,
-  accept,
-  filePreview,
-  getRootProps,
-  getInputProps,
-  icon,
-}: any) => (
-  <div>
-    <Label className="text-neutral-300">{label}</Label>
-    <div
-      {...getRootProps()}
-      className={`border-2 border-dashed border-neutral-700 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer hover:border-${accept === "video" ? "green" : "blue"}-500`}
-    >
-      <input {...getInputProps()} />
-      {filePreview ? (
-        typeof filePreview === "string" && filePreview.endsWith(".jpg") ? (
-          <Image
-            src={filePreview}
-            alt={label}
-            width={200}
-            height={120}
-            className="rounded-lg object-cover"
-          />
-        ) : (
-          <p className="text-neutral-200">{filePreview}</p>
-        )
-      ) : (
-        <div className="flex flex-col items-center text-neutral-400">
-          {icon}
-          <p>Click or drag & drop to upload {accept}</p>
-        </div>
-      )}
-    </div>
-  </div>
-);
