@@ -90,7 +90,7 @@ export default function Navbar() {
               scrolled ? "text-primary" : "text-white"
             }`}
           >
-            <Image src="/assets/logo/logo-blu.jpg" alt="Loudear-Logo" width={50} height={50} className="rounded-full object-cover shadow-lg"/>
+            <Image src="/assets/logo/logo-bl.jpg" alt="Loudear-Logo" width={50} height={50} className="rounded-full object-cover shadow-2xl"/>
           </span>
         </Link>
 

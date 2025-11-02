@@ -1,5 +1,5 @@
 // app/playlists/[id]/page.tsx
-import { DeezerPlaylist, fetchPlaylistById, fetchPlaylists } from "@/lib/youtube";
+import { fetchPlaylistById, fetchPlaylists } from "@/lib/spotify";
 import PlaylistDetailsClient from "./components/PlaylistDetailsClient";
 
 interface Props {
@@ -29,7 +29,7 @@ export default async function PlaylistPage({ params }: Props) {
 
   return (
     <PlaylistDetailsClient
-      playlist={playlist as DeezerPlaylist}
+      playlist={playlist as any}
       relatedPlaylist={related}
     />
   );

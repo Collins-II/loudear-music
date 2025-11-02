@@ -6,8 +6,6 @@ import { TopPlaylist } from "@/components/playlists/TopPlaylist";
 import { Playlist } from "../../page";
 import Image from "next/image";
 import { LazySpotifyIframe } from "./LazySpotifyIframe";
-import { DeezerPlaylist } from "@/lib/youtube";
-
 interface Track {
   id: string;
   title: string;
@@ -27,7 +25,7 @@ export interface PlaylistDetail {
 }
 
 interface Props {
-  playlist: DeezerPlaylist;
+  playlist: any;
   relatedPlaylist: Playlist[];
 }
 

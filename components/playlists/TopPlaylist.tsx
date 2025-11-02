@@ -18,36 +18,39 @@ export function TopPlaylist({ id, title, curator, image, plays }: TopPlaylistPro
     <motion.div
       whileHover={{ scale: 1.05 }}
       transition={{ type: "spring", stiffness: 200 }}
-      className="min-w-[240px] cursor-pointer"
+      className="w-full sm:w-[280px] md:w-[320px] lg:w-[350px] cursor-pointer"
     >
       <Link href={`/playlists/${id}`}>
-      <div className="flex flex-row overflow-hidden bg-white rounded-l-2xl transition">
-        {/* image */}
-        <div className="relative h-24 w-34">
-        <Image
-            src={image}
-            alt={curator}
-            fill
-            className="object-cover"
-        />
-        </div>
-        {/* Content */}
-        <div className="flex flex-col justify-between w-full p-3">
-          <div>
-            <p className="text-[11px] uppercase tracking-wide text-slate-600 font-medium truncate mb-1">
-              {curator}
-            </p>
-            <h4 className="text-base md:text-lg font-extrabold text-gray-900 leading-snug truncate">
-              {title}
-            </h4>
+        <div className="flex bg-white rounded-2xl overflow-hidden hover:shadow-xl transition-shadow duration-300">
+          {/* Image */}
+          <div className="relative flex-shrink-0 w-24 h-24">
+            <Image
+              src={image}
+              alt={title}
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 6rem, (max-width: 768px) 7rem, (max-width: 1024px) 8rem, 9rem"
+              priority
+            />
           </div>
-          <div className="w-full flex justify-between items-center mt-2">
-            <p className="flex items-center gap-2 text-[11px] text-gray-500 tracking-tight">
-              {plays} <PlayIcon size={12}/>
-            </p>
+
+          {/* Content */}
+          <div className="flex flex-col justify-between p-3 w-full">
+            <div>
+              <p className="text-xs sm:text-sm uppercase tracking-wide text-slate-600 font-medium truncate">
+                {curator}
+              </p>
+              <h4 className=" sm:text-base md:text-lg font-extrabold text-gray-900 leading-snug truncate">
+                {title}
+              </h4>
+            </div>
+            <div className="flex justify-between items-center mt-2">
+              <p className="flex items-center gap-1 text-xs sm:text-[11px] text-gray-500 tracking-tight">
+                {plays} <PlayIcon size={14} />
+              </p>
+            </div>
           </div>
         </div>
-      </div>
       </Link>
     </motion.div>
   );

@@ -94,6 +94,10 @@ export async function POST(req: Request) {
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean);
+      const songFeatures = (formData.get(`songs[${idx}][features]`)?.toString() || "")
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
 
       const songBuffer = await bufferFromFile(file);
 
@@ -120,6 +124,7 @@ export async function POST(req: Request) {
         author: currentUser._id,
         title: songTitle || file.name,
         artist: songArtist || artist,
+        features: songFeatures,
         genre: songGenre || genre,
         album: title,
         explicit,
