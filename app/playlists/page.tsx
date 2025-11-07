@@ -6,6 +6,9 @@ import { TopPlaylist } from "@/components/playlists/TopPlaylist";
 import { fetchPlaylists } from "@/lib/spotify";
 import { Button } from "@/components/ui/button";
 import { DropdownRadio } from "@/components/DropdownRadio";
+import TopCardSkeleton from "@/components/skeletons/top-card-skeleton";
+import SkeletonList from "@/components/skeletons/skeleton-list";
+import VideoCardSkeleton from "@/components/skeletons/video-card-skeleton";
 
 export interface Playlist {
   id: string;
@@ -169,7 +172,34 @@ useEffect(() => {
     });
   };
 
-  if (loading) return <div className="flex items-center justify-center h-screen text-xl font-bold">Loading playlists...</div>;
+   if (loading) {
+       return (
+            <main className="bg-background min-h-screen px-6 md:px-12 py-12 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-12">
+              {/* Main Grid Skeleton */}
+              <div className="lg:col-span-3 space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <VideoCardSkeleton key={i} />
+                  ))}
+                </div>
+                <SkeletonList count={5} />
+              </div>
+      
+              {/* Sidebar Skeleton */}
+              <aside className="space-y-12">
+                <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-1">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <TopCardSkeleton key={i} />
+                  ))}
+                </div>
+      
+                <div className="bg-gray-200 h-60 flex items-center justify-center rounded-lg">
+                  <span className="text-gray-500">Advertisement</span>
+                </div>
+              </aside>
+            </main>
+          );
+    }
 
   return (
     <main className="bg-background min-h-screen">

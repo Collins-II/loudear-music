@@ -182,7 +182,7 @@ const [weeklyViews, allTimeViews] = await Promise.all([
   const statsResults = await Promise.allSettled(
     trending.map((t) => {
       const objectId = new Types.ObjectId(String(t._id));
-      return getViewCounts(objectId, model);
+      return getViewCounts(objectId as any, model);
     })
   );
 

@@ -28,6 +28,19 @@ app.prepare().then(() => {
         socket.on("comment:reaction", (payload) => {
             io.to(payload.room).emit("comment:reaction", payload);
         });
+        // 🔹 Broadcast media updates
+        socket.on("media:create", (payload) => {
+            console.log(`🎵 Media created: ${payload.type} -> ${payload.data.title}`);
+            io.emit("media:create", payload);
+        });
+        socket.on("media:update", (payload) => {
+            console.log(`🎵 Media updated: ${payload.type} -> ${payload.data.title}`);
+            io.emit("media:update", payload);
+        });
+        socket.on("media:delete", (payload) => {
+            console.log(`🎵 Media deleted: ${payload.type} -> ${payload.id}`);
+            io.emit("media:delete", payload);
+        });
         // Category update
         socket.on("charts:update:category", (payload) => {
             console.log(`📊 Category update -> ${payload.category}`);
@@ -37,6 +50,15 @@ app.prepare().then(() => {
         socket.on("charts:update:item", (payload) => {
             console.log(`📊 Item update -> ${payload.id} → pos ${payload.newPos}`);
             io.emit("charts:update:item", payload);
+        });
+        // 🧡 Handle real-time stan updates
+        socket.on("stan:update", (payload) => {
+            const { artistId, stanCount, userHasStanned } = payload;
+            io.to(`artist:${artistId}`).emit("stan:update", {
+                artistId,
+                stanCount,
+                userHasStanned,
+            });
         });
         socket.on("leave", (room) => {
             socket.leave(room);

@@ -2,11 +2,11 @@
 
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { ReactNode, useRef } from "react";
+import React, { ReactNode, useRef } from "react";
 
 interface HorizontalSliderProps {
   title?: string;
-  children: ReactNode[];
+  children: ReactNode;
   className?: string;
   gap?: "sm" | "md" | "lg";
 }
@@ -67,16 +67,18 @@ export default function HorizontalSlider({
           touch-pan-x md:touch-auto 
           webkit-scroll-touch touch-pan-y touch-pinch-zoom`}
         >
-          {children.map((child, index) => (
-            <motion.div
-              key={index}
-              className="flex-shrink-0 snap-center min-w-[80%] sm:min-w-[45%] md:min-w-[30%] lg:min-w-[25%]"
-              whileHover={{ scale: 1.03 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              {child}
-            </motion.div>
-          ))}
+          {children &&
+            // ✅ Safely map children using React.Children.map
+            React.Children.map(children, (child, index) => (
+              <motion.div
+                key={index}
+                className="flex-shrink-0 snap-center min-w-[80%] sm:min-w-[45%] md:min-w-[30%] lg:min-w-[25%]"
+                whileHover={{ scale: 1.03 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                {child}
+              </motion.div>
+            ))}
         </div>
       </div>
     </div>

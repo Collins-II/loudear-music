@@ -34,7 +34,7 @@ export async function OPTIONS() {
  */
 export async function PATCH(
   req: Request,
-  { params }: { params: { type: string; id: string } }
+  { params }: { params: Promise<{ type: string; id: string }> }
 ) {
   try {
     await connectToDatabase();
@@ -44,7 +44,7 @@ export async function PATCH(
       return corsResponse({ error: "Unauthorized" }, 401);
     }
 
-    const { type, id } = params;
+    const { type, id } = await params;
     const { visibility } = await req.json();
 
     if (!["public", "private", "unlisted"].includes(visibility)) {

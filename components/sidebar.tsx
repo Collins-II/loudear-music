@@ -1,20 +1,29 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { X, UploadCloud, Music, VideoIcon } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  X,
+  LogOut,
+} from "lucide-react";
+import { useSession, signOut } from "next-auth/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
-import { useSession } from "next-auth/react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import SignInButton from "@/components/auth/SignInButton";
-import { useEffect } from "react";
+import { SiYoutubestudio } from "react-icons/si";
+import Image from "next/image";
+import { IconDotsVertical } from "@tabler/icons-react";
 
 interface SidebarProps {
   scrolled: boolean;
@@ -34,18 +43,22 @@ export default function Sidebar({
   const router = useRouter();
   const pathname = usePathname();
   const { data: session } = useSession();
+  const user = session?.user;
 
-  // Disable scroll on body when sidebar is open
+  // Disable scroll when sidebar is open
   useEffect(() => {
-    if (mobileOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
     return () => {
       document.body.style.overflow = "";
     };
   }, [mobileOpen]);
+
+  // Motion variants
+  const panelVariants = {
+    hidden: { x: "100%" },
+    visible: { x: 0 },
+    exit: { x: "100%" },
+  };
 
   return (
     <AnimatePresence>
@@ -62,121 +75,178 @@ export default function Sidebar({
           />
 
           {/* 🔹 SIDEBAR PANEL */}
-          <motion.div
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
+          <motion.aside
+            key="sidebar"
+            variants={panelVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
             transition={{ type: "tween", duration: 0.3 }}
-            className={`fixed top-0 right-0 w-72 h-screen rounded-bl-xl z-[60] flex flex-col shadow-lg transition-colors duration-300 ${
-              scrolled ? "bg-white text-gray-900" : "bg-black text-white"
-            }`}
+            className={`fixed top-0 right-0 w-72 h-screen rounded-bl-xl z-[60] flex flex-col shadow-lg transition-colors duration-300
+              ${scrolled ? "bg-white text-gray-900" : "bg-neutral-950 text-white"}`}
+            role="dialog"
+            aria-modal="true"
           >
             {/* HEADER */}
-            <div className="flex justify-between items-center px-6 py-4">
-              <Link href="/" className="flex items-center gap-2">
+            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-700/20">
+              <Link
+                href="/"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-2"
+              >
                 <span
-                  className={`italic text-2xl md:text-3xl font-extrabold transition-colors ${
-                    scrolled ? "text-primary" : "text-white"
+                  className={`italic text-2xl font-extrabold transition-colors ${
+                    scrolled ? "text-blue-600" : "text-white"
                   }`}
                 >
-                  LoudEar
+                  <Image src="/assets/logo/logo-bl.jpg" alt="LOUDEAR-LOGO" width={50} height={50} className="rounded-full object-cover" />
                 </span>
               </Link>
-              <button
-                aria-label="close-button"
+
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setMobileOpen(false)}
-                className="p-2 rounded-md hover:bg-gray-100/10"
+                aria-label="Close sidebar"
+                className="rounded-full"
               >
                 <X className="w-6 h-6" />
-              </button>
+              </Button>
             </div>
 
-            <Separator />
-
             {/* NAVIGATION */}
-            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-              {navItems.map((item) => {
-                const isActive = pathname === item.href;
+            <nav className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+              {navItems.map(({ href, label }) => {
+                const active = pathname === href;
                 return (
                   <Link
-                    key={item.href}
-                    href={item.href}
+                    key={href}
+                    href={href}
                     onClick={() => setMobileOpen(false)}
-                    className={`block text-base font-semibold transition-colors ${
-                      isActive
-                        ? "text-blue-500"
-                        : scrolled
-                        ? "text-gray-700 hover:text-blue-600"
-                        : "text-gray-300 hover:text-white"
-                    }`}
+                    className={`block text-base font-semibold rounded-md px-2 py-1 transition-colors
+                      ${
+                        active
+                          ? "text-blue-500"
+                          : scrolled
+                          ? "text-gray-800 hover:text-blue-600"
+                          : "text-gray-300 hover:text-white"
+                      }`}
                   >
-                    {item.label}
+                    {label}
                   </Link>
                 );
               })}
-            </div>
+            </nav>
 
-            {/* FOOTER (Sticky Bottom) */}
-            <div className="sticky bottom-0 left-0 right-0 bg-inherit border-t border-gray-700/30 p-6 space-y-4 z-[70]">
+            <Separator className="opacity-20" />
+
+            {/* FOOTER */}
+            <footer className="p-6 border-t border-gray-700/30 space-y-4">
               {session ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="default"
-                      className={`rounded-full w-full gap-2 ${
-                        scrolled ? "bg-gray-900 text-white" : "bg-white text-black"
-                      }`}
-                    >
-                      <UploadCloud className="w-5 h-5" /> Submit Media
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent
-                    side="top"
-                    align="start"
-                    className={`w-full z-[80] border-none ${
-                      scrolled ? "bg-white text-gray-900" : "bg-black text-white"
-                    }`}
-                  >
-                    <DropdownMenuItem
-                      onClick={() => {
-                        router.push("/upload/song");
-                        setMobileOpen(false);
-                      }}
-                      className="gap-2"
-                    >
-                      <Music className="w-4 h-4" />
-                      Upload Song
-                    </DropdownMenuItem>
-                    <Separator className="bg-neutral-600" />
-                    <DropdownMenuItem
-                      onClick={() => {
-                        router.push("/upload/video");
-                        setMobileOpen(false);
-                      }}
-                      className="gap-2"
-                    >
-                      <VideoIcon className="w-4 h-4" />
-                      Upload Video
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <>
+                  {/* Upload Media Dropdown */}
+                      <Button
+                        className={`w-full justify-center uppercase rounded-full gap-2 font-semibold cursor-pointer ${
+                          scrolled
+                            ? "bg-gray-900 text-white hover:bg-gray-800"
+                            : "bg-white text-black hover:bg-neutral-100"
+                        }`}
+                        onClick={() => {
+                          router.push("/studio/dashboard");
+                          setMobileOpen(false);
+                        }}
+                      >
+                         Studio <SiYoutubestudio />
+                      </Button>
+                   
+
+{/* 🔹 User Info Dropdown */}
+<DropdownMenu>
+  <DropdownMenuTrigger asChild>
+    <button
+      className="flex items-center w-full gap-3 rounded-md px-3 py-2 text-left transition-colors hover:bg-muted/10 focus:outline-none focus:ring-2 focus:ring-ring data-[state=open]:bg-muted"
+    >
+      <Avatar className="h-9 w-9 rounded-full border border-border">
+        <AvatarImage src={user?.image as string} alt={user?.name as string} />
+        <AvatarFallback className="rounded-full bg-muted text-muted-foreground font-medium">
+          {user?.name?.[0]?.toUpperCase() ?? "U"}
+        </AvatarFallback>
+      </Avatar>
+
+      <div className="flex-1 min-w-0">
+        <p className="truncate font-medium text-sm leading-tight">
+          {user?.name ?? "Unnamed User"}
+        </p>
+        <p className="truncate text-xs text-muted-foreground leading-tight">
+          {user?.email ?? "No email available"}
+        </p>
+      </div>
+
+      <IconDotsVertical className="ml-auto w-4 h-4 text-muted-foreground" />
+    </button>
+  </DropdownMenuTrigger>
+
+  <DropdownMenuContent
+    align="end"
+    sideOffset={6}
+    className="min-w-60 rounded-lg border border-border bg-popover p-1 shadow-lg bg-black"
+  >
+    <DropdownMenuLabel className="px-3 py-2 font-normal">
+      <div className="flex items-center gap-3">
+        <Avatar className="h-8 w-8 rounded-full border border-border">
+          <AvatarImage src={user?.image as string} alt={user?.name as string} />
+          <AvatarFallback className="rounded-full bg-muted text-muted-foreground font-medium">
+            {user?.name?.[0]?.toUpperCase() ?? "U"}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex flex-col text-sm leading-tight">
+          <span className="font-medium truncate text-white">
+            {user?.name ?? "User"}
+          </span>
+          <span className="text-xs text-muted-foreground truncate">
+            {user?.email ?? ""}
+          </span>
+        </div>
+      </div>
+    </DropdownMenuLabel>
+
+    <DropdownMenuSeparator />
+
+    {/* Example of future user settings if needed */}
+    {/* <DropdownMenuItem onClick={() => router.push("/account")} className="gap-2">
+      <UserCircle2 className="w-4 h-4" /> Account Settings
+    </DropdownMenuItem> */}
+
+    <DropdownMenuItem
+      onClick={() => signOut()}
+      className="gap-2 text-sm font-medium text-destructive focus:text-destructive hover:text-destructive"
+    >
+      <LogOut className="w-4 h-4" />
+      Log out
+    </DropdownMenuItem>
+  </DropdownMenuContent>
+</DropdownMenu>
+
+                </>
               ) : (
                 <>
                   <Button
-                    variant="default"
-                    className="rounded-full gap-2 w-full bg-blue-600 text-white hover:bg-blue-700"
-                    onClick={handleMediaClick}
-                  >
-                    <UploadCloud className="w-5 h-5" /> Submit Media
+                        className={`w-full justify-center uppercase rounded-full gap-2 font-semibold cursor-pointer ${
+                          scrolled
+                            ? "bg-gray-900 text-white hover:bg-gray-800"
+                            : "bg-white text-black hover:bg-neutral-100"
+                        }`}
+                        onClick={handleMediaClick}
+                      >
+                         Studio <SiYoutubestudio />
                   </Button>
-
-                  <div className="pt-4">
+                  <div className="pt-2">
                     <SignInButton />
                   </div>
                 </>
               )}
-            </div>
-          </motion.div>
+            </footer>
+          </motion.aside>
         </>
       )}
     </AnimatePresence>

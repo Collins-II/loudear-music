@@ -11,6 +11,9 @@ import { getSocket } from "@/lib/socketClient";
 import { useMemo } from "react";
 import { MusicCard } from "@/components/music/MusicCard";
 import { TopSongCard } from "@/components/music/TopSongsCard";
+import SkeletonList from "@/components/skeletons/skeleton-list";
+import MusicCardSkeleton from "@/components/skeletons/music-card-skeleton";
+import TopCardSkeleton from "@/components/skeletons/top-card-skeleton";
 
 // --- Filters ---
 const genres = ["All", "Hip Hop", "Afro Pop", "Gospel", "RnB", "Dancehall"];
@@ -80,12 +83,38 @@ export default function IndexMusicWrapper() {
   }, []);
 
   if (loading) {
-    return (
-      <main className="flex items-center justify-center h-screen">
-        <span className="text-gray-500 text-lg">Loading music...</span>
-      </main>
-    );
-  }
+      return (
+        <main className="bg-background min-h-screen px-6 md:px-12 py-12 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-12">
+          {/* Skeleton Main Grid */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Grid Skeleton */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <MusicCardSkeleton key={i} />
+              ))}
+            </div>
+  
+            {/* Chart Skeleton */}
+            <SkeletonList count={5} />
+          </div>
+  
+          {/* Sidebar Skeleton */}
+          <aside className="space-y-12">
+            
+  
+            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-1">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <TopCardSkeleton key={i} />
+              ))}
+            </div>
+  
+            <div className="bg-gray-200 h-60 flex items-center justify-center rounded-lg">
+              <span className="text-gray-500">Advertisement</span>
+            </div>
+          </aside>
+        </main>
+      );
+    }
 
   return <IndexMusic initialData={initialData} topVideos={top10Videos} />;
 }
@@ -341,8 +370,16 @@ const filteredCharts = useMemo(() => {
         {/* Main */}
         <div className="lg:col-span-3">
           {loading ? (
-            <div className="text-gray-500">Refreshing charts...</div>
-          ) : filters.view === "chart" ? (
+            filters.view === "grid" ? (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                {Array.from({ length: 6 }).map((_, i) => (
+                <MusicCardSkeleton key={i} />
+              ))}
+            </div>
+            ) : (
+              <SkeletonList count={10} />
+            )
+            ) : filters.view === "chart" ? (
             <div className="space-y-4">
               <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
                 <span className="relative z-10 bg-white capitalize pr-3">
@@ -409,14 +446,6 @@ const filteredCharts = useMemo(() => {
 
         {/* Sidebar */}
         <aside className="space-y-12">
-          <div className="rounded-xl overflow-hidden shadow-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white p-6">
-            <h4 className="text-xl font-bold">🔥 Summer Hits 2025</h4>
-            <p className="text-sm mt-2">The hottest tracks for your vibe</p>
-            <Button className="mt-4 bg-white text-black hover:bg-gray-200">
-              Listen Now
-            </Button>
-          </div>
-
           <div>
             <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
               <span className="relative z-10 bg-white pr-3">Top 10 Songs</span>

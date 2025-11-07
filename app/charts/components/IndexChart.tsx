@@ -1,18 +1,20 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-
 import { ChartRow } from "@/components/music/ChartRow";
 import { DropdownRadio } from "@/components/DropdownRadio";
 import { getCharts, ChartItem, getTrending } from "@/actions/getCharts";
 import { ChartCard } from "@/components/music/ChartCard";
 import { getSocket } from "@/lib/socketClient";
-import { useMemo } from "react";
 import { TopVideoCard } from "@/components/video/TopVideoCard";
+import SkeletonList from "@/components/skeletons/skeleton-list";
+import ChartCardSkeleton from "@/components/skeletons/chart-card-skeleton";
+import { TrendingItem, TrendingLeaderboard } from "@/app/search/components/IndexSearch";
+import TopCardSkeleton from "@/components/skeletons/top-card-skeleton";
 
-// --- Filters ---
+/* ---------------------------------- Filters ---------------------------------- */
 const genres = ["All", "Hip Hop", "Afro Pop", "Gospel", "RnB", "Dancehall"];
 const alphabet = ["All", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"] as const;
 
@@ -42,8 +44,7 @@ export default function ChartsPageWrapper() {
           sinceDays: 30,
         });
 
-        // 🔑 Normalize trending videos into ChartItem shape
-  // 🔑 Normalize trending videos into ChartItem shape
+        // Normalize trending videos
         const videos: ChartItem[] = trendingVideos.map((v: any) => ({
           id: String(v._id),
           title: v.title,
@@ -72,7 +73,7 @@ export default function ChartsPageWrapper() {
         setTop10Videos(videos);
         setInitialData(charts);
       } catch (err) {
-        console.error("Error loading initial charts:", err);
+        console.error("Error loading charts:", err);
       } finally {
         setLoading(false);
       }
@@ -82,8 +83,34 @@ export default function ChartsPageWrapper() {
 
   if (loading) {
     return (
-      <main className="flex items-center justify-center h-screen">
-        <span className="text-gray-500 text-lg">Loading charts...</span>
+      <main className="bg-background min-h-screen px-6 md:px-12 py-12 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-12">
+        {/* Skeleton Main Grid */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* Grid Skeleton */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <ChartCardSkeleton key={i} />
+            ))}
+          </div>
+
+          {/* Chart Skeleton */}
+          <SkeletonList count={5} />
+        </div>
+
+        {/* Sidebar Skeleton */}
+        <aside className="space-y-12">
+          
+
+          <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-1">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <TopCardSkeleton key={i} />
+            ))}
+          </div>
+
+          <div className="bg-gray-200 h-60 flex items-center justify-center rounded-lg">
+            <span className="text-gray-500">Advertisement</span>
+          </div>
+        </aside>
       </main>
     );
   }
@@ -91,34 +118,45 @@ export default function ChartsPageWrapper() {
   return <ChartsPage initialData={initialData} topVideos={top10Videos} />;
 }
 
-function ChartsPage({ initialData, topVideos }: { initialData: ChartItem[], topVideos: ChartItem[] }) {
-  const [filters, setFilters] = useState<{
-    filter: FilterType;
-    genre: string;
-    letter: string;
-    category: Category;
-    region: string;
-    sort: Sort;
-    view: ViewMode;
-  }>({
-    filter: "latest",
+/* -------------------------------------------------------------------------- */
+/*                             Main Charts Page                               */
+/* -------------------------------------------------------------------------- */
+
+function ChartsPage({
+  initialData,
+  topVideos,
+}: {
+  initialData: ChartItem[];
+  topVideos: ChartItem[];
+}) {
+  const [filters, setFilters] = useState({
+    filter: "latest" as FilterType,
     genre: "All",
     letter: "All",
-    category: "songs",
+    category: "songs" as Category,
     region: "global",
-    sort: "this-week",
-    view: "grid",
+    sort: "this-week" as Sort,
+    view: "grid" as ViewMode,
   });
 
   const socket = getSocket();
   const [charts, setCharts] = useState<ChartItem[]>(initialData);
   const [loading, setLoading] = useState(false);
+  const [trending, setTrending] = useState<TrendingItem[]>([]);
 
   const itemsPerPage = 9;
   const [visibleItems, setVisibleItems] = useState(itemsPerPage);
   const loaderRef = useRef<HTMLDivElement | null>(null);
 
-  // --- Fetch charts when category/sort/region changes ---
+   /* 🧠 Fetch trending */
+    useEffect(() => {
+      fetch("/api/trending/global?limit=6")
+        .then((r) => (r.ok ? r.json() : Promise.reject()))
+        .then((data) => setTrending(data.items || []))
+        .catch(() => {});
+    }, []);
+
+  /* --- Fetch charts on category/sort change --- */
   useEffect(() => {
     async function fetchCharts() {
       setLoading(true);
@@ -153,79 +191,74 @@ function ChartsPage({ initialData, topVideos }: { initialData: ChartItem[], topV
 
 
 
-const filteredCharts = useMemo(() => {
-  let list = [...charts]; // copy so we don't mutate state
+  /* --- Filtering logic --- */
+  const filteredCharts = useMemo(() => {
+    let list = [...charts];
 
-  // --- Genre filter ---
-  if (filters.filter === "genre" && filters.genre !== "All") {
-    list = list.filter(
-      (item) => item.genre?.toLowerCase() === filters.genre.toLowerCase()
-    );
-  }
-
-  // --- Alphabet filter ---
-  if (filters.filter === "a-z" && filters.letter !== "All") {
-    list = list.filter((item) => {
-      const firstCharTitle = item.title?.[0]?.toUpperCase() ?? "";
-      const firstCharArtist = item.artist?.[0]?.toUpperCase() ?? "";
-      return firstCharTitle === filters.letter || firstCharArtist === filters.letter;
-    });
-    list.sort((a, b) => a.title.localeCompare(b.title));
-  }
-
-  // --- Latest filter ---
-  if (filters.filter === "latest") {
-    list = list
-      .filter((item) => {
-        const release = new Date(item.releaseDate ?? "");
-        const twoWeeksAgo = new Date();
-        twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
-        return release >= twoWeeksAgo;
-      })
-      .sort(
-        (a, b) =>
-          new Date(b.releaseDate ?? "").getTime() -
-          new Date(a.releaseDate ?? "").getTime()
+    if (filters.filter === "genre" && filters.genre !== "All") {
+      list = list.filter(
+        (item) => item.genre?.toLowerCase() === filters.genre.toLowerCase()
       );
-  }
+    }
 
-  // --- Trending filter ---
-  if (filters.filter === "trending") {
-    list = list
-      .filter((item) => item.position && item.position <= 10)
-      .sort((a, b) => a.position - b.position);
-  }
+    if (filters.filter === "a-z" && filters.letter !== "All") {
+      list = list
+        .filter((item) => {
+          const firstCharTitle = item.title?.[0]?.toUpperCase() ?? "";
+          const firstCharArtist = item.artist?.[0]?.toUpperCase() ?? "";
+          return (
+            firstCharTitle === filters.letter || firstCharArtist === filters.letter
+          );
+        })
+        .sort((a, b) => a.title.localeCompare(b.title));
+    }
 
-  return list;
-}, [charts, filters]);
+    if (filters.filter === "latest") {
+      list = list
+        .filter((item) => {
+          const release = new Date(item.releaseDate ?? "");
+          const twoWeeksAgo = new Date();
+          twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+          return release >= twoWeeksAgo;
+        })
+        .sort(
+          (a, b) =>
+            new Date(b.releaseDate ?? "").getTime() -
+            new Date(a.releaseDate ?? "").getTime()
+        );
+    }
 
+    if (filters.filter === "trending") {
+      list = list
+        .filter((item) => item.position && item.position <= 10)
+        .sort((a, b) => a.position - b.position);
+    }
+
+    return list;
+  }, [charts, filters]);
 
   useEffect(() => setVisibleItems(itemsPerPage), [filters]);
 
-useEffect(() => {
-  if (filters.view === "grid") return;
+  useEffect(() => {
+    if (filters.view === "grid") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setVisibleItems((prev) =>
+            Math.min(prev + itemsPerPage, filteredCharts.length)
+          );
+        }
+      },
+      { threshold: 1 }
+    );
+    const current = loaderRef.current;
+    if (current) observer.observe(current);
+    return () => {
+      if (current) observer.unobserve(current);
+    };
+  }, [filteredCharts, filters.view]);
 
-  const observer = new IntersectionObserver(
-    (entries) => {
-      if (entries[0].isIntersecting) {
-        setVisibleItems((prev) =>
-          Math.min(prev + itemsPerPage, filteredCharts.length)
-        );
-      }
-    },
-    { threshold: 1 }
-  );
-
-  const current = loaderRef.current;
-  if (current) observer.observe(current);
-
-  return () => {
-    if (current) observer.unobserve(current);
-  };
-}, [filteredCharts, filters.view]);
-
-
-  const cardUrl = filters.category === "songs"? "song" : "album" 
+  const cardUrl = filters.category === "songs" ? "song" : "album";
 
   const clearFilters = () =>
     setFilters({
@@ -289,7 +322,6 @@ useEffect(() => {
             </div>
 
             <div className="flex flex-wrap w-full items-center justify-start gap-4">
-              {/* A–Z filter */}
               <DropdownRadio
                 actionLabel="A-Z"
                 label="By Alphabet"
@@ -299,7 +331,6 @@ useEffect(() => {
                 }
               />
 
-              {/* Genre filter */}
               <DropdownRadio
                 actionLabel="Genre"
                 label="Select Genre"
@@ -309,25 +340,23 @@ useEffect(() => {
                 }
               />
 
-                            {/* Sort filter */}
-                            <DropdownRadio
-                              actionLabel="Sort"
-                              label="Select"
-                              data={["latest", "trending"]}
-                              onChange={(val) =>
-                                setFilters((f) => ({ ...f, filter: val as FilterType }))
-                              }
-                            />
-              
-                             {/* Sort filter */}
-                            <DropdownRadio
-                              actionLabel="By Weeks"
-                              label="Select"
-                              data={["all-time", "this-week", "last-week"]}
-                              onChange={(val) =>
-                                setFilters((f) => ({ ...f, sort: val as Sort }))
-                              }
-                            />
+              <DropdownRadio
+                actionLabel="Sort"
+                label="Select"
+                data={["latest", "trending"]}
+                onChange={(val) =>
+                  setFilters((f) => ({ ...f, filter: val as FilterType }))
+                }
+              />
+
+              <DropdownRadio
+                actionLabel="By Weeks"
+                label="Select"
+                data={["all-time", "this-week", "last-week"]}
+                onChange={(val) =>
+                  setFilters((f) => ({ ...f, sort: val as Sort }))
+                }
+              />
 
               <Button variant="secondary" size="sm" onClick={clearFilters}>
                 Clear Filters
@@ -342,7 +371,16 @@ useEffect(() => {
         {/* Main */}
         <div className="lg:col-span-3">
           {loading ? (
-            <div className="text-gray-500">Refreshing charts...</div>
+            filters.view === "grid" ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <ChartCardSkeleton key={i} />
+              ))}
+            </div>
+
+            ) : (
+              <SkeletonList count={10} />
+            )
           ) : filters.view === "chart" ? (
             <div className="space-y-4">
               <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
@@ -395,10 +433,7 @@ useEffect(() => {
                 ))}
               </div>
 
-              <div
-                ref={loaderRef}
-                className="h-12 flex justify-center items-center"
-              >
+              <div ref={loaderRef} className="h-12 flex justify-center items-center">
                 {visibleItems < filteredCharts.length && (
                   <span className="text-gray-500">Loading more...</span>
                 )}
@@ -409,13 +444,7 @@ useEffect(() => {
 
         {/* Sidebar */}
         <aside className="space-y-12">
-          <div className="rounded-xl overflow-hidden shadow-lg bg-gradient-to-r from-purple-500 to-pink-500 text-white p-6">
-            <h4 className="text-xl font-bold">🔥 Summer Hits 2025</h4>
-            <p className="text-sm mt-2">The hottest tracks for your vibe</p>
-            <Button className="mt-4 bg-white text-black hover:bg-gray-200">
-              Listen Now
-            </Button>
-          </div>
+          <TrendingLeaderboard list={trending} />
 
           <div>
             <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
@@ -433,7 +462,7 @@ useEffect(() => {
                   href={`/videos/${track.id}`}
                   thumbnail={track.image}
                   videoUrl={track.videoUrl as string}
-                  genre={track.genre} // correctly using genre now
+                  genre={track.genre}
                   views={track.stats.totalViews}
                 />
               ))}

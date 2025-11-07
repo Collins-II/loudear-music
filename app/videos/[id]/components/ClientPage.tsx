@@ -217,13 +217,6 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
               </div>
             </div>
           </div>
-          {/* Description */}
-          {data.description && (
-            <article className="prose prose-lg dark:prose-invert max-w-none">
-              <h3 className="mt-6 text-2xl md:text-3xl font-extrabold">About the video</h3>
-              <p className="italic">{data.description}</p>
-            </article>
-          )}
 
           {/* Video Player */}
             <VideoPlayer
@@ -246,6 +239,14 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
 
           <ViewStats current={data.viewCount} previous={data.previousViewCount as number} />
         </div> 
+
+                  {/* Description */}
+          {data.description && (
+            <article className="prose prose-lg dark:prose-invert max-w-none">
+              <h3 className="mt-6 text-2xl md:text-3xl font-extrabold">About the video</h3>
+              <p className="italic">{data.description}</p>
+            </article>
+          )}
 
           {/* Related videos */}
           {relatedVideos.length > 0 && (

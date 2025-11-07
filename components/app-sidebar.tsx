@@ -34,58 +34,58 @@ const data = {
   navMain: [
     {
       title: "Dashboard",
-      url: "/dashboard",
+      url: "/studio/dashboard",
       icon: IconDashboard,
     },
   ],
   contentManagement: [
     {
       name: "Submit Video",
-      url: "/dashboard/upload/video",
+      url: "/studio/dashboard/upload/video",
       icon: IconVideo,
     },
     {
       name: "Submit Song",
-      url: "/dashboard/upload/song",
+      url: "/studio/dashboard/upload/song",
       icon: IconMusic,
     },
     {
       name: "Submit Album",
-      url: "/dashboard/upload/album",
+      url: "/studio/dashboard/upload/album",
       icon: IconFolder,
     },
     {
       name: "Edit Profile",
-      url: "/dashboard/profile/edit",
+      url: "/studio/dashboard/profile/edit",
       icon: IconUserEdit,
     },
   ],
   musicAndEvents: [
     {
       name: "Songs",
-      url: "/dashboard/admin/songs",
+      url: "/studio/dashboard/admin/songs",
       icon: IconMusic,
     },
     {
       name: "Albums",
-      url: "/dashboard/admin/albums",
+      url: "/studio/dashboard/admin/albums",
       icon: IconChartBar,
     },
     {
       name: "Videos",
-      url: "/dashboard/admin/videos",
+      url: "/studio/dashboard/admin/videos",
       icon: IconFolder,
     },
   ],
   management: [
     {
       name: "Promotions & Marketing",
-      url: "/dashboard/admin/promotions",
+      url: "/studio/dashboard/admin/promotions",
       icon: IconBrandSpotify,
     },
    /* {
       name: "Bookings & Shows",
-      url: "/dashboard/admin/bookings",
+      url: "/studio/dashboard/admin/bookings",
       icon: IconUsers,
     },*/
     
@@ -93,19 +93,19 @@ const data = {
   finance: [
     {
       name: "Financial Reports",
-      url: "/dashboard/admin/reports",
+      url: "/studio/dashboard/admin/reports",
       icon: IconDatabase,
     },
   ],
   navSecondary: [
     {
       title: "Settings",
-      url: "/dashboard/admin/settings",
+      url: "/studio/dashboard/admin/settings",
       icon: IconSettings,
     },
     {
       title: "Get Help",
-      url: "/dashboard/admin/help",
+      url: "/studio/dashboard/admin/help",
       icon: IconHelp,
     },
   ],
@@ -121,7 +121,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <Link href="/dashboard" className="data-[slot=sidebar-menu-button]:!p-1.5">
+            <Link href="/studio/dashboard" className="data-[slot=sidebar-menu-button]:!p-1.5">
                 <h1 className="text-1xl font-extrabold leading-tight tracking-tight md:text-2xl">
                   <span className="bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500 bg-clip-text text-transparent italic">
                     {user?.name}

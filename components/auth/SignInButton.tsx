@@ -1,7 +1,7 @@
 // components/auth/SignInButton.tsx
 "use client";
 
-import { useSession, signIn, signOut } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Image from "next/image";
-import { FaGoogle } from "react-icons/fa";
+import { RiLoginCircleFill } from "react-icons/ri";
 import { motion } from "framer-motion";
 import { LayoutDashboard, LogOut, User } from "lucide-react";
 import { HiOutlineChevronUpDown } from "react-icons/hi2";
@@ -31,11 +31,11 @@ export default function SignInButton() {
       <motion.div
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        onClick={() => signIn("google")}
+        onClick={() => router.push('/login')}
         className="cursor-pointer bg-white border border-gray-300 hover:bg-gray-50 flex items-center justify-center gap-2 rounded-full px-4 py-2 shadow-sm"
       >
-        <FaGoogle className="text-black" />
-        <p className="hidden lg:block text-gray-700 text-sm font-medium">Sign in with Google</p>
+        <RiLoginCircleFill  className="text-black" />
+        <p className="hidden lg:block text-gray-700 text-sm font-medium">Login</p>
       </motion.div>
     );
   }

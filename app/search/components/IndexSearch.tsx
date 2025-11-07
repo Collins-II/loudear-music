@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SearchCard from "@/components/search/SearchCard";
+import SkeletonSearch from "@/components/skeletons/search-skeleton";
 
 /* ---------------------------
    Types
@@ -41,7 +42,7 @@ interface SearchResponse {
   limit: number;
 }
 
-interface TrendingItem {
+export interface TrendingItem {
   id: string;
   title: string;
   artist?: string;
@@ -64,19 +65,6 @@ function useDebounced<T>(value: T, delay = 350) {
   return v;
 }
 
-
-const SkeletonCard = () => (
-  <div className="relative overflow-hidden rounded-2xl bg-white dark:bg-neutral-900 border border-black/5 dark:border-white/5 shadow">
-    <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/20 dark:via-white/10 to-transparent" />
-    <div className="w-full h-56 md:h-48 lg:h-56 bg-gray-200 dark:bg-neutral-800" />
-    <div className="p-4 space-y-3">
-      <div className="h-4 w-3/4 bg-gray-200 dark:bg-neutral-800 rounded" />
-      <div className="h-3 w-1/2 bg-gray-200 dark:bg-neutral-800 rounded" />
-      <div className="h-3 w-full bg-gray-200 dark:bg-neutral-800 rounded" />
-    </div>
-  </div>
-);
-
 function ResultTile({ item, rank }: { item: SearchResultBase; rank?: number }) {
 
   return (
@@ -87,7 +75,7 @@ function ResultTile({ item, rank }: { item: SearchResultBase; rank?: number }) {
 /* ---------------------------
    Trending Leaderboard
 ----------------------------*/
-function TrendingLeaderboard({ list }: { list: TrendingItem[] }) {
+export function TrendingLeaderboard({ list }: { list: TrendingItem[] }) {
   return (
     <section className="rounded-2xl bg-gradient-to-r from-pink-600 via-red-500 to-orange-400 text-white p-4 shadow-lg">
       <div className="flex items-center justify-between mb-4">
@@ -129,11 +117,11 @@ export default function InteractiveSearchPage(): JSX.Element {
   const params = useSearchParams();
 
   const [query, setQuery] = useState(params.get("q") || "");
-  const [type, setType] = useState<"all" | ResultType>(
+  const [type] = useState<"all" | ResultType>(
     (params.get("type") as any) || "all"
   );
-  const [genre, setGenre] = useState(params.get("genre") || "All");
-  const [sort, setSort] = useState<SortOption>(
+  const [genre] = useState(params.get("genre") || "All");
+  const [sort ] = useState<SortOption>(
     (params.get("sort") as SortOption) || "relevance"
   );
 
@@ -249,7 +237,7 @@ export default function InteractiveSearchPage(): JSX.Element {
           )}
         </motion.form>
 
-        {/* Filters */}
+        {/* Filters 
         <div className="mt-6 flex flex-wrap justify-center md:justify-between items-center gap-3">
           <div className="flex items-center gap-2 flex-wrap justify-center">
             {(["all", "song", "album", "video"] as const).map((t) => (
@@ -290,7 +278,7 @@ export default function InteractiveSearchPage(): JSX.Element {
               <option value="popular">Popular</option>
             </select>
           </div>
-        </div>
+        </div>*/}
 
         {/* Results Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mt-10">
@@ -299,7 +287,7 @@ export default function InteractiveSearchPage(): JSX.Element {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <AnimatePresence>
                 {loading
-                  ? Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)
+                  ? Array.from({ length: 6 }).map((_, i) => <SkeletonSearch key={i} />)
                   : results.map((r, idx) => (
                       <ResultTile key={`${r.type}-${r.id}`} item={r} rank={idx + 1} />
                     ))}

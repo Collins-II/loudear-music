@@ -8,23 +8,15 @@ import { useSession } from "next-auth/react";
 import { Button } from "./ui/button";
 import {
   X,
-  UploadCloud,
-  Music,
-  VideoIcon,
   Search,
 } from "lucide-react";
 import { TbMenu3 } from "react-icons/tb";
-import {
-  DropdownMenu,
-  DropdownMenuTrigger,
-  DropdownMenuContent,
-  DropdownMenuItem,
-} from "./ui/dropdown-menu";
-import { Separator } from "./ui/separator";
 import SignInButton from "./auth/SignInButton";
 import { toast } from "sonner";
-import Sidebar from "./sidebar";
+import NavSidebar from "./sidebar";
 import Image from "next/image";
+import { SiYoutubestudio } from "react-icons/si";
+import { TbLoaderQuarter } from "react-icons/tb";
 
 export default function Navbar() {
   const router = useRouter();
@@ -37,6 +29,7 @@ export default function Navbar() {
   const [searchOpen, setSearchOpen] = useState(false); // desktop search
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false); // mobile search
   const [animate, setAnimate] = useState(false);
+  const [onSearch, setOnSearch] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -54,8 +47,10 @@ export default function Navbar() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    setOnSearch(true)
     if (searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setOnSearch(false)
       setSearchQuery("");
       setSearchOpen(false);
       setMobileSearchOpen(false);
@@ -68,8 +63,12 @@ export default function Navbar() {
       setAnimate(true);
       toast("You need to sign in first to submit media.");
       setTimeout(() => setAnimate(false), 800);
+    } else {
+      router.push("/studio/dashboard");
+      setMobileOpen(false);
     }
   };
+
 
   return (
     <motion.header
@@ -129,7 +128,7 @@ export default function Navbar() {
                 scrolled ? "bg-gray-100 text-gray-800" : "bg-white/20 text-white"
               } hover:scale-105`}
             >
-              <Search size={18} />
+              { onSearch ? (<TbLoaderQuarter size={18} />) : (<Search size={18} />) }
             </button>
 
             <AnimatePresence>
@@ -167,46 +166,21 @@ export default function Navbar() {
           </div>
 
           {/* Submit Media */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <motion.div
+           <motion.div
                 animate={animate ? { x: [-5, 5, -5, 5, 0] } : {}}
                 transition={{ duration: 0.5 }}
               >
-                <Button
-                  variant="default"
-                  className="rounded-full gap-2"
-                  onClick={handleMediaClick}
-                >
-                  <UploadCloud className="w-5 h-5" />
-                  Submit Media
-                </Button>
-              </motion.div>
-            </DropdownMenuTrigger>
-
-            {session && (
-              <DropdownMenuContent
-                align="end"
-                className="bg-black/90 border-none w-48 text-white"
-              >
-                <DropdownMenuItem
-                  onClick={() => router.push("/upload/song")}
-                  className="bg-black/80 gap-2"
-                >
-                  <Music className="text-white w-4 h-4" />
-                  Upload Song
-                </DropdownMenuItem>
-                <Separator className="bg-neutral-600" />
-                <DropdownMenuItem
-                  onClick={() => router.push("/upload/video")}
-                  className="bg-black/80 gap-2"
-                >
-                  <VideoIcon className="text-white w-4 h-4" />
-                  Upload Video
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            )}
-          </DropdownMenu>
+          <Button
+            className={`w-full justify-center uppercase rounded-full gap-2 font-semibold ${
+              scrolled
+                ? "bg-gray-900 text-white hover:bg-gray-800"
+                : "bg-white text-black hover:bg-neutral-100"
+            }`}
+            onClick={handleMediaClick}
+          >
+             Studio <SiYoutubestudio />
+          </Button>
+          </motion.div>
 
           <SignInButton />
         </div>
@@ -221,7 +195,7 @@ export default function Navbar() {
               scrolled ? "bg-gray-100 text-gray-800" : "bg-white/20 text-white"
             }`}
           >
-            <Search size={18} />
+            {onSearch ? (<TbLoaderQuarter size={18} />) : (<Search size={18} />)}
           </button>
 
           {/* Menu Toggle */}
@@ -288,7 +262,7 @@ export default function Navbar() {
               onClick={() => setMobileOpen(false)}
             />
 
-            <Sidebar
+            <NavSidebar
               scrolled={scrolled}
               navItems={navItems}
               mobileOpen={mobileOpen}

@@ -4,10 +4,9 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import Image from "next/image";
 
  function ArtistProfilePage() {
   return (
@@ -95,7 +94,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
                   className="hover:shadow-lg transition border-gray-200 dark:border-white/10"
                 >
                   <CardContent className="p-4">
-                    <img
+                    <Image
                       src="/placeholder.jpg"
                       alt="song cover"
                       className="rounded-lg mb-3"
@@ -118,7 +117,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
                   className="hover:shadow-lg transition border-gray-200 dark:border-white/10"
                 >
                   <CardContent className="p-4">
-                    <img
+                    <Image
                       src="/album-cover.jpg"
                       alt="album cover"
                       className="rounded-lg mb-3"
@@ -138,7 +137,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
               {Array.from({ length: 4 }).map((_, i) => (
                 <Card key={i} className="overflow-hidden group">
                   <div className="relative">
-                    <img
+                    <Image
                       src="/video-thumbnail.jpg"
                       alt="video thumbnail"
                       className="rounded-lg group-hover:opacity-80 transition"

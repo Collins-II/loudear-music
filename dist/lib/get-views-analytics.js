@@ -13,9 +13,13 @@ const viewsAnalytics_1 = require("./database/models/viewsAnalytics");
  */
 async function getViewCounts(itemId, model) {
     var _a, _b;
-    const analytics = await viewsAnalytics_1.ViewAnalytics.find({ itemId, model }).lean();
+    if (!mongoose_1.Types.ObjectId.isValid(itemId))
+        throw new Error("Invalid ObjectId");
+    const analytics = await viewsAnalytics_1.ViewAnalytics.find({
+        itemId,
+        $or: [{ contentModel: model }, { model }],
+    }).lean();
     const totalViews = analytics.reduce((sum, entry) => sum + (entry.views || 0), 0);
-    // Sort by week to find last week's stats
     const sorted = analytics.sort((a, b) => (a.week < b.week ? 1 : -1));
     const previousViewCount = (_b = (_a = sorted[1]) === null || _a === void 0 ? void 0 : _a.views) !== null && _b !== void 0 ? _b : 0;
     return { totalViews, previousViewCount };
