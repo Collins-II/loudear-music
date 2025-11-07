@@ -28,7 +28,6 @@ export async function generateMetadata({ params }: AlbumDetailsPageProps): Promi
   try {
     const { id } = await params;
     const album = await getAlbumWithStats(id);
-    console.log("ALBUM__BY__ID",album)
 
     // Narrow / guard
     if (!album || !isBaseSerialized(album)) {

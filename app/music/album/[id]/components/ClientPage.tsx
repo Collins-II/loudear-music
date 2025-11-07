@@ -23,6 +23,7 @@ import { saveAs } from "file-saver";
 import { handleInteractionUtil } from "@/lib/interactions";
 import { useRouter } from "next/navigation";
 import { StanButton } from "@/components/auth/StanButton";
+import type { User as UserType } from "next-auth";
 
 interface AlbumClientPageProps {
   data: AlbumSerialized;
@@ -310,7 +311,7 @@ useEffect(() => {
             model="Album"
             id={data._id}
             initialComments={data.latestComments}
-            user={user}
+            user={user as UserType}
           />
         </section>
 

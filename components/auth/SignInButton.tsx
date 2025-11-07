@@ -31,11 +31,11 @@ export default function SignInButton() {
       <motion.div
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        onClick={() => router.push('/login')}
+        onClick={() => router.push('/auth')}
         className="cursor-pointer bg-white border border-gray-300 hover:bg-gray-50 flex items-center justify-center gap-2 rounded-full px-4 py-2 shadow-sm"
       >
         <RiLoginCircleFill  className="text-black" />
-        <p className="hidden lg:block text-gray-700 text-sm font-medium">Login</p>
+        <p className="hidden lg:block text-gray-700 text-sm font-medium">SignIn</p>
       </motion.div>
     );
   }
@@ -70,7 +70,7 @@ export default function SignInButton() {
           <User className="mr-2 h-4 w-4" />
           Profile
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push("/dashboard")} className="text-gray-700 text-xs font-semibold">
+        <DropdownMenuItem onClick={() => router.push("/studio/dashboard")} className="text-gray-700 text-xs font-semibold">
           <LayoutDashboard className="mr-2 h-4 w-4" />
           Dashboard
         </DropdownMenuItem>

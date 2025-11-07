@@ -8,82 +8,68 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import {
-  RadioGroup,
-  RadioGroupItem,
-} from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
 import { MultiSelect } from "@/components/ui/multi-select";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { signIn } from "next-auth/react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import Image from "next/image";
-import { Icons } from "@/components/icons"; // custom icon map
+import { toast } from "sonner";
+import { Icons } from "@/components/icons";
+import { cn } from "@/lib/utils";
 
 // -----------------------------
-// 🎯 Zod Schema
+// 🎯 Validation Schema
 // -----------------------------
 const formSchema = z.object({
-  name: z.string().optional(),
-  email: z.string().email({ message: "Enter a valid email" }),
+  name: z.string().min(2, "Full name is required"),
+  email: z.string().email("Enter a valid email"),
   role: z.enum(["fan", "artist"]),
   stageName: z.string().optional(),
   genres: z.array(z.string()).min(1, "Select at least one genre"),
-  socialLinks: z
-    .array(
-      z.object({
-        platform: z.string(),
-        url: z.string().url("Invalid URL format"),
-      })
-    )
-    .optional(),
+  socials: z.record(z.string(), z.string().url()).optional(),
 });
 
 // -----------------------------
-// 🎧 Genre List
+// 🎧 Genre Options
 // -----------------------------
-export const GENRES = [
-  "Afrobeat",
-  "Hip-Hop",
-  "Pop",
-  "R&B",
-  "Gospel",
-  "Dancehall",
-  "House",
-  "Rock",
-  "Jazz",
-  "Classical",
-  "Reggae",
-  "Electronic",
+const GENRES = [
+  "Afrobeat", "Hip-Hop", "Pop", "R&B", "Gospel", "Dancehall",
+  "House", "Rock", "Jazz", "Classical", "Reggae", "Electronic",
 ];
 
 // -----------------------------
-// 💬 Social Platforms
+// 🪩 Socials Metadata
 // -----------------------------
-const SOCIAL_PLATFORMS = [
-  { name: "Facebook", icon: Icons.facebook },
-  { name: "Instagram", icon: Icons.instagram },
-  { name: "Twitter", icon: Icons.twitter },
-  { name: "YouTube", icon: Icons.youtube },
-  { name: "TikTok", icon: Icons.tiktok },
-  { name: "SoundCloud", icon: Icons.soundcloud },
+const SOCIALS = [
+  { id: "facebook", label: "Facebook", icon: Icons.facebook },
+  { id: "instagram", label: "Instagram", icon: Icons.instagram },
+  { id: "twitter", label: "Twitter", icon: Icons.twitter },
+  { id: "youtube", label: "YouTube", icon: Icons.youtube },
+  { id: "tiktok", label: "TikTok", icon: Icons.tiktok },
+  { id: "soundcloud", label: "SoundCloud", icon: Icons.soundcloud },
 ];
 
-export function AuthForm({ className }: React.ComponentProps<"div">) {
-  const [isLogin, setIsLogin] = useState(true);
+export function RegisterForm({ className }: React.ComponentProps<"div">) {
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<"fan" | "artist">("fan");
+  const [activeSocials, setActiveSocials] = useState<string[]>([]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { role: "fan", genres: [], socialLinks: [] },
+    defaultValues: {
+      name: "",
+      email: "",
+      role: "fan",
+      genres: [],
+      socials: {},
+    },
   });
 
-  const handleNext = async () => {
+  const nextStep = async () => {
     //const valid = await form.trigger();
     setStep((s) => s + 1);
   };
+  const prevStep = () => setStep((s) => s - 1);
 
   const handleRegister = async (values: z.infer<typeof formSchema>) => {
     try {
@@ -94,10 +80,10 @@ export function AuthForm({ className }: React.ComponentProps<"div">) {
         body: JSON.stringify(values),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Signup failed");
+      if (!res.ok) throw new Error(data.message || "Registration failed");
 
-      toast.success("Account created successfully!");
-      await signIn("credentials", { email: values.email, redirect: true });
+      toast.success("Account created successfully! Redirecting...");
+      window.location.href = "/auth/login";
     } catch (err: any) {
       toast.error(err.message);
     } finally {
@@ -105,217 +91,238 @@ export function AuthForm({ className }: React.ComponentProps<"div">) {
     }
   };
 
-  const addSocialLink = (platform: string, url: string) => {
-    const existing = form.getValues("socialLinks") || [];
-    form.setValue("socialLinks", [
-      ...existing,
-      { platform, url },
-    ]);
-  };
-
-  const removeSocial = (platform: string) => {
-    const filtered = (form.getValues("socialLinks") || []).filter(
-      (s: any) => s.platform !== platform
-    );
-    form.setValue("socialLinks", filtered);
-  };
-
   // -----------------------------
-  // 🧭 Step Configuration
+  // 🪜 Step Data
   // -----------------------------
   const steps = [
-    {
-      id: "role",
-      title: "Choose Your Role",
-      content: (
-        <div className="flex flex-col items-center gap-6">
-          <Label className="text-lg font-semibold">
-            Are you joining as a Fan or Artist?
-          </Label>
-          <RadioGroup
-            value={role}
-            onValueChange={(v) => {
-              setRole(v as "fan" | "artist");
-              form.setValue("role", v as "fan" | "artist");
-            }}
-            className="flex gap-6"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="fan" id="fan" />
-              <Label htmlFor="fan">Fan</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="artist" id="artist" />
-              <Label htmlFor="artist">Artist</Label>
-            </div>
-          </RadioGroup>
-          <Button onClick={handleNext} className="w-40 mt-6">
-            Continue
-          </Button>
-        </div>
-      ),
-    },
-    {
-      id: "details",
-      title: role === "artist" ? "Artist Details" : "Fan Preferences",
-      content: (
-        <div className="flex flex-col items-center gap-4">
-          {role === "artist" && (
-            <Input
-              placeholder="Stage Name"
-              {...form.register("stageName")}
-              className="max-w-sm"
-            />
-          )}
-          <MultiSelect
-            options={GENRES.map((g) => ({ label: g, value: g }))}
-            value={form.getValues("genres") || []} // get current value from form
-            onChange={(vals: string[]) => form.setValue("genres", vals)}
-            placeholder="Select your favorite genres"
-            className="w-full max-w-sm"
-           />
-
-          <div className="flex justify-between w-full max-w-sm mt-6">
-            <Button variant="outline" onClick={() => setStep(step - 1)}>
-              Back
-            </Button>
-            <Button onClick={handleNext}>Continue</Button>
-          </div>
-        </div>
-      ),
-    },
-    {
-      id: "social",
-      title: "Connect Socials",
-      content: (
-        <div className="flex flex-col items-center gap-6">
-          <Label className="text-lg font-semibold">
-            Link your social profiles (optional)
-          </Label>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-4 max-w-lg">
-            {SOCIAL_PLATFORMS.map(({ name, icon: Icon }) => {
-              const existing = (form.getValues("socialLinks") || []).find(
-                (s: any) => s.platform === name
-              );
-              return (
-                <Button
-                  key={name}
-                  variant={existing ? "default" : "outline"}
-                  size="icon"
-                  onClick={() => {
-                    if (existing) removeSocial(name);
-                    else {
-                      const url = prompt(`Enter your ${name} profile URL:`);
-                      if (url) addSocialLink(name, url);
-                    }
-                  }}
-                >
-                  <Icon className="h-5 w-5" />
-                </Button>
-              );
-            })}
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-2 mt-3">
-            {(form.watch("socialLinks") || []).map((s: any) => (
-              <Badge key={s.platform} variant="secondary">
-                {s.platform}
-              </Badge>
-            ))}
-          </div>
-
-          <Button
-            className="mt-6 w-40"
-            onClick={form.handleSubmit(handleRegister)}
-            disabled={loading}
-          >
-            {loading ? "Creating..." : "Finish Sign Up"}
-          </Button>
-
-          <div className="flex justify-between w-full max-w-sm mt-6">
-            <Button variant="outline" onClick={() => setStep(step - 1)}>
-              Back
-            </Button>
-          </div>
-        </div>
-      ),
-    },
+    { id: "role", label: "Role" },
+    { id: "details", label: "Details" },
+    { id: "genres", label: "Genres" },
+    { id: "socials", label: "Socials" },
   ];
 
+  // -----------------------------
+  // ⚙️ Step Components
+  // -----------------------------
+  const renderStep = () => {
+    switch (steps[step].id) {
+      case "role":
+        return (
+          <div className="flex flex-col items-center gap-6">
+            <RadioGroup
+              value={role}
+              onValueChange={(v) => {
+                setRole(v as "fan" | "artist");
+                form.setValue("role", v as "fan" | "artist");
+              }}
+              className="flex gap-8 mt-4"
+            >
+              {["fan", "artist"].map((r) => (
+                <Label
+                  key={r}
+                  className={cn(
+                    "cursor-pointer flex items-center gap-2 text-lg font-semibold",
+                    role === r ? "text-primary" : "text-muted-foreground"
+                  )}
+                >
+                  <RadioGroupItem value={r} /> {r.charAt(0).toUpperCase() + r.slice(1)}
+                </Label>
+              ))}
+            </RadioGroup>
+            <Button onClick={nextStep} className="w-40 mt-6">
+              Continue
+            </Button>
+          </div>
+        );
+
+      case "details":
+        return (
+          <motion.div
+            key="details"
+            className="flex flex-col items-center gap-4 w-full"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <Input placeholder="Full Name" {...form.register("name")} className="max-w-sm" />
+            <Input placeholder="Email Address" type="email" {...form.register("email")} className="max-w-sm" />
+            {role === "artist" && (
+              <Input placeholder="Stage Name" {...form.register("stageName")} className="max-w-sm" />
+            )}
+            <div className="flex justify-between w-full max-w-sm mt-6">
+              <Button variant="outline" onClick={prevStep}>Back</Button>
+              <Button onClick={nextStep}>Continue</Button>
+            </div>
+          </motion.div>
+        );
+
+      case "genres":
+        return (
+          <motion.div
+            key="genres"
+            className="flex flex-col items-center gap-4 w-full"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <MultiSelect
+              options={GENRES.map((g) => ({ label: g, value: g }))}
+              value={form.getValues("genres")}
+              onChange={(vals: string[]) => form.setValue("genres", vals)}
+              placeholder="Select genres"
+              className="w-full max-w-sm"
+            />
+            <div className="flex justify-between w-full max-w-sm mt-6">
+              <Button variant="outline" onClick={prevStep}>Back</Button>
+              <Button onClick={nextStep}>Continue</Button>
+            </div>
+          </motion.div>
+        );
+
+      case "socials":
+        return (
+          <motion.div
+            key="socials"
+            className="flex flex-col gap-4 items-center w-full"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            {/* Icon Picker */}
+            <div className="flex flex-wrap justify-center gap-4 mb-4">
+              {SOCIALS.map(({ id, icon: Icon, label }) => {
+                const isActive = activeSocials.includes(id);
+                return (
+                  <motion.button
+                    key={id}
+                    onClick={() => {
+                      if (isActive) {
+                        setActiveSocials((p) => p.filter((s) => s !== id));
+                        form.setValue(`socials.${id}` as any, "");
+                      } else {
+                        setActiveSocials((p) => [...p, id]);
+                      }
+                    }}
+                    whileTap={{ scale: 0.9 }}
+                    className={cn(
+                      "w-12 h-12 flex items-center justify-center rounded-full border shadow-md transition-colors",
+                      isActive ? "bg-primary text-white" : "border-muted hover:bg-muted/30"
+                    )}
+                    title={label}
+                  >
+                    <Icon className="w-6 h-6" />
+                  </motion.button>
+                );
+              })}
+            </div>
+
+            {/* Dynamic Inputs */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-md">
+              {activeSocials.map((id) => {
+                const { label, icon: Icon } = SOCIALS.find((s) => s.id === id)!;
+                return (
+                  <div key={id} className="flex items-center gap-2 bg-muted/20 p-2 rounded-md">
+                    <Icon className="w-5 h-5 text-muted-foreground" />
+                    <Input
+                      placeholder={`${label} URL`}
+                      {...form.register(`socials.${id}` as const)}
+                      className="flex-1"
+                    />
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-between w-full max-w-sm mt-6">
+              <Button variant="outline" onClick={prevStep}>Back</Button>
+              <Button
+                onClick={form.handleSubmit(handleRegister)}
+                disabled={loading}
+                className="w-40"
+              >
+                {loading ? "Creating..." : "Finish Sign Up"}
+              </Button>
+            </div>
+          </motion.div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className={`flex flex-col gap-6 h-full ${className}`}>
-      <Card>
+    <div className={cn("flex flex-col gap-6 h-full", className)}>
+      <Card className="overflow-hidden shadow-lg">
         <CardContent className="grid p-0 md:grid-cols-2">
-          <div className="flex flex-col justify-center p-6 md:p-8">
-            <div className="flex flex-col items-center text-center mb-4">
-              <h1 className="text-2xl font-bold">
-                {isLogin ? "Welcome back" : steps[step].title}
+          {/* Left Section */}
+          <div className="flex flex-col justify-center p-6 md:p-8 gap-4">
+            {/* Progress Bar */}
+            <div className="flex justify-between items-center mb-6">
+              {steps.map((s, i) => (
+                <motion.div
+                  key={s.id}
+                  className="flex-1 h-2 mx-1 rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: i <= step ? "100%" : "0%" }}
+                  transition={{ duration: 0.4 }}
+                  style={{ backgroundColor: i <= step ? "#7c3aed" : "#d1d5db" }}
+                />
+              ))}
+            </div>
+
+            <div className="flex flex-col items-center text-center mb-6">
+              <motion.div
+                className="relative flex items-center justify-center w-24 h-24 mx-auto rounded-full overflow-hidden shadow-md"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6 }}
+              >
+                <Image
+                  src="/assets/logo/logo-pi.jpg"
+                  alt="LoudEar Logo"
+                  fill
+                  className="object-cover"
+                />
+              </motion.div>
+              <h1 className="text-2xl font-bold mt-4 tracking-wide text-gradient">
+                {steps[step].label}
               </h1>
-              <p className="text-muted-foreground">
-                {isLogin
-                  ? "Login to your LoudEar account"
-                  : "Join the LoudEar community"}
+              <p className="text-muted-foreground mt-1">
+                {step === 0
+                  ? "Choose your role to get started"
+                  : step === 1
+                  ? "Tell us about yourself"
+                  : step === 2
+                  ? "Pick your favorite genres"
+                  : "Link your socials (optional)"}
               </p>
             </div>
 
-            <AnimatePresence mode="wait">
-              {isLogin ? (
-                <motion.div
-                  key="login"
-                  initial={{ opacity: 0, x: 40 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -40 }}
-                  transition={{ duration: 0.4 }}
-                  className="flex flex-col gap-6 items-center"
-                >
-                  <div className="grid grid-cols-2 gap-4 w-full max-w-sm">
-                    <Button onClick={() => signIn("google")} variant="outline">
-                      Google
-                    </Button>
-                    <Button onClick={() => signIn("facebook")} variant="outline">
-                      Facebook
-                    </Button>
-                  </div>
-                  <div className="text-center text-sm mt-6">
-                    Don&apos;t have an account?{" "}
-                    <button
-                      type="button"
-                      onClick={() => setIsLogin(false)}
-                      className="underline underline-offset-4"
-                    >
-                      Sign up
-                    </button>
-                  </div>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key={steps[step].id}
-                  initial={{ opacity: 0, x: 40 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -40 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  {steps[step].content}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <AnimatePresence mode="wait">{renderStep()}</AnimatePresence>
           </div>
 
-          <div className="bg-muted relative hidden md:block">
+          {/* Right Section */}
+          <div className="bg-muted relative hidden md:block rounded-l-2xl overflow-hidden">
             <Image
-              src="/assets/images/cleo-04.jpg"
+              src="/assets/images/yomaps-01.jpg"
               fill
-              alt="Auth"
-              className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.3]"
+              alt="Register"
+              className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.3] dark:grayscale"
             />
           </div>
         </CardContent>
       </Card>
 
-      <div className="text-muted-foreground text-center text-xs">
-        By continuing, you agree to our{" "}
-        <a href="#" className="underline">Terms of Service</a> and{" "}
-        <a href="#" className="underline">Privacy Policy</a>.
+      <div className="text-muted-foreground text-center text-xs mt-2">
+        By signing up, you agree to our{" "}
+        <a href="#" className="underline underline-offset-2 hover:text-primary transition">
+          Terms of Service
+        </a>{" "}
+        and{" "}
+        <a href="#" className="underline underline-offset-2 hover:text-primary transition">
+          Privacy Policy
+        </a>.
       </div>
     </div>
   );

@@ -1,14 +1,16 @@
 import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import AppleProvider from "next-auth/providers/apple";
+import FacebookProvider from "next-auth/providers/facebook";
 import { connectToDatabase } from "@/lib/database";
 import { User } from "@/lib/database/models/user";
 
-// ✅ Extend the Session and JWT interfaces
 declare module "next-auth" {
   interface Session {
     user: {
       id: string;
       name?: string | null;
+      stageName?: string | null;
       email?: string | null;
       image?: string | null;
       role?: "fan" | "artist";
@@ -18,10 +20,10 @@ declare module "next-auth" {
       genres?: string[];
     };
   }
-
   interface User {
     id: string;
     role?: "fan" | "artist";
+    stageName?: string;
   }
 }
 
@@ -29,6 +31,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
     role?: "fan" | "artist";
+    isNewUser?: boolean;
   }
 }
 
@@ -38,71 +41,79 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
+    AppleProvider({
+      clientId: process.env.APPLE_CLIENT_ID!,
+      clientSecret: process.env.APPLE_CLIENT_SECRET!,
+    }),
+    FacebookProvider({
+      clientId: process.env.META_CLIENT_ID!,
+      clientSecret: process.env.META_CLIENT_SECRET!,
+    }),
   ],
 
   secret: process.env.NEXT_AUTH_SECRET,
 
-  session: {
-    strategy: "jwt",
-  },
+  session: { strategy: "jwt" },
 
   callbacks: {
-    // 🔹 1️⃣ Handle sign-in and sync DB user
-    async signIn({ user, account }) {
-      if (account?.provider === "google") {
+    /**
+     * 1️⃣ Handle sign-in and tag new users
+     */
+    async signIn({ user }) {
+      try {
         await connectToDatabase();
-        const existing = await User.findOne({ email: user.email });
+        const existingUser = await User.findOne({ email: user.email });
 
-        if (!existing) {
+        if (!existingUser) {
+          // Create a default fan profile
           const newUser = await User.create({
             name: user.name,
             email: user.email,
             image: user.image,
-            role: "fan", // default role
+            role: "fan",
           });
 
-          user.id = newUser._id as string;
-          user.role = newUser.role;
+          (user as any).id = newUser._id as string;
+          (user as any).role = "fan";
+          (user as any).isNewUser = true;
         } else {
-          existing.name = user.name || existing.name;
-          existing.image = user.image || existing.image;
-          await existing.save();
+          existingUser.name = user.name || existingUser.name;
+          existingUser.image = user.image || existingUser.image;
+          await existingUser.save();
 
-          user.id = existing._id as string;
-          user.role = existing.role;
+          (user as any).id = existingUser._id as string;
+          (user as any).role = existingUser.role;
+          (user as any).isNewUser = false;
         }
-      }
 
-      return true;
+        return true;
+      } catch (err) {
+        console.error("[AUTH_SIGNIN_ERROR]", err);
+        return false;
+      }
     },
 
-    // 🔹 2️⃣ Sync role & ID into JWT
+    /**
+     * 2️⃣ Persist new-user flag and ID in JWT
+     */
     async jwt({ token, user }) {
-      // On initial sign-in
       if (user) {
-        token.id = user.id;
-        token.role = user.role || "fan";
-      } else {
-        // On subsequent requests, ensure DB updates propagate
-        await connectToDatabase();
-        const dbUser = await User.findOne({ email: token.email });
-        if (dbUser) {
-          token.id = dbUser._id as string;
-          token.role = dbUser.role || "fan";
-        }
+        token.id = (user as any).id;
+        token.role = (user as any).role || "fan";
+        token.isNewUser = (user as any).isNewUser ?? false;
       }
-
       return token;
     },
 
-    // 🔹 3️⃣ Sync JWT info into Session (client-side accessible)
+    /**
+     * 3️⃣ Hydrate session with full profile data
+     */
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as "fan" | "artist";
       }
 
-      // Optionally fetch extra fields from DB (only on server)
       if (session.user.email) {
         await connectToDatabase();
         const dbUser = await User.findOne({ email: session.user.email });
@@ -117,5 +128,53 @@ export const authOptions: NextAuthOptions = {
 
       return session;
     },
+
+    /**
+     * 4️⃣ Redirect logic for new users
+     */
+    async redirect({ baseUrl, url }) {
+      // Extract `isNewUser` flag from JWT via internal NextAuth URL
+      try {
+        // The redirect callback doesn't get token directly, so we rely on `url` inspection.
+        // NextAuth adds internal callback URLs like `${baseUrl}/api/auth/callback/google`
+        // We redirect from the default post-login redirect here.
+        //const newUserCookie = "next-auth.newUser";
+        if (url.includes("/api/auth/callback")) {
+          // Always redirect to homepage after OAuth handshake
+          return baseUrl;
+        }
+
+        // Check if redirected after sign-in
+        if (url.includes("newUser=true")) {
+          return `${baseUrl}/auth/register`;
+        }
+
+        return url.startsWith(baseUrl) ? url : baseUrl;
+      } catch (err) {
+        console.error("[AUTH_REDIRECT_ERROR]", err);
+        return baseUrl;
+      }
+    },
+  },
+
+  events: {
+    /**
+     * 5️⃣ Auto-append ?newUser=true after sign-in event for first-timers
+     */
+    async signIn({ user }) {
+      if ((user as any).isNewUser) {
+        // This automatically adds the flag to redirect URL
+        (user as any).redirect = "/auth/register?newUser=true";
+      }
+    },
+  },
+
+  /**
+   * 6️⃣ Custom pages for UX
+   */
+  pages: {
+    signIn: "/auth/login",
+    error: "/auth/error",
+    newUser: "/auth/register", // ✅ built-in NextAuth redirect for first-time users
   },
 };

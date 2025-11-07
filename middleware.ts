@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-const PUBLIC_PATHS = ["/", "/login", "/register", "/api/public"];
+const PUBLIC_PATHS = ["/", "/auth", "/auth/register", "/api/public"];
 const ARTIST_PATHS = ["/artist", "/studio", "/upload", "/dashboard/artist"];
 const USER_PATHS = ["/dashboard", "/profile", "/account"];
 
@@ -26,9 +26,13 @@ export async function middleware(req: NextRequest) {
 
   // 🚫 Not logged in → redirect to login
   if (!token) {
-    const loginUrl = new URL("/login", req.url);
+    const loginUrl = new URL("/auth", req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
+  }
+
+  if (token?.isNewUser && req.nextUrl.pathname !== "/auth/register") {
+    return NextResponse.redirect(new URL("/auth/register", req.url));
   }
 
   // ✅ Logged-in user
@@ -53,7 +57,7 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
+    "/studio/dashboard/:path*",
     "/artist/:path*",
     "/studio/:path*",
     "/upload/:path*",

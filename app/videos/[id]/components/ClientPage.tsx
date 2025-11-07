@@ -26,6 +26,7 @@ import ViewStats from "@/components/stats/ViewStats";
 import { handleInteractionUtil } from "@/lib/interactions";
 import { useRouter } from "next/navigation";
 import { StanButton } from "@/components/auth/StanButton";
+import type { User as UserType } from "next-auth";
 
 interface VideoPageProps {
   data: VideoSerialized;
@@ -268,7 +269,7 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
           )}
 
           {/* Comments */}
-          <Comments model="Video" id={data._id} initialComments={data.latestComments} user={user} />
+          <Comments model="Video" id={data._id} initialComments={data.latestComments} user={user as UserType } />
         </section>
 
         {/* SIDEBAR */}

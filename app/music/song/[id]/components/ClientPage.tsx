@@ -27,6 +27,7 @@ import ViewStats from "@/components/stats/ViewStats";
 import { handleInteractionUtil } from "@/lib/interactions";
 import { useRouter } from "next/navigation";
 import { StanButton } from "@/components/auth/StanButton";
+import type { User as UserType } from "next-auth";
 
 /**
  * Design goals:
@@ -368,7 +369,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
 
           {/* Comments */}
           <div className="mt-8">
-            <Comments model="Song" id={data._id} initialComments={data.latestComments} user={user} />
+            <Comments model="Song" id={data._id} initialComments={data.latestComments} user={user as UserType} />
           </div>
         </section>
 
