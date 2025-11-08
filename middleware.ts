@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-const PUBLIC_PATHS = ["/", "/auth", "/auth/register"];
+const PUBLIC_PATHS = ["/", "/auth", "/auth/error"];
 const ARTIST_PATHS = ["/artist", "/studio", "/upload"];
 const USER_PATHS = ["/studio", "/profile", "/account"];
 
@@ -11,30 +11,40 @@ export async function middleware(req: NextRequest) {
 
   // ✅ Allow public routes
   if (
-    PUBLIC_PATHS.some((p) => p !== "/" && pathname.startsWith(p)) ||
-    pathname === "/"
+    PUBLIC_PATHS.some((p) => pathname.startsWith(p)) ||
+    pathname === "/" ||
+    pathname.startsWith("/api/public")
   ) {
     return NextResponse.next();
   }
 
-  // ✅ Get NextAuth token (Edge compatible)
   const token = await getToken({
     req,
     secret: process.env.NEXT_AUTH_SECRET,
     secureCookie: process.env.NODE_ENV === "production",
   });
 
-  // 🚫 Not logged in → redirect to login
+  // 🚫 Not logged in
   if (!token) {
     const loginUrl = new URL("/auth", req.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // ✅ Logged-in user
   const userRole = (token as any).role || "fan";
+  const isNewUser = (token as any).isNewUser ?? false;
 
-  // 🎭 Role-based access
+  // 🧩 Force new users into register until setup done
+  if (isNewUser && pathname !== "/auth/register") {
+    return NextResponse.redirect(new URL("/auth/register", req.url));
+  }
+
+  // 🚫 Block existing users from register
+  if (!isNewUser && pathname.startsWith("/auth/register")) {
+    return NextResponse.redirect(new URL("/", req.url));
+  }
+
+  // 🎭 Role-based control
   if (ARTIST_PATHS.some((p) => pathname.startsWith(p))) {
     if (userRole !== "artist") {
       return NextResponse.redirect(new URL("/forbidden", req.url));
@@ -47,7 +57,6 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  // ✅ Allow request
   return NextResponse.next();
 }
 
@@ -57,5 +66,6 @@ export const config = {
     "/artist/:path*",
     "/studio/:path*",
     "/upload/:path*",
+    "/auth/register",
   ],
 };

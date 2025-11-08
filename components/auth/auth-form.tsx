@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -102,6 +102,8 @@ export function RegisterForm({
     },
   });
 
+  const watchedValues = useWatch({ control: form.control });
+
   // -----------------------------
   // 🧩 Smart Bio Suggestion
   // -----------------------------
@@ -174,19 +176,18 @@ export function RegisterForm({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to update profile");
 
-       // ✅ Update NextAuth session cache
-    await update({
-      user: {
-        stageName: data.user.stageName,
-        role: data.user.role,
-        image: data.user.image,
-        location: data.user.location,
-        bio: data.user.bio,
-        phone: data.user.phone,
-        genres: data.user.genres,
-        isNewUser: false,
-      },
-    });
+      await update({
+        user: {
+          stageName: data.user.stageName,
+          role: data.user.role,
+          image: data.user.image,
+          location: data.user.location,
+          bio: data.user.bio,
+          phone: data.user.phone,
+          genres: data.user.genres,
+          isNewUser: false,
+        },
+      });
 
       toast.success("Profile updated successfully!");
       window.location.href = "/studio/dashboard";
@@ -198,10 +199,10 @@ export function RegisterForm({
   };
 
   // -----------------------------
-  // 🧮 Profile Completion Logic
+  // 🧮 Profile Completion Logic (reactive)
   // -----------------------------
-  const completion = useMemo(() => {
-    const vals = form.watch();
+  const completion = (() => {
+    const vals = watchedValues;
     const total = role === "artist" ? 8 : 4;
     let filled = 0;
 
@@ -213,10 +214,10 @@ export function RegisterForm({
       if (vals.stageName) filled++;
       if (vals.socials && Object.values(vals.socials).some((v) => v)) filled++;
       if (vals.payout?.network && vals.payout?.phone) filled++;
-      if (vals.image) filled++;
+      //if (vals.image) filled++;
     }
     return Math.round((filled / total) * 100);
-  }, [form, role]);
+  })();
 
   // -----------------------------
   // Steps Definition
@@ -232,9 +233,7 @@ export function RegisterForm({
         ]
       : [{ id: "role", label: "Role" }, { id: "genres", label: "Genres" }];
 
-  const nextStep = () => {
-      setStep((s) => Math.min(s + 1, steps.length - 1));
-  };
+  const nextStep = () => setStep((s) => Math.min(s + 1, steps.length - 1));
   const prevStep = () => setStep((s) => Math.max(s - 1, 0));
 
   // -----------------------------
@@ -269,7 +268,7 @@ export function RegisterForm({
                 </Label>
               ))}
             </RadioGroup>
-            <Button onClick={nextStep} className="w-40 mt-6">
+            <Button type="button" onClick={nextStep} className="w-40 mt-6">
               Continue
             </Button>
           </div>
@@ -323,10 +322,10 @@ export function RegisterForm({
             </Button>
 
             <div className="flex justify-between w-full max-w-sm mt-6">
-              <Button variant="outline" onClick={prevStep}>
+              <Button type="button" variant="outline" onClick={prevStep}>
                 Back
               </Button>
-              <Button onClick={nextStep}>Continue</Button>
+              <Button type="button" onClick={nextStep}>Continue</Button>
             </div>
           </motion.div>
         );
@@ -346,11 +345,11 @@ export function RegisterForm({
             />
             <div className="flex justify-between w-full max-w-sm mt-6">
               {step > 0 && (
-                <Button variant="outline" onClick={prevStep}>
+                <Button type="button" variant="outline" onClick={prevStep}>
                   Back
                 </Button>
               )}
-              <Button onClick={nextStep}>
+              <Button type="button" onClick={nextStep}>
                 {role === "artist" ? "Continue" : "Finish"}
               </Button>
             </div>
@@ -410,10 +409,10 @@ export function RegisterForm({
             </div>
 
             <div className="flex justify-between w-full max-w-sm mt-6">
-              <Button variant="outline" onClick={prevStep}>
+              <Button type="button" variant="outline" onClick={prevStep}>
                 Back
               </Button>
-              <Button onClick={nextStep}>Continue</Button>
+              <Button type="button" onClick={nextStep}>Continue</Button>
             </div>
           </motion.div>
         );
@@ -446,11 +445,11 @@ export function RegisterForm({
             />
 
             <div className="flex justify-between w-full max-w-sm mt-6">
-              <Button variant="outline" onClick={prevStep}>
+              <Button type="button" variant="outline" onClick={prevStep}>
                 Back
               </Button>
               <Button
-                type="button"
+                type="submit"
                 onClick={form.handleSubmit(handleRegister)}
                 disabled={loading}
                 className="w-40"
@@ -476,9 +475,7 @@ export function RegisterForm({
     >
       <Card className="overflow-hidden shadow-lg">
         <CardContent className="grid p-0 md:grid-cols-2">
-          {/* Left Section */}
           <div className="flex flex-col justify-center p-6 md:p-8 gap-4">
-            {/* Progress Bar */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex-1 bg-gray-200 rounded-full h-2 overflow-hidden">
                 <motion.div
@@ -492,7 +489,6 @@ export function RegisterForm({
                 {completion}% Complete
               </span>
             </div>
-
             <div className="flex flex-col items-center text-center mb-6">
               <h1 className="text-muted-foreground text-lg font-semibold">
                 Welcome{" "}
@@ -503,7 +499,6 @@ export function RegisterForm({
               <p className="text-muted-foreground text-sm">
                 {steps[step]?.label || ""}
               </p>
-
               <motion.div
                 className="relative flex items-center justify-center w-24 h-24 mx-auto rounded-full overflow-hidden shadow-md mt-4"
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -517,11 +512,8 @@ export function RegisterForm({
                 />
               </motion.div>
             </div>
-
             <AnimatePresence mode="wait">{renderStep()}</AnimatePresence>
           </div>
-
-          {/* Right Section */}
           <div className="bg-muted relative hidden md:block rounded-l-2xl overflow-hidden">
             <Image
               src="/assets/images/yomaps-01.jpg"
@@ -535,17 +527,11 @@ export function RegisterForm({
 
       <div className="text-muted-foreground text-center text-xs mt-2">
         By signing up, you agree to our{" "}
-        <a
-          href="#"
-          className="underline underline-offset-2 hover:text-primary transition"
-        >
+        <a href="#" className="underline hover:text-primary">
           Terms of Service
         </a>{" "}
         and{" "}
-        <a
-          href="#"
-          className="underline underline-offset-2 hover:text-primary transition"
-        >
+        <a href="#" className="underline hover:text-primary">
           Privacy Policy
         </a>
         .
