@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-const PUBLIC_PATHS = ["/", "/auth", "/auth/register", "/api/public"];
-const ARTIST_PATHS = ["/artist", "/studio", "/upload", "/dashboard/artist"];
-const USER_PATHS = ["/dashboard", "/profile", "/account"];
+const PUBLIC_PATHS = ["/", "/auth", "/auth/register"];
+const ARTIST_PATHS = ["/artist", "/studio", "/upload"];
+const USER_PATHS = ["/studio", "/profile", "/account"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -31,23 +31,19 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (token?.isNewUser && req.nextUrl.pathname !== "/auth/register") {
-    return NextResponse.redirect(new URL("/auth/register", req.url));
-  }
-
   // ✅ Logged-in user
   const userRole = (token as any).role || "fan";
 
   // 🎭 Role-based access
   if (ARTIST_PATHS.some((p) => pathname.startsWith(p))) {
     if (userRole !== "artist") {
-      return NextResponse.redirect(new URL("/403", req.url));
+      return NextResponse.redirect(new URL("/forbidden", req.url));
     }
   }
 
   if (USER_PATHS.some((p) => pathname.startsWith(p))) {
     if (!["fan", "artist"].includes(userRole)) {
-      return NextResponse.redirect(new URL("/403", req.url));
+      return NextResponse.redirect(new URL("/forbidden", req.url));
     }
   }
 

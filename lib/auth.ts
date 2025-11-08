@@ -5,6 +5,9 @@ import FacebookProvider from "next-auth/providers/facebook";
 import { connectToDatabase } from "@/lib/database";
 import { User } from "@/lib/database/models/user";
 
+// ------------------------------------
+// ✅ Extended Type Declarations
+// ------------------------------------
 declare module "next-auth" {
   interface Session {
     user: {
@@ -20,10 +23,13 @@ declare module "next-auth" {
       genres?: string[];
     };
   }
+
   interface User {
     id: string;
+    email?: string;
     role?: "fan" | "artist";
     stageName?: string;
+    isNewUser?: boolean;
   }
 }
 
@@ -35,6 +41,9 @@ declare module "next-auth/jwt" {
   }
 }
 
+// ------------------------------------
+// ⚙️ NextAuth Configuration
+// ------------------------------------
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -56,16 +65,16 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
 
   callbacks: {
-    /**
-     * 1️⃣ Handle sign-in and tag new users
-     */
+    // ---------------------------------------------------
+    // 1️⃣ Handle Sign-In — create or update user
+    // ---------------------------------------------------
     async signIn({ user }) {
       try {
         await connectToDatabase();
+
         const existingUser = await User.findOne({ email: user.email });
 
         if (!existingUser) {
-          // Create a default fan profile
           const newUser = await User.create({
             name: user.name,
             email: user.email,
@@ -87,27 +96,37 @@ export const authOptions: NextAuthOptions = {
         }
 
         return true;
-      } catch (err) {
-        console.error("[AUTH_SIGNIN_ERROR]", err);
+      } catch (error) {
+        console.error("[AUTH_SIGNIN_ERROR]", error);
         return false;
       }
     },
 
-    /**
-     * 2️⃣ Persist new-user flag and ID in JWT
-     */
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = (user as any).id;
-        token.role = (user as any).role || "fan";
-        token.isNewUser = (user as any).isNewUser ?? false;
-      }
-      return token;
-    },
+    // ---------------------------------------------------
+    // 2️⃣ JWT — persist essential data
+    // ---------------------------------------------------
+async jwt({ token, user }) {
+  if (user) {
+    token.id = (user as any).id;
+    token.role = (user as any).role || "fan";
+    token.isNewUser = (user as any).isNewUser ?? false;
+  } else {
+    // Periodically recheck user role in DB every hour
+    //const shouldRefresh = !token.lastCheck || Date.now() - (token.lastCheck as number) > 60 * 60 * 1000;
+    if (token.email) {
+      await connectToDatabase();
+      const dbUser = await User.findOne({ email: token.email });
+      if (dbUser) token.role = dbUser.role;
+      token.lastCheck = Date.now();
+    }
+  }
+  return token;
+},
 
-    /**
-     * 3️⃣ Hydrate session with full profile data
-     */
+
+    // ---------------------------------------------------
+    // 3️⃣ Session — hydrate with DB data
+    // ---------------------------------------------------
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
@@ -123,33 +142,30 @@ export const authOptions: NextAuthOptions = {
           session.user.genres = dbUser.genres;
           session.user.phone = dbUser.phone;
           session.user.image = dbUser.image;
+          session.user.stageName = dbUser.stageName
         }
       }
 
       return session;
     },
 
-    /**
-     * 4️⃣ Redirect logic for new users
-     */
-    async redirect({ baseUrl, url }) {
-      // Extract `isNewUser` flag from JWT via internal NextAuth URL
+    // ---------------------------------------------------
+    // 4️⃣ Redirect — clean new-user flow
+    // ---------------------------------------------------
+    async redirect({ url, baseUrl }) {
       try {
-        // The redirect callback doesn't get token directly, so we rely on `url` inspection.
-        // NextAuth adds internal callback URLs like `${baseUrl}/api/auth/callback/google`
-        // We redirect from the default post-login redirect here.
-        //const newUserCookie = "next-auth.newUser";
-        if (url.includes("/api/auth/callback")) {
-          // Always redirect to homepage after OAuth handshake
-          return baseUrl;
-        }
+        const urlObj = new URL(url, baseUrl);
+        const isNewUser = urlObj.searchParams.get("isNewUser");
+        const userId = urlObj.searchParams.get("id");
 
-        // Check if redirected after sign-in
-        if (url.includes("newUser=true")) {
+        // redirect first-time users to registration details page
+        if (isNewUser === "true" && userId) {
           return `${baseUrl}/auth/register`;
         }
 
-        return url.startsWith(baseUrl) ? url : baseUrl;
+        if (url.startsWith("/")) return `${baseUrl}${url}`;
+        if (urlObj.origin === baseUrl) return url;
+        return baseUrl;
       } catch (err) {
         console.error("[AUTH_REDIRECT_ERROR]", err);
         return baseUrl;
@@ -157,24 +173,23 @@ export const authOptions: NextAuthOptions = {
     },
   },
 
+  // ---------------------------------------------------
+  // 5️⃣ Event Hook — mark new users for redirect
+  // ---------------------------------------------------
   events: {
-    /**
-     * 5️⃣ Auto-append ?newUser=true after sign-in event for first-timers
-     */
     async signIn({ user }) {
       if ((user as any).isNewUser) {
-        // This automatically adds the flag to redirect URL
-        (user as any).redirect = "/auth/register?newUser=true";
+        (user as any).redirect = `/auth/${(user as any).id}/user-details?isNewUser=true`;
       }
     },
   },
 
-  /**
-   * 6️⃣ Custom pages for UX
-   */
+  // ---------------------------------------------------
+  // 6️⃣ Custom Pages
+  // ---------------------------------------------------
   pages: {
     signIn: "/auth/login",
     error: "/auth/error",
-    newUser: "/auth/register", // ✅ built-in NextAuth redirect for first-time users
+    newUser: "/auth/register",
   },
 };

@@ -1,11 +1,18 @@
+import { getCurrentUser } from "@/actions/getCurrentUser";
 import { RegisterForm } from "@/components/auth/auth-form"
+import { IUser } from "@/lib/database/models/user";
 
-export default function LoginPage() {
+const Register = async () => {
+
+  const user = await getCurrentUser();
+
   return (
     <div className="bg-muted flex min-h-svh flex-col items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm md:max-w-3xl pt-16">
-        <RegisterForm />
+        <RegisterForm user={ user as IUser } />
       </div>
     </div>
   )
 }
+
+export default Register;

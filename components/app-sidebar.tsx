@@ -114,6 +114,7 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
   const user = session?.user;
+  console.log("USER_SESSION", user)
 
   return (
     <Sidebar collapsible="offcanvas" {...props} className="pt-20">
@@ -124,7 +125,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             <Link href="/studio/dashboard" className="data-[slot=sidebar-menu-button]:!p-1.5">
                 <h1 className="text-1xl font-extrabold leading-tight tracking-tight md:text-2xl">
                   <span className="bg-gradient-to-r from-yellow-300 via-orange-400 to-red-500 bg-clip-text text-transparent italic">
-                    {user?.name}
+                    {user?.stageName}
                   </span>
                 </h1>
               </Link>
