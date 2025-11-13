@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
@@ -40,7 +40,7 @@ export default function Sidebar({
   setMobileOpen,
   handleMediaClick,
 }: SidebarProps) {
-  //const router = useRouter();
+  const router = useRouter();
   const pathname = usePathname();
   const { data: session } = useSession();
   const user = session?.user;
@@ -144,8 +144,9 @@ export default function Sidebar({
             <footer className="p-6 border-t border-gray-700/30 space-y-4">
               {session ? (
                 <>
-                  {/* Upload Media Dropdown 
+                  {/* Upload Media Dropdown */}
                       <Button
+                        disabled
                         className={`w-full justify-center uppercase rounded-full gap-2 font-semibold cursor-pointer ${
                           scrolled
                             ? "bg-gray-900 text-white hover:bg-gray-800"
@@ -158,7 +159,6 @@ export default function Sidebar({
                       >
                          Studio <SiYoutubestudio />
                       </Button>
-                      */}
                    
 
 {/* 🔹 User Info Dropdown */}
