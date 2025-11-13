@@ -82,7 +82,7 @@ export default function Sidebar({
             animate="visible"
             exit="exit"
             transition={{ type: "tween", duration: 0.3 }}
-            className={`fixed top-0 right-0 w-72 h-screen rounded-bl-xl z-[60] flex flex-col shadow-lg transition-colors duration-300
+            className={`fixed top-0 right-0 w-72 h-screen/95 rounded-bl-xl z-[60] flex flex-col shadow-lg transition-colors duration-300
               ${scrolled ? "bg-white text-gray-900" : "bg-neutral-950 text-white"}`}
             role="dialog"
             aria-modal="true"

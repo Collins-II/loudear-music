@@ -14,7 +14,7 @@ import {
 import Image from "next/image";
 import { RiLoginCircleFill } from "react-icons/ri";
 import { motion } from "framer-motion";
-import { LayoutDashboard, LogOut, User } from "lucide-react";
+import {  LogOut } from "lucide-react";
 import { HiOutlineChevronUpDown } from "react-icons/hi2";
 import { useRouter } from "next/navigation";
 
@@ -65,7 +65,7 @@ export default function SignInButton() {
             {session.user?.email}
           </p>
         </DropdownMenuLabel>
-        <DropdownMenuSeparator />
+        {/*<DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => router.push("/profile")} className="text-gray-700 text-xs font-semibold">
           <User className="mr-2 h-4 w-4" />
           Profile
@@ -73,7 +73,7 @@ export default function SignInButton() {
         <DropdownMenuItem onClick={() => router.push("/studio/dashboard")} className="text-gray-700 text-xs font-semibold">
           <LayoutDashboard className="mr-2 h-4 w-4" />
           Dashboard
-        </DropdownMenuItem>
+        </DropdownMenuItem>*/}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => signOut()} className="text-red-500">
           <LogOut className="mr-2 h-4 w-4" />

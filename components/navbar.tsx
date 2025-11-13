@@ -15,7 +15,7 @@ import SignInButton from "./auth/SignInButton";
 import { toast } from "sonner";
 import NavSidebar from "./sidebar";
 import Image from "next/image";
-import { SiYoutubestudio } from "react-icons/si";
+//import { SiYoutubestudio } from "react-icons/si";
 import { TbLoaderQuarter } from "react-icons/tb";
 
 export default function Navbar() {
@@ -28,7 +28,7 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false); // desktop search
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false); // mobile search
-  const [animate, setAnimate] = useState(false);
+  //const [animate, setAnimate] = useState(false);
   const [onSearch, setOnSearch] = useState(false);
 
   useEffect(() => {
@@ -60,9 +60,9 @@ export default function Navbar() {
 
   const handleMediaClick = () => {
     if (!session) {
-      setAnimate(true);
+      //setAnimate(true);
       toast("You need to sign in first to submit media.");
-      setTimeout(() => setAnimate(false), 800);
+      //setTimeout(() => setAnimate(false), 800);
     } else {
       router.push("/studio/dashboard");
       setMobileOpen(false);
@@ -165,7 +165,7 @@ export default function Navbar() {
             </AnimatePresence>
           </div>
 
-          {/* Submit Media */}
+          {/* Submit Media 
            <motion.div
                 animate={animate ? { x: [-5, 5, -5, 5, 0] } : {}}
                 transition={{ duration: 0.5 }}
@@ -180,7 +180,7 @@ export default function Navbar() {
           >
              Studio <SiYoutubestudio />
           </Button>
-          </motion.div>
+          </motion.div>*/}
 
           <SignInButton />
         </div>

@@ -1,45 +1,60 @@
 import cloudinary from "@/lib/cloudinary";
 import { NextResponse } from "next/server";
 
-// Convert File to Buffer
 async function bufferFromFile(file: File): Promise<Buffer> {
   const arrayBuffer = await file.arrayBuffer();
   return Buffer.from(arrayBuffer);
 }
 
-// Handle POST uploads
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
     const folder = (formData.get("folder") as string) || "uploads";
-
-    type CloudinaryResourceType = "image" | "video" | "raw" | "auto";
     const resourceType =
-      (formData.get("resource_type") as CloudinaryResourceType) || "auto";
+      (formData.get("resource_type") as "image" | "video" | "raw" | "auto") ||
+      "auto";
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
     }
 
-    // convert to buffer
     const buffer = await bufferFromFile(file);
 
-    // upload to cloudinary
-    const result = await new Promise((resolve, reject) => {
+    const result: any = await new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        { folder, resource_type: resourceType },
-        (err, result) => {
-          if (err) reject(err);
-          else resolve(result);
+        { folder, resource_type: resourceType, timeout: 1200000},
+        (err, res) => {
+          if (err) {
+            console.error("Cloudinary upload_stream error:", err);
+            reject(err);
+          } else {
+            resolve(res);
+          }
         }
       );
       uploadStream.end(buffer);
     });
 
-    return NextResponse.json(result);
-  } catch (error) {
+    // ✅ Return only safe properties
+    return NextResponse.json({
+      success: true,
+      secure_url: result.secure_url,
+      public_id: result.public_id,
+      resource_type: result.resource_type,
+      format: result.format,
+      bytes: result.bytes,
+      duration: result.duration,
+    });
+  } catch (error: any) {
     console.error("Cloudinary upload error:", error);
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Cloudinary upload failed",
+        details: error.message,
+      },
+      { status: 500 }
+    );
   }
 }

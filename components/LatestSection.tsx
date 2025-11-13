@@ -72,6 +72,7 @@ export default function LatestSection({ songs, videos, loading }: SectionProps) 
             <GoogleAd slot="1234567890" />
 
             {/* Top Videos */}
+            {videos && (
             <div>
               <HorizontalSlider title="Top Videos">
                 {isLoading
@@ -102,6 +103,7 @@ export default function LatestSection({ songs, videos, loading }: SectionProps) 
                 </motion.div>
               </div>
             </div>
+            )}
           </div>
 
           {/* Sidebar Ads */}

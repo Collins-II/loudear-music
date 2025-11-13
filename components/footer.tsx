@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Facebook, Twitter, Instagram, Youtube } from "lucide-react";
+import Image from "next/image";
 
 export default function Footer() {
   return (
@@ -13,14 +14,12 @@ export default function Footer() {
         
         {/* About */}
         <div>
-           {/* Logo */}
+        {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <span
-            className={` text-2xl md:text-3xl font-extrabold transition-colors ${
-               "text-primary"
-            }`}
+            className={`italic text-2xl md:text-3xl font-extrabold transition-colors`}
           >
-            LoudEar
+            <Image src="/assets/logo/logo-bl.jpg" alt="Loudear-Logo" width={50} height={50} className="rounded-full object-cover shadow-2xl"/>
           </span>
         </Link>
           <p className="text-sm text-gray-600 leading-relaxed">

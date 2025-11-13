@@ -10,6 +10,7 @@ export interface IUser extends Document {
   email: string;
   image?: string;
   role: "fan" | "artist";
+  isNewUser?: false;
   bio?: string;
   location?: string;
   phone?: string;
@@ -84,6 +85,7 @@ const UserSchema = new Schema<IUser>(
       default: "fan",
       index: true,
     },
+    isNewUser: { type: Boolean },
 
     bio: { type: String, maxlength: 2000 },
     location: { type: String, maxlength: 200 },

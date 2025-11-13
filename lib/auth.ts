@@ -26,6 +26,7 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
+    email?: string;
     role?: "fan" | "artist";
     isNewUser?: boolean;
   }
@@ -89,6 +90,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = (user as any).id;
+        token.email = user.email!;
         token.role = (user as any).role || "fan";
         token.isNewUser = (user as any).isNewUser ?? false;
       } else if (token.email) {
@@ -96,8 +98,8 @@ export const authOptions: NextAuthOptions = {
         const dbUser = await User.findOne({ email: token.email });
         if (dbUser) {
           token.role = dbUser.role;
-          // ⚙️ Keep token clean for existing users
-          if (token.isNewUser && dbUser.name && dbUser.bio) {
+          // Mark as not new if user already has name or bio
+          if (token.isNewUser && (dbUser.name || dbUser.bio)) {
             token.isNewUser = false;
           }
         }
@@ -111,6 +113,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id!;
+        session.user.email = token.email!;
         session.user.role = token.role!;
         session.user.isNewUser = token.isNewUser ?? false;
       }
@@ -122,10 +125,7 @@ export const authOptions: NextAuthOptions = {
      * 4️⃣ Redirect — handle new user onboarding
      */
     async redirect({ url, baseUrl }) {
-      // Prevent existing users from `/auth/register`
-      if (url.includes("/auth/register") && !url.includes("isNewUser=true")) {
-        return baseUrl;
-      }
+      // If user just signed in and is new
       if (url.includes("isNewUser=true")) {
         return `${baseUrl}/auth/register`;
       }

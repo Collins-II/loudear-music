@@ -34,27 +34,23 @@ export async function middleware(req: NextRequest) {
   const userRole = (token as any).role || "fan";
   const isNewUser = (token as any).isNewUser ?? false;
 
-  // 🧩 Force new users into register until setup done
-  if (isNewUser && pathname !== "/auth/register") {
+  // 🧩 Force new users to complete registration
+  if (isNewUser && !pathname.startsWith("/auth/register")) {
     return NextResponse.redirect(new URL("/auth/register", req.url));
   }
 
-  // 🚫 Block existing users from register
+  // 🚫 Prevent existing users from returning to registration
   if (!isNewUser && pathname.startsWith("/auth/register")) {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
   // 🎭 Role-based control
-  if (ARTIST_PATHS.some((p) => pathname.startsWith(p))) {
-    if (userRole !== "artist") {
-      return NextResponse.redirect(new URL("/forbidden", req.url));
-    }
+  if (ARTIST_PATHS.some((p) => pathname.startsWith(p)) && userRole !== "artist") {
+    return NextResponse.redirect(new URL("/forbidden", req.url));
   }
 
-  if (USER_PATHS.some((p) => pathname.startsWith(p))) {
-    if (!["fan", "artist"].includes(userRole)) {
-      return NextResponse.redirect(new URL("/forbidden", req.url));
-    }
+  if (USER_PATHS.some((p) => pathname.startsWith(p)) && !["fan", "artist"].includes(userRole)) {
+    return NextResponse.redirect(new URL("/forbidden", req.url));
   }
 
   return NextResponse.next();
@@ -62,9 +58,8 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/studio/dashboard/:path*",
-    "/artist/:path*",
     "/studio/:path*",
+    "/artist/:path*",
     "/upload/:path*",
     "/auth/register",
   ],
