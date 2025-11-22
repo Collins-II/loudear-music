@@ -1,10 +1,14 @@
 import { getCurrentUser } from "@/actions/getCurrentUser";
 import { RegisterForm } from "@/components/auth/auth-form"
 import { IUser } from "@/lib/database/models/user";
+import { redirect } from "next/navigation";
 
 const Register = async () => {
 
   const user = await getCurrentUser();
+  if (!user?.isNewUser) {
+    redirect("/")
+  }
 
   return (
     <div className="bg-muted flex min-h-svh flex-col items-center justify-center p-6 md:p-10">

@@ -53,6 +53,7 @@ const UserSchema = new mongoose_1.Schema({
         default: "fan",
         index: true,
     },
+    isNewUser: { type: Boolean },
     bio: { type: String, maxlength: 2000 },
     location: { type: String, maxlength: 200 },
     phone: { type: String, trim: true },

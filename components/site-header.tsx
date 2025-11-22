@@ -11,6 +11,7 @@ import {
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
+import { NavActions } from "./nav-actions";
 
 export function SiteHeader() {
   const { data: session } = useSession();
@@ -33,7 +34,7 @@ export function SiteHeader() {
       {/* Background Image with Overlay */}
       <div className="absolute inset-0">
         <Image
-          src="/images/bizzy03.jpg"
+          src="/assets/images/bizzy03.jpg"
           alt="BACKGROUND_COVER"
           fill
           priority
@@ -56,7 +57,7 @@ export function SiteHeader() {
             <BreadcrumbItem>
               <BreadcrumbPage className="line-clamp-1 flex items-center">
                 <span className="inline-block rounded-full bg-white/10 px-3 py-1 capitalize font-bold text-xs sm:text-sm text-white/80 backdrop-blur-md">
-                  {user?.genres} • {user?.location}
+                  {user?.role} • {user?.location}
                 </span>
               </BreadcrumbPage>
             </BreadcrumbItem>
@@ -75,7 +76,7 @@ export function SiteHeader() {
           </span>
         </h1>
         {/* Uncomment if needed */}
-        {/* <NavActions /> */}
+        <NavActions />
       </div>
     </header>
   );

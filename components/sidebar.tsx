@@ -146,7 +146,6 @@ export default function Sidebar({
                 <>
                   {/* Upload Media Dropdown */}
                       <Button
-                        disabled
                         className={`w-full justify-center uppercase rounded-full gap-2 font-semibold cursor-pointer ${
                           scrolled
                             ? "bg-gray-900 text-white hover:bg-gray-800"

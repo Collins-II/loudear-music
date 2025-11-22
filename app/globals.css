@@ -71,7 +71,7 @@
   --secondary: #2563eb; /* balanced blue */
   --secondary-foreground: #ffffff;
 
-  --accent: #555352; /* orange accent */
+  --accent: #e9e8e8; /* orange accent */
   --accent-foreground: #ffffff;
 
   --muted: #f4f4f5;
@@ -106,7 +106,7 @@
   --secondary: #3b82f6; /* softer blue for dark bg */
   --secondary-foreground: #ffffff;
 
-  --accent: #f8d0af; /* warm orange accent */
+  --accent: #747272; /* warm orange accent */
   --accent-foreground: #000000;
 
   --muted: #1e1e1e;
@@ -124,6 +124,37 @@
   --sidebar-border: hsl(240 3.7% 15.9%);
   --sidebar-ring: hsl(217.2 91.2% 59.8%);
 }
+
+.tag-indigo {
+  @apply bg-indigo-100 dark:bg-indigo-900/20 
+         text-indigo-600 dark:text-indigo-400 
+         px-2 py-[2px] rounded-full text-[11px] font-medium;
+}
+
+.tag-green {
+  @apply bg-green-100 dark:bg-green-900/20 
+         text-green-600 dark:text-green-400 
+         px-2 py-[2px] rounded-full text-[11px] font-medium;
+}
+
+.tag-purple {
+  @apply bg-purple-100 dark:bg-purple-900/20 
+         text-purple-600 dark:text-purple-400 
+         px-2 py-[2px] rounded-full text-[11px] font-medium;
+}
+
+.btn-indigo {
+  @apply bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg shadow-md;
+}
+
+.btn-disabled {
+  @apply bg-gray-400 dark:bg-gray-600 cursor-not-allowed text-white rounded-lg;
+}
+
+.btn-cart {
+  @apply flex items-center gap-2 px-3 py-2 text-xs font-semibold transition;
+}
+
 
 /* Hide scrollbar but keep scrolling */
 .scrollbar-hide::-webkit-scrollbar {

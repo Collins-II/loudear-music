@@ -5,6 +5,7 @@ import mongoose, { Schema, Document, Model, Types } from "mongoose";
  * Supports both Fan and Artist profiles
  */
 export interface IUser extends Document {
+  _id: string;
   // Core info
   name: string;
   email: string;

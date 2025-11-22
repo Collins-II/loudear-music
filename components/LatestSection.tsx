@@ -7,7 +7,7 @@ import { MusicCard } from "./music/MusicCard";
 import { VideoCard } from "./video/VideoCard";
 import { VideoModal } from "@/components/video/VideoModal";
 import HorizontalSlider from "./sliders/HorizontalSlider";
-import GoogleAd from "./ads/AdSlot";
+//import GoogleAd from "./ads/AdSlot";
 import { ChartItem } from "@/actions/getCharts";
 import MusicCardSkeleton from "./skeletons/music-card-skeleton";
 import VideoCardSkeleton from "./skeletons/video-card-skeleton";
@@ -68,8 +68,8 @@ export default function LatestSection({ songs, videos, loading }: SectionProps) 
               </div>
             </div>
 
-            {/* Banner Ad */}
-            <GoogleAd slot="1234567890" />
+            {/* Banner Ad 
+            <GoogleAd slot="1234567890" />*/}
 
             {/* Top Videos */}
             {videos && (
@@ -106,11 +106,12 @@ export default function LatestSection({ songs, videos, loading }: SectionProps) 
             )}
           </div>
 
-          {/* Sidebar Ads */}
+           Sidebar Ads 
           <aside className="hidden lg:flex flex-col gap-6">
-            <GoogleAd slot="1234567890" />
-            <GoogleAd slot="1234567890" />
-          </aside>
+            
+           {/* <GoogleAd slot="1234567890" />
+            <GoogleAd slot="1234567890" />*/}
+          </aside> 
         </div>
 
         {/* Video Modal */}

@@ -2,18 +2,28 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-const PUBLIC_PATHS = ["/", "/auth", "/auth/error"];
-const ARTIST_PATHS = ["/artist", "/studio", "/upload"];
-const USER_PATHS = ["/studio", "/profile", "/account"];
+const PUBLIC_PATHS = [
+  "/",
+  "/auth",
+  "/auth/error",
+  "/api/public",
+  "/favicon.ico",
+  "/manifest.json",
+  "/robots.txt",
+  "/assets",
+  "/images",
+  "/_next",
+];
+
+const ARTIST_PATHS = ["/artist", "/studio/dashboard"];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // ✅ Allow public routes
+  // Allow static & public paths
   if (
     PUBLIC_PATHS.some((p) => pathname.startsWith(p)) ||
-    pathname === "/" ||
-    pathname.startsWith("/api/public")
+    pathname.match(/\.(png|jpg|jpeg|svg|ico|webp)$/)
   ) {
     return NextResponse.next();
   }
@@ -21,35 +31,36 @@ export async function middleware(req: NextRequest) {
   const token = await getToken({
     req,
     secret: process.env.NEXT_AUTH_SECRET,
-    secureCookie: process.env.NODE_ENV === "production",
   });
 
-  // 🚫 Not logged in
+  // If logged out → allow only public paths, block private pages
   if (!token) {
-    const loginUrl = new URL("/auth", req.url);
-    loginUrl.searchParams.set("callbackUrl", pathname);
-    return NextResponse.redirect(loginUrl);
+    if (!pathname.startsWith("/auth")) {
+      const loginUrl = new URL("/auth", req.url);
+      loginUrl.searchParams.set("callbackUrl", pathname);
+      return NextResponse.redirect(loginUrl);
+    }
+    return NextResponse.next();
   }
 
-  const userRole = (token as any).role || "fan";
-  const isNewUser = (token as any).isNewUser ?? false;
+  const isNewUser = token.isNewUser ?? false;
+  const role = token.role ?? "fan";
 
-  // 🧩 Force new users to complete registration
-  if (isNewUser && !pathname.startsWith("/auth/register")) {
-    return NextResponse.redirect(new URL("/auth/register", req.url));
+  // NEW USER → must finish onboarding
+  if (isNewUser) {
+    if (!pathname.startsWith("/auth/register")) {
+      return NextResponse.redirect(new URL("/auth/register", req.url));
+    }
+    return NextResponse.next();
   }
 
-  // 🚫 Prevent existing users from returning to registration
+  // Returning user → block access to onboarding page
   if (!isNewUser && pathname.startsWith("/auth/register")) {
     return NextResponse.redirect(new URL("/", req.url));
   }
 
-  // 🎭 Role-based control
-  if (ARTIST_PATHS.some((p) => pathname.startsWith(p)) && userRole !== "artist") {
-    return NextResponse.redirect(new URL("/forbidden", req.url));
-  }
-
-  if (USER_PATHS.some((p) => pathname.startsWith(p)) && !["fan", "artist"].includes(userRole)) {
+  // Artist protected routes
+  if (ARTIST_PATHS.some((p) => pathname.startsWith(p)) && role !== "artist") {
     return NextResponse.redirect(new URL("/forbidden", req.url));
   }
 
@@ -61,6 +72,9 @@ export const config = {
     "/studio/:path*",
     "/artist/:path*",
     "/upload/:path*",
+    "/profile/:path*",
+    "/account/:path*",
     "/auth/register",
+    "/dashboard/:path*",
   ],
 };

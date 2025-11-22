@@ -8,6 +8,7 @@ import GlobalAudioPlayer from "@/components/global_audio_player";
 import Script from "next/script";
 import GoogleProvider from "@/lib/provider/google_provider";
 import { Toaster } from "sonner";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,17 +20,63 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://loudear.com";
+
 export const metadata: Metadata = {
-  title: "LoudEar | Music & Video Streaming",
+  title: "LoudEar – Music & Video Streaming",
   description:
-    "LoudEar — Stream, download, and discover music and videos. A modern Artist-inspired platform for music lovers.",
-  manifest: "/manifest.json", // ✅ PWA support
+    "Stream, download, and discover music and videos on LoudEar. A modern platform for artists, creators, and music lovers.",
+  metadataBase: new URL(BASE_URL),
+
+  applicationName: "LoudEar",
+  manifest: "/manifest.json",
   themeColor: "#ff0050",
+
   icons: {
-    icon: "/icons/icon-192x192.png",
-    apple: "/icons/icon-192x192.png",
+    icon: [
+      { url: "/assets/logo/logo-blu.jpg", type: "image/jpg", sizes: "32x32" },
+      { url: "/assets/logo/logo-blu.jpg", type: "image/jpg", sizes: "16x16" },
+    ],
+    apple: { url: "/assets/logo/logo-blu.jpg", sizes: "180x180" },
+    other: [
+      {
+        rel: "mask-icon",
+        url: "/assets/logo/logo-blu.jpg",
+        color: "#ff0050",
+      },
+      {
+        rel: "manifest",
+        url: "/manifest.json",
+      },
+    ],
+  },
+
+  openGraph: {
+    title: "LoudEar – Stream Music & Videos",
+    description:
+      "Discover trending beats, music videos, and exclusive artist releases. Enjoy high-quality streaming on LoudEar.",
+    url: BASE_URL,
+    siteName: "LoudEar",
+    images: [
+      {
+        url: `${BASE_URL}/assets/logo/logo-blu.jpg`,
+        width: 1200,
+        height: 630,
+        alt: "LoudEar Preview",
+      },
+    ],
+    type: "website",
+  },
+
+  twitter: {
+    card: "summary_large_image",
+    title: "LoudEar – Music & Video Streaming",
+    description:
+      "Stream, download, and discover the latest music & videos from artists worldwide.",
+    images: [`${BASE_URL}/assets/logo/logo-blu.jpg`],
   },
 };
+
 
 export default function RootLayout({
   children,
@@ -37,7 +84,7 @@ export default function RootLayout({
   const adsenseId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID;
 
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en" className="scroll-smooth" suppressHydrationWarning>
       <head>
         {/* ✅ Google AdSense */}
         <Script
@@ -47,12 +94,6 @@ export default function RootLayout({
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseId}`}
           crossOrigin="anonymous"
         />
-
-        {/* ✅ PWA Meta */}
-        <meta name="application-name" content="LoudEar" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="LoudEar" />
       </head>
 
       <body
@@ -62,7 +103,12 @@ export default function RootLayout({
         <Toaster />
         <NextTopLoader color="#fff" showSpinner={false} />
         <GoogleProvider>
-        
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
         <ReduxProvider>
           <div className="relative min-h-screen flex flex-col overflow-hidden">
             {/* Decorative Billboard-inspired Backgrounds */}
@@ -81,6 +127,7 @@ export default function RootLayout({
             <GlobalAudioPlayer />
           </div>
         </ReduxProvider>
+        </ThemeProvider>
         </GoogleProvider>
       </body>
     </html>

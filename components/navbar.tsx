@@ -6,30 +6,36 @@ import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession } from "next-auth/react";
 import { Button } from "./ui/button";
-import {
-  X,
-  Search,
-} from "lucide-react";
-import { TbMenu3 } from "react-icons/tb";
+import { X, Search } from "lucide-react";
+import { FaOpencart } from "react-icons/fa6";
+import { TbMenu3, TbLoaderQuarter } from "react-icons/tb";
+import { SiYoutubestudio } from "react-icons/si";
 import SignInButton from "./auth/SignInButton";
 import { toast } from "sonner";
 import NavSidebar from "./sidebar";
 import Image from "next/image";
-//import { SiYoutubestudio } from "react-icons/si";
-import { TbLoaderQuarter } from "react-icons/tb";
+import CartSidebar from "./cart-sidebar";
+import { useSelector } from "react-redux";
+import { RootState } from "@/lib/store";
 
 export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const { data: session } = useSession();
 
+  const items = useSelector((state: RootState) => state.cart.items);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [searchOpen, setSearchOpen] = useState(false); // desktop search
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false); // mobile search
-  //const [animate, setAnimate] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [animate, setAnimate] = useState(false);
   const [onSearch, setOnSearch] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+   useEffect(() => setMounted(true), []);
+
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
@@ -41,16 +47,17 @@ export default function Navbar() {
     { label: "Charts", href: "/charts" },
     { label: "Music", href: "/music" },
     { label: "Videos", href: "/videos" },
+    { label: "SoundHub", href: "/sound-hub" },
     { label: "Playlists", href: "/playlists" },
     { label: "Blog", href: "/blog" },
   ];
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setOnSearch(true)
+    setOnSearch(true);
     if (searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-      setOnSearch(false)
+      setOnSearch(false);
       setSearchQuery("");
       setSearchOpen(false);
       setMobileSearchOpen(false);
@@ -60,15 +67,14 @@ export default function Navbar() {
 
   const handleMediaClick = () => {
     if (!session) {
-      //setAnimate(true);
+      setAnimate(true);
       toast("You need to sign in first to submit media.");
-      //setTimeout(() => setAnimate(false), 800);
+      setTimeout(() => setAnimate(false), 800);
     } else {
       router.push("/studio/dashboard");
       setMobileOpen(false);
     }
   };
-
 
   return (
     <motion.header
@@ -76,25 +82,23 @@ export default function Navbar() {
       animate={{ y: 0 }}
       transition={{ type: "spring", stiffness: 120 }}
       className={`fixed w-full z-50 transition-colors duration-300 ${
-        scrolled
-          ? "bg-white shadow-md text-gray-900"
-          : "bg-black/60 backdrop-blur-md text-white"
+        scrolled ? "bg-white shadow-md text-gray-900" : "bg-black/60 backdrop-blur-md text-white"
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 md:px-12 flex justify-between items-center h-16">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <span
-            className={`italic text-2xl md:text-3xl font-extrabold transition-colors ${
-              scrolled ? "text-primary" : "text-white"
-            }`}
-          >
-            <Image src="/assets/logo/logo-bl.jpg" alt="Loudear-Logo" width={50} height={50} className="rounded-full object-cover shadow-2xl"/>
-          </span>
+          <Image
+            src="/assets/logo/logo-bl.jpg"
+            alt="Loudear-Logo"
+            width={50}
+            height={50}
+            className="rounded-full object-cover shadow-2xl"
+          />
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-4">
+        <nav className="hidden lg:flex items-center gap-4">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -118,7 +122,7 @@ export default function Navbar() {
         </nav>
 
         {/* Desktop Actions */}
-        <div className="hidden md:flex items-center gap-4">
+        <div className="hidden lg:flex items-center gap-4">
           {/* 🔍 Search Toggle */}
           <div className="relative">
             <button
@@ -128,7 +132,7 @@ export default function Navbar() {
                 scrolled ? "bg-gray-100 text-gray-800" : "bg-white/20 text-white"
               } hover:scale-105`}
             >
-              { onSearch ? (<TbLoaderQuarter size={18} />) : (<Search size={18} />) }
+              {onSearch ? <TbLoaderQuarter size={18} /> : <Search size={18} />}
             </button>
 
             <AnimatePresence>
@@ -165,29 +169,40 @@ export default function Navbar() {
             </AnimatePresence>
           </div>
 
-          {/* Submit Media 
-           <motion.div
-                animate={animate ? { x: [-5, 5, -5, 5, 0] } : {}}
-                transition={{ duration: 0.5 }}
-              >
-          <Button
-            className={`w-full justify-center uppercase rounded-full gap-2 font-semibold ${
-              scrolled
-                ? "bg-gray-900 text-white hover:bg-gray-800"
-                : "bg-white text-black hover:bg-neutral-100"
-            }`}
-            onClick={handleMediaClick}
-          >
-             Studio <SiYoutubestudio />
-          </Button>
-          </motion.div>*/}
+          {/* Studio Button */}
+          <motion.div animate={animate ? { x: [-5, 5, -5, 5, 0] } : {}} transition={{ duration: 0.5 }}>
+            <Button
+              className={`w-full justify-center uppercase rounded-full gap-2 font-semibold ${
+                scrolled
+                  ? "bg-gray-900 text-white hover:bg-gray-800"
+                  : "bg-white text-black hover:bg-neutral-100"
+              }`}
+              onClick={handleMediaClick}
+            >
+              Studio <SiYoutubestudio />
+            </Button>
+          </motion.div>
 
           <SignInButton />
+
+          {/* Cart Toggle */}
+          <button
+            onClick={() => setCartOpen(true)}
+            className={`relative p-2 rounded-full transition ${
+              scrolled ? "bg-gray-100 text-gray-800" : "bg-white/20 text-white"
+            }`}
+          >
+            <FaOpencart size={20} />
+            {mounted && items.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                {items.length}
+              </span>
+            )}
+          </button>
         </div>
 
-        {/* Mobile Menu & Search Toggle */}
-        <div className="md:hidden flex items-center gap-2">
-          {/* Search Toggle */}
+        {/* Mobile Menu & Search */}
+        <div className="lg:hidden flex items-center gap-2">
           <button
             aria-label="toggle-mobile-search"
             onClick={() => setMobileSearchOpen((prev) => !prev)}
@@ -195,18 +210,30 @@ export default function Navbar() {
               scrolled ? "bg-gray-100 text-gray-800" : "bg-white/20 text-white"
             }`}
           >
-            {onSearch ? (<TbLoaderQuarter size={18} />) : (<Search size={18} />)}
+            {onSearch ? <TbLoaderQuarter size={18} /> : <Search size={18} />}
           </button>
 
-          {/* Menu Toggle */}
           <button
             aria-label="Toggle Menu"
-            className={`p-2 transition-colors ${
-              scrolled ? "text-gray-800" : "text-white"
-            }`}
+            className={`p-2 transition-colors ${scrolled ? "text-gray-800" : "text-white"}`}
             onClick={() => setMobileOpen((prev) => !prev)}
           >
             {mobileOpen ? <X className="w-6 h-6" /> : <TbMenu3 className="w-6 h-6" />}
+          </button>
+
+          {/* Mobile Cart */}
+          <button
+            onClick={() => setCartOpen(true)}
+            className={`relative p-2 rounded-full transition ${
+              scrolled ? "bg-gray-100 text-gray-800" : "bg-white/20 text-white"
+            }`}
+          >
+            <FaOpencart size={20} />
+            {mounted && items.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                {items.length}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -220,7 +247,7 @@ export default function Navbar() {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className={`md:hidden px-4 py-2 flex items-center gap-2 ${
+            className={`lg:hidden px-4 py-2 flex items-center gap-2 ${
               scrolled ? "bg-white text-gray-900" : "bg-black text-white"
             }`}
           >
@@ -247,21 +274,15 @@ export default function Navbar() {
       <AnimatePresence>
         {mobileOpen && (
           <>
-            {/* Overlay */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.5 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
               className="fixed inset-0 z-40"
-              style={{
-                backgroundColor: scrolled
-                  ? "rgba(255,255,255,0.5)"
-                  : "rgba(0,0,0,0.5)",
-              }}
+              style={{ backgroundColor: scrolled ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)" }}
               onClick={() => setMobileOpen(false)}
             />
-
             <NavSidebar
               scrolled={scrolled}
               navItems={navItems}
@@ -269,10 +290,37 @@ export default function Navbar() {
               setMobileOpen={setMobileOpen}
               handleMediaClick={handleMediaClick}
             />
-  
           </>
         )}
       </AnimatePresence>
+
+{/* Cart Sidebar */}
+<AnimatePresence>
+  {cartOpen && (
+    <>
+      {/* Overlay */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 0.5 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className="fixed inset-0 z-40 bg-black/40"
+        onClick={() => setCartOpen(false)}
+      />
+
+      {/* Sidebar */}
+      <motion.div
+        initial={{ x: "100%" }}
+        animate={{ x: 0 }}
+        exit={{ x: "100%" }}
+        transition={{ type: "spring", stiffness: 120 }}
+        className="fixed top-0 right-0 h-screen w-70 md:w-80 z-50 flex flex-col"
+      >
+        <CartSidebar setCartOpen={setCartOpen} />
+      </motion.div>
+    </>
+  )}
+</AnimatePresence>
     </motion.header>
   );
 }

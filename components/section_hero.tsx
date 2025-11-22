@@ -16,7 +16,7 @@ export default function SectionHero({subtitle}: Props) {
       {/* Background with spotlight gradient */}
       <div className="absolute inset-0">
         <Image
-          src="/assets/images/bizzy03.jpg" // Replace with Yo Maps promo image
+          src="/assets/images/bizzy01.jpg" // Replace with Yo Maps promo image
           alt="Cleo Ice Queen"
           fill
           priority

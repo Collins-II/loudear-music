@@ -1,0 +1,41 @@
+/* REGION BAR */
+.region-bar {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  margin-top: 12px;
+  background: #404040; /* neutral-700 */
+  border-radius: 6px;
+}
+
+/* Selected region */
+.region-selected {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: rgba(34, 197, 94, 0.4); /* green-500/40 */
+  border-radius: 6px;
+
+  /* Injected via CSS variables */
+  left: var(--region-start);
+  width: var(--region-width);
+}
+
+/* Resize handles */
+.region-handle {
+  position: absolute;
+  top: 0;
+  width: 8px;
+  height: 100%;
+  background: rgb(74, 222, 128); /* green-400 */
+  cursor: ew-resize;
+  border-radius: 2px;
+}
+
+.region-handle.start {
+  left: var(--region-start-handle);
+}
+
+.region-handle.end {
+  left: var(--region-end-handle);
+}

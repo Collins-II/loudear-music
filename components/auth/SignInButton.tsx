@@ -4,23 +4,26 @@
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import Image from "next/image";
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from "@/components/ui/popover"
+import {
+  Avatar,
+  AvatarFallback,
+  AvatarImage,
+} from "@/components/ui/avatar"
 import { RiLoginCircleFill } from "react-icons/ri";
 import { motion } from "framer-motion";
-import {  LogOut } from "lucide-react";
-import { HiOutlineChevronUpDown } from "react-icons/hi2";
+import {  LogOut,   Wallet, Users, User} from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 export default function SignInButton() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  const user = session?.user;
+  const [accountOpen, setAccountOpen] = useState(false)
 
   if (status === "loading") {
     return <Button className="rounded-full" disabled>Loading…</Button>;
@@ -40,46 +43,38 @@ export default function SignInButton() {
     );
   }
 
+   
+
   return (
-    <DropdownMenu >
-      <DropdownMenuTrigger className="bg-transparent" asChild>
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="flex items-center gap-1 rounded-full focus:outline-none"
-        >
-          <Image
-            src={session.user?.image ?? "/assets/images/avatar-placeholder.png"}
-            alt={session.user?.name ?? "avatar"}
-            width={36}
-            height={36}
-            className="h-9 w-9 rounded-full object-cover"
-          />
-          <HiOutlineChevronUpDown className="w-4 h-4 text-gray-500"/>
-        </motion.button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="bg-white w-48">
-        <DropdownMenuLabel>
-          <p className="text-black font-medium">{session.user?.name}</p>
-          <p className="text-xs text-gray-500 truncate">
-            {session.user?.email}
-          </p>
-        </DropdownMenuLabel>
-        {/*<DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => router.push("/profile")} className="text-gray-700 text-xs font-semibold">
-          <User className="mr-2 h-4 w-4" />
-          Profile
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => router.push("/studio/dashboard")} className="text-gray-700 text-xs font-semibold">
-          <LayoutDashboard className="mr-2 h-4 w-4" />
-          Dashboard
-        </DropdownMenuItem>*/}
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => signOut()} className="text-red-500">
-          <LogOut className="mr-2 h-4 w-4" />
-          Logout
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        <Popover open={accountOpen} onOpenChange={setAccountOpen}>
+          <PopoverTrigger asChild>
+            <Avatar className="cursor-pointer h-8 w-8">
+              <AvatarImage src={user?.image as string} />
+              <AvatarFallback>CM</AvatarFallback>
+            </Avatar>
+          </PopoverTrigger>
+  
+          <PopoverContent className="bg-white dark:bg-black/90 text-black/90 dark:text-white w-56 p-0">
+            <div className="p-3 border-b">
+              <div className="font-medium">{user?.stageName || user?.name}</div>
+              <div className="text-xs text-muted-foreground">User Account</div>
+            </div>
+  
+            <div className="flex flex-col p-1">
+              <Button variant="ghost" className="w-full justify-start gap-2">
+                <User size={16} /> Profile
+              </Button>
+              <Button variant="ghost" className="w-full justify-start gap-2">
+                <Users size={16} /> Creator Dashboard
+              </Button>
+              <Button variant="ghost" className="w-full justify-start gap-2">
+                <Wallet size={16} /> My Subscriptions
+              </Button>
+              <Button onClick={() => signOut()} variant="ghost" className="w-full justify-start gap-2 text-red-500">
+                <LogOut size={16} /> Logout
+              </Button>
+            </div>
+          </PopoverContent>
+        </Popover>
   );
 }

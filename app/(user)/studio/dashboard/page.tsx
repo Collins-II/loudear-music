@@ -1,18 +1,29 @@
-import { ChartAreaInteractive } from "@/components/chart-area-interactive"
-import { SectionCards } from "@/components/section-cards"
+import AppAreaChart from "@/components/AppAreaChart";
+import AppBarChart from "@/components/AppBarChart";
+import AppPieChart from "@/components/AppPieChart";
+import CardList from "@/components/CardList";
+import TodoList from "@/components/TodoList";
 
-export default function Page() {
+const Homepage = () => {
   return (
-    
-        <div className="flex flex-1 flex-col">
-          <div className="@container/main flex flex-1 flex-col gap-2">
-            <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-              <SectionCards />
-              <div className="px-4 lg:px-6">
-                <ChartAreaInteractive />
-              </div>
-            </div>
-          </div>
-        </div>
-  )
-}
+    <div>
+    <div className="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-4 gap-4">
+      <div className="bg-primary-foreground p-4 rounded-lg lg:col-span-2 xl:col-span-1 2xl:col-span-2">
+        <AppAreaChart />
+      </div>
+      <div className="bg-primary-foreground p-4 rounded-lg">
+        <AppPieChart />
+      </div>
+      <div className="bg-primary-foreground p-4 rounded-lg">
+        <TodoList/>
+      </div>
+        <CardList />
+      </div>
+       <div className="bg-primary-foreground p-4 rounded-lg w-full">
+        <AppBarChart />
+      </div>
+    </div>
+  );
+};
+
+export default Homepage;

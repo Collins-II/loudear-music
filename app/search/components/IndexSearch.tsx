@@ -49,6 +49,9 @@ export interface TrendingItem {
   cover?: string;
   rank: number;
   score?: number;
+  model?: string;
+  genre?: string;
+  createdAt: string;
 }
 
 /* ---------------------------

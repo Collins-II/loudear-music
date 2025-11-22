@@ -114,6 +114,7 @@ const data = {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { data: session } = useSession();
   const user = session?.user;
+  console.log("SESSON_USER", user)
 
   return (
     <Sidebar collapsible="offcanvas" {...props} className="pt-20">

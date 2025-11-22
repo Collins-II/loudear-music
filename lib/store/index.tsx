@@ -1,12 +1,16 @@
 // store/index.ts
 import { configureStore } from "@reduxjs/toolkit";
 import audioReducer from "./audioSlice";
-import themeReducer from "./themeSlice"
+import themeReducer from "./themeSlice";
+import cartReducer from "./cartSlice";
+import currencySlice from "./currency-slice";
 
 export const store = configureStore({
   reducer: {
     audio: audioReducer,
-    theme: themeReducer
+    theme: themeReducer,
+    cart: cartReducer,
+    currency: currencySlice,
   },
 });
 

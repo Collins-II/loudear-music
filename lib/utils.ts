@@ -12,6 +12,7 @@ import { ISong } from "@/lib/database/models/song";
 import { IAlbum } from "@/lib/database/models/album";
 import { IVideo } from "@/lib/database/models/video";
 import { IUser } from "./database/models/user";
+
 /**
  * Utility to format and handle view counts.
  * Provides helpers to format, increment, and parse view numbers.
@@ -20,6 +21,36 @@ import { IUser } from "./database/models/user";
  * Utility functions for handling view counts, growth analytics,
  * and number formatting for music / media / auction platforms.
  */
+export function formatNumberWithCommas(value: number | string): string {
+    return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+};
+
+export function formatNumber(value: number, locale: string = "en-US"): string {
+    return new Intl.NumberFormat(locale).format(value);
+};
+  
+  
+
+export const getCurrencySymbol = (currencyCode: string): string => {
+  const symbols: Record<string, string> = {
+    USD: "$",
+    EUR: "€",
+    GBP: "£",
+    JPY: "¥",
+    CNY: "¥",
+    INR: "₹",
+    NGN: "₦",
+    ZMW: "ZK",
+    KES: "KSh",
+    ZAR: "R",
+    CAD: "$",
+    AUD: "$",
+    // Add more as needed
+  };
+
+  return symbols[currencyCode.toUpperCase()] || currencyCode;
+};
+
 
 export async function bufferFromFile(file: File): Promise<Buffer> {
   const arrayBuffer = await file.arrayBuffer();

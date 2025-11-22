@@ -9,15 +9,13 @@ declare module "next-auth" {
   interface Session {
     user: {
       id: string;
-      name?: string | null;
       email?: string | null;
-      image?: string | null;
-      role?: "fan" | "artist";
+      name?: string | null;
       stageName?: string | null;
-      bio?: string;
-      location?: string;
-      phone?: string;
+      image?: string | null;
       genres?: string[];
+      role?: "fan" | "artist";
+      location?: string | null;
       isNewUser?: boolean;
     };
   }
@@ -27,7 +25,12 @@ declare module "next-auth/jwt" {
   interface JWT {
     id?: string;
     email?: string;
+    name?: string;
+    image?: string;
+    stageName?: string | null;
+    genres?: string[];
     role?: "fan" | "artist";
+    location?: string | null;
     isNewUser?: boolean;
   }
 }
@@ -48,19 +51,17 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
 
-  secret: process.env.NEXT_AUTH_SECRET,
   session: { strategy: "jwt" },
+  secret: process.env.NEXT_AUTH_SECRET,
 
   callbacks: {
-    /**
-     * 1️⃣ Handle Sign-In — create or update user
-     */
     async signIn({ user }) {
       await connectToDatabase();
 
       let dbUser = await User.findOne({ email: user.email });
 
       if (!dbUser) {
+        // New user
         dbUser = await User.create({
           name: user.name,
           email: user.email,
@@ -68,77 +69,60 @@ export const authOptions: NextAuthOptions = {
           role: "fan",
         });
 
-        (user as any).id = dbUser._id as string;
-        (user as any).role = "fan";
+        user.id = dbUser._id.toString();
         (user as any).isNewUser = true;
       } else {
-        dbUser.name = user.name || dbUser.name;
-        dbUser.image = user.image || dbUser.image;
+        // Returning user
+        dbUser.name = dbUser.name;
+        dbUser.image = dbUser.image;
         await dbUser.save();
 
-        (user as any).id = dbUser._id as string;
-        (user as any).role = dbUser.role;
+        user.id = dbUser._id.toString();
         (user as any).isNewUser = false;
+        (user as any).image = dbUser.image;
+        (user as any).role = dbUser.role ?? "fan";
+        (user as any).stageName = dbUser.stageName ?? null;
+        (user as any).genres = dbUser.genres ?? [];
+        (user as any).location = dbUser.location ?? null;
       }
 
       return true;
     },
 
-    /**
-     * 2️⃣ JWT — store key info persistently
-     */
     async jwt({ token, user }) {
       if (user) {
         token.id = (user as any).id;
-        token.email = user.email!;
-        token.role = (user as any).role || "fan";
+        token.name = user.name as string;
+        token.email = user.email as string;
+        token.image = user.image as string;
+        token.role = (user as any).role ?? "fan";
+        token.stageName = (user as any).stageName ?? null;
+        token.genres = (user as any).genres ?? [];
+        token.location = (user as any).location ?? null;
         token.isNewUser = (user as any).isNewUser ?? false;
-      } else if (token.email) {
-        await connectToDatabase();
-        const dbUser = await User.findOne({ email: token.email });
-        if (dbUser) {
-          token.role = dbUser.role;
-          // Mark as not new if user already has name or bio
-          if (token.isNewUser && (dbUser.name || dbUser.bio)) {
-            token.isNewUser = false;
-          }
-        }
       }
       return token;
     },
 
-    /**
-     * 3️⃣ Session — hydrate from DB
-     */
     async session({ session, token }) {
-      if (session.user) {
-        session.user.id = token.id!;
-        session.user.email = token.email!;
-        session.user.role = token.role!;
-        session.user.isNewUser = token.isNewUser ?? false;
-      }
+      if (!session.user) return session;
+
+      session.user.id = token.id!;
+      session.user.email = token.email ?? null;
+      session.user.name = token.name ?? null;
+      session.user.image = token.image ?? null;
+      session.user.role = token.role ?? "fan";
+      session.user.stageName = token.stageName ?? null;
+      session.user.genres = token.genres ?? [];
+      session.user.location = token.location ?? null;
+      session.user.isNewUser = token.isNewUser ?? false;
 
       return session;
     },
-
-    /**
-     * 4️⃣ Redirect — handle new user onboarding
-     */
-    async redirect({ url, baseUrl }) {
-      // If user just signed in and is new
-      if (url.includes("isNewUser=true")) {
-        return `${baseUrl}/auth/register`;
-      }
-      return baseUrl;
-    },
   },
 
-  /**
-   * 5️⃣ Custom Pages
-   */
   pages: {
     signIn: "/auth",
     error: "/auth/error",
-    newUser: "/auth/register",
   },
 };
