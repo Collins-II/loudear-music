@@ -46,8 +46,8 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.APPLE_CLIENT_SECRET!,
     }),
     FacebookProvider({
-      clientId: process.env.META_CLIENT_ID!,
-      clientSecret: process.env.META_CLIENT_SECRET!,
+      clientId: process.env.FACEBOOK_CLIENT_ID!,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
     }),
   ],
 
