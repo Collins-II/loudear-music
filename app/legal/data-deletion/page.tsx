@@ -5,7 +5,7 @@ export const metadata = {
   description: "Privacy Policy for LoudEar Platform",
 };
 
-export function DataDeletionPage() {
+export default function DataDeletionPage() {
 return (
 <div className="max-w-3xl mx-auto p-6 space-y-6">
 <h1 className="text-3xl font-bold">Data Deletion Instructions</h1>
