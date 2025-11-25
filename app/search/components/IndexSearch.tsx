@@ -80,7 +80,7 @@ function ResultTile({ item, rank }: { item: SearchResultBase; rank?: number }) {
 ----------------------------*/
 export function TrendingLeaderboard({ list }: { list: TrendingItem[] }) {
   return (
-    <section className="rounded-2xl bg-gradient-to-r from-pink-600 via-red-500 to-orange-400 text-white p-4 shadow-lg">
+    <section className="rounded-2xl bg-gradient-to-r from-pink-600 via-red-500 to-orange-400 text-white py-4 shadow-lg">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-extrabold">Global Trends</h3>
         <div className="text-xs opacity-90">Updated weekly</div>

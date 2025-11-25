@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import React, { ReactNode, useRef } from "react";
+import ThemedHeading from "../themed-heading";
 
 interface HorizontalSliderProps {
   title?: string;
@@ -33,10 +34,9 @@ export default function HorizontalSlider({
       {/* Header */}
       <div className="flex items-center justify-between mb-4 px-4 md:px-0">
         {title && (
-          <h3 className="relative text-slate-900 dark:text-white text-2xl md:text-3xl font-extrabold tracking-tight">
-            <span className="relative z-10 pr-3 bg-background">{title}</span>
-            <span className="hidden md:block absolute left-0 top-1/2 w-full h-[8px] bg-black/80 -z-0"></span>
-          </h3>
+          <ThemedHeading>
+            {title}
+          </ThemedHeading>
         )}
 
         {/* Navigation Buttons */}

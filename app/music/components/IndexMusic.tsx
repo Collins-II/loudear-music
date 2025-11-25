@@ -14,6 +14,7 @@ import { TopSongCard } from "@/components/music/TopSongsCard";
 import SkeletonList from "@/components/skeletons/skeleton-list";
 import MusicCardSkeleton from "@/components/skeletons/music-card-skeleton";
 import TopCardSkeleton from "@/components/skeletons/top-card-skeleton";
+import ThemedHeading from "@/components/themed-heading";
 
 // --- Filters ---
 const genres = ["All", "Hip Hop", "Afro Pop", "Gospel", "RnB", "Dancehall"];
@@ -381,12 +382,9 @@ const filteredCharts = useMemo(() => {
             )
             ) : filters.view === "chart" ? (
             <div className="space-y-4">
-              <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
-                <span className="relative z-10 bg-white capitalize pr-3">
-                  {`Top ${filters.category} (${filters.sort.replace("-", " ")})`}
-                </span>
-                <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
-              </h3>
+              <ThemedHeading>
+                {`Top ${filters.category} (${filters.sort.replace("-", " ")})`}
+              </ThemedHeading>
 
               <div className="divide-y">
                 {charts.map((item) => (
@@ -405,14 +403,11 @@ const filteredCharts = useMemo(() => {
             </div>
           ) : (
             <>
-              <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
-                <span className="relative z-10 bg-white pr-3 capitalize">
-                  {filters.filter === "a-z"
+              <ThemedHeading>
+                {filters.filter === "a-z"
                     ? "Browse A–Z"
                     : `${filters.filter} ${filters.category}`}
-                </span>
-                <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
-              </h3>
+              </ThemedHeading>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {filteredCharts.slice(0, visibleItems).map((item, idx) => (
@@ -447,10 +442,9 @@ const filteredCharts = useMemo(() => {
         {/* Sidebar */}
         <aside className="space-y-12">
           <div>
-            <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
-              <span className="relative z-10 bg-white pr-3">Top 10 Songs</span>
-              <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
-            </h3>
+              <ThemedHeading>
+               Top 10 Songs
+              </ThemedHeading>
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-1">
               {topVideos.map((track, index) => (
                 <TopSongCard

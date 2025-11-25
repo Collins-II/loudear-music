@@ -1,26 +1,15 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Play, Pause, Info } from "lucide-react";
-import { FaPlus } from "react-icons/fa6";
-import { GiCheckMark } from "react-icons/gi";
+import { Play, Pause, Music2, ShoppingCart } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/lib/store";
 import { addItem } from "@/lib/store/cartSlice";
-
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription
-} from "@/components/ui/dialog";
-import { IoIosClose } from "react-icons/io";
-import { Separator } from "../ui/separator";
 import { useConvertPrice } from "@/lib/store/currency-utils";
 import { getCurrencySymbol, formatNumberWithCommas } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 interface BeatItem {
   id: string;
@@ -41,268 +30,193 @@ interface Props {
 export default function BeatCard({ item }: Props) {
   const selectedCurrency = useSelector((state: RootState) => state.currency.selectedCurrency);
   const convertPrice = useConvertPrice();
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const modalAudio = useRef<HTMLAudioElement | null>(null);
-
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [open, setOpen] = useState(false);
-
   const dispatch = useDispatch<AppDispatch>();
   const cartItems = useSelector((state: RootState) => state.cart.items);
 
-  const inCart = cartItems.some(
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [hovered, setHovered] = useState(false);
+
+  const isInCart = cartItems.some(
     (c) => c.beatId === item.id && c.licenseId === "default"
   );
 
-  const togglePlay = () => {
-    if (!audioRef.current) return;
+useEffect(() => {
+  const audio = audioRef.current; // capture stable reference
+
+  return () => {
+    if (audio) audio.pause();
+  };
+}, []); // safe: no dependencies needed
+
+
+  /* 🎧 TRACK PROGRESS BAR */
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const updateProgress = () => {
+      if (!audio.duration) return;
+      setProgress((audio.currentTime / audio.duration) * 100);
+    };
+
+    audio.addEventListener("timeupdate", updateProgress);
+    audio.addEventListener("ended", () => setIsPlaying(false));
+
+    return () => {
+      audio.removeEventListener("timeupdate", updateProgress);
+    };
+  }, []);
+
+  const togglePlay = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
     if (isPlaying) {
-      audioRef.current.pause();
+      audio.pause();
       setIsPlaying(false);
     } else {
-      audioRef.current.play();
+      audio.play();
       setIsPlaying(true);
     }
-  };
+  },[isPlaying]);
 
-  const toggleModalPlay = () => {
-    if (!modalAudio.current) return;
-    if (!open) return;
-
-    if (!modalAudio.current.paused) {
-      modalAudio.current.pause();
-      setIsPlaying(false);
-    } else {
-      modalAudio.current.play();
-      setIsPlaying(true);
-    }
-  };
-
-  const handleAddToCart = () => {
-    dispatch(
-      addItem({
-        title: item.title,
-        image: item.image as string,
-        beatId: item.id,
-        licenseId: "default",
-        price: item.price || 0
-      })
-    );
-  };
+  const hoverPlayButton = useMemo(
+    () => (
+      <motion.button
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: hovered ? 1 : 0, scale: hovered ? 1 : 0.95 }}
+        transition={{ duration: 0.2 }}
+        className="absolute inset-0 flex items-center justify-center bg-black/30 dark:bg-white/10 backdrop-blur-sm"
+        onClick={(e) => {
+          e.stopPropagation();
+          togglePlay();
+        }}
+      >
+        <div className="p-3 bg-white dark:bg-neutral-900 rounded-full shadow-md border border-black/20 dark:border-white/20">
+          {isPlaying ? (
+            <Pause className="h-6 w-6 text-black dark:text-white" />
+          ) : (
+            <Play className="h-6 w-6 text-black dark:text-white" />
+          )}
+        </div>
+      </motion.button>
+    ),
+    [hovered, isPlaying, togglePlay]
+  );
 
   return (
-    <>
-      {/* ---- CARD ---- */}
-      <motion.div
-        layout
-        initial={{ opacity: 0, y: 6 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -6 }}
-        className="
-          group relative flex items-start gap-3 sm:gap-4 
-          rounded-xl p-3 sm:p-4 border border-black/10 dark:border-white/10 
-          shadow-md hover:shadow-lg hover:scale-[1.01] 
-          bg-white dark:bg-black transition-transform
-        "
-      >
-        {/* Cover */}
-        <button
-          onClick={() => setOpen(true)}
-          className="
-            relative w-16 h-16 sm:w-20 sm:h-20 
-            flex-shrink-0 rounded-xl overflow-hidden 
-            border-2 border-black/20 dark:border-white/20 
-            group-hover:border-indigo-500 transition
-          "
-        >
-          {item.image ? (
-            <Image src={item.image} alt={item.title} fill className="object-cover" />
-          ) : (
-            <div className="bg-gray-200 dark:bg-neutral-800 w-full h-full flex items-center justify-center text-gray-500 dark:text-gray-400 font-semibold text-sm">
-              Beat
-            </div>
-          )}
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="group w-full border-b-[4px] border-black dark:border-white bg-white dark:bg-neutral-900 shadow-sm transition hover:shadow-md overflow-hidden flex"
+    >
+      {/* Thumbnail Section */}
+      <div className="relative w-36 sm:w-40 h-36 sm:h-40 shrink-0 overflow-hidden bg-neutral-200 dark:bg-neutral-800">
+        <Image
+          src={item.image || "/placeholder.png"}
+          alt={item.title}
+          fill
+          className="object-cover"
+        />
 
-          {/* Waveform */}
-          {isPlaying && (
-            <motion.div
-              className="absolute bottom-1 left-1 right-1 flex items-end justify-between px-1 h-5 sm:h-6"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
-              {[4, 8, 12, 8, 4].map((h, i) => (
-                <motion.span
-                  key={i}
-                  className="w-[2px] sm:w-1 bg-indigo-400 dark:bg-indigo-300 rounded"
-                  animate={{ height: ["4px", `${h}px`, "4px"] }}
-                  transition={{
-                    repeat: Infinity,
-                    duration: 0.6,
-                    delay: i * 0.1,
-                    ease: "easeInOut"
-                  }}
-                />
-              ))}
-            </motion.div>
-          )}
-        </button>
-
-        {item.previewUrl && (
-          <audio
-            ref={audioRef}
-            src={item.previewUrl}
-            onEnded={() => setIsPlaying(false)}
+        {/* Progress Bar */}
+        <div className="absolute bottom-0 left-0 w-full h-1 bg-black/20 dark:bg-white/20">
+          <motion.div
+            className="h-full bg-black dark:bg-white"
+            animate={{ width: `${progress}%` }}
+            transition={{ ease: "linear" }}
           />
-        )}
+        </div>
 
-        {/* Info */}
-        <div className="flex-1 min-w-0 flex flex-col gap-1">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <div className="text-sm sm:text-base font-bold truncate text-black dark:text-white group-hover:text-indigo-500 dark:group-hover:text-indigo-400 transition">
-                {item.title}
-              </div>
-              <div className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                By{" "}
-                <span className="italic font-semibold text-black dark:text-white">
-                  {item.producer}
-                </span>
-              </div>
+        {/* Hover Play Button */}
+        {hovered && hoverPlayButton}
+
+        {item.previewUrl && <audio ref={audioRef} src={item.previewUrl} />}
+      </div>
+
+      {/* Information Section */}
+      <div className="flex flex-col justify-between flex-1 p-4">
+        <div>
+          <div className="text-xs uppercase tracking-widest font-medium text-black/60 dark:text-white/60">
+            {item.genre}
+          </div>
+
+          <h3 className="mt-1 text-lg sm:text-xl font-bold text-black dark:text-white leading-tight">
+            {item.title}
+          </h3>
+
+          <p className="text-sm text-black/60 dark:text-white/60 mt-1">
+            {item.producer}
+          </p>
+        </div>
+
+        {/* Metadata */}
+        <div className="flex flex-wrap gap-3 mt-3 text-sm text-black/70 dark:text-white/70">
+          {item.bpm && (
+            <div className="flex items-center gap-1">
+              <Music2 className="w-4 h-4" />
+              <span>{item.bpm} BPM</span>
             </div>
+          )}
+          {item.key && (
+            <div className="flex items-center gap-1">
+              <span className="font-medium">Key:</span>
+              <span>{item.key}</span>
+            </div>
+          )}
+        </div>
 
-            
+        {/* Bottom Row */}
+        <div className="mt-4 flex items-center justify-between">
+          <div className="text-xl font-bold text-black dark:text-white">
+            {item.price
+              ? `${getCurrencySymbol(selectedCurrency)}${formatNumberWithCommas(
+                  convertPrice(Number(item.price))
+                )}`
+              : "Free"}
           </div>
 
-          {/* Tags */}
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
-            {item.genre && (
-              <span className="tag-indigo">{item.genre}</span>
-            )}
-            {item.bpm && (
-              <span className="tag-green">{item.bpm} BPM</span>
-            )}
-            {item.key && (
-              <span className="tag-purple">Key {item.key}</span>
-            )}
-          </div>
-
-          {/* Price + Button */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mt-2 gap-2">
-            <span className="text-black dark:text-white font-bold text-sm sm:text-base">
-             {item.price
-                ? `${getCurrencySymbol(selectedCurrency)} ${formatNumberWithCommas(convertPrice(Number(item.price)))}`
-                : "Free"}
-              </span>
-            
-          <div className="flex items-center gap-1">
-            {/* Play Button */}
-            {item.previewUrl && (
-              <button
-                onClick={togglePlay}
-                className="
-                  w-8 h-8 sm:w-9 sm:h-9 rounded-full 
-                  bg-indigo-500 hover:bg-indigo-600 
-                  text-white flex items-center justify-center 
-                  shadow-md transition
-                "
-              >
-                {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-              </button>
-            )}
-            <button
-              onClick={handleAddToCart}
-              disabled={inCart}
-              className={`btn-cart ${inCart ? "btn-disabled" : "btn-indigo"}`}
+          <div className="flex items-center gap-2">
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={togglePlay}
+              className="border-black/20 dark:border-white/20 text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
             >
-              {inCart ? <GiCheckMark size={14} />: <FaPlus size={14} />}  {inCart ? "In Cart" : "Full Beat"}
-            </button>
-            
-            </div>
-          </div>
-        </div>
-
-        {/* Details Icon */}
-        <button
-          aria-label="info-button"
-          onClick={() => setOpen(true)}
-          className="absolute top-2 right-2 text-neutral-400 opacity-60 hover:opacity-100 transition"
-        >
-          <Info size={18} />
-        </button>
-      </motion.div>
-
-      {/* ---- MODAL ---- */}
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md sm:max-w-lg md:rounded-2xl p-6 bg-white dark:bg-neutral-900 border border-black/10 dark:border-white/10">
-        <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-md italic text-gray-900 dark:text-white">Beat Info</h3>
-         <button
-            aria-label="close-button"
-            onClick={() => setOpen(false)}
-            className={`relative p-2 rounded-full transition text-black/90`}
-           >
-             <IoIosClose size={30}/>
-          </button>
-        </div>
-        <Separator className=""/>
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">{item.title}</DialogTitle>
-            <DialogDescription className="text-gray-600 dark:text-gray-400">
-              Produced by <span className="font-semibold">{item.producer}</span>
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="mt-4">
-            {/* Big Cover */}
-            <div className="relative w-full h-52 rounded-xl overflow-hidden border border-black/10 dark:border-white/10">
-              {item.image ? (
-                <Image src={item.image} alt={item.title} fill className="object-cover" />
+              {isPlaying ? (
+                <Pause className="h-4 w-4" />
               ) : (
-                <div className="w-full h-full bg-gray-200 dark:bg-neutral-800" />
+                <Play className="h-4 w-4" />
               )}
-            </div>
+            </Button>
 
-            {/* Modal Audio */}
-            {item.previewUrl && (
-              <div className="flex items-center justify-center mt-4">
-                <audio ref={modalAudio} src={item.previewUrl} />
-                <button
-                  aria-label="info-play"
-                  onClick={toggleModalPlay}
-                  className="w-12 h-12 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white flex items-center justify-center shadow-lg transition"
-                >
-                  {isPlaying ? <Pause size={16} /> : <Play size={16} />}
-                </button>
-              </div>
-            )}
-
-            {/* Details */}
-            <div className="mt-4 flex flex-wrap gap-2">
-              {item.genre && <span className="tag-indigo">{item.genre}</span>}
-              {item.bpm && <span className="tag-green">{item.bpm} BPM</span>}
-              {item.key && <span className="tag-purple">Key {item.key}</span>}
-            </div>
-
-            {/* Price + CTA */}
-            <div className="mt-6 flex items-center justify-between">
-              <span className="font-bold text-lg text-black dark:text-white">
-              {item.price
-                ? `${getCurrencySymbol(selectedCurrency)} ${formatNumberWithCommas(convertPrice(Number(item.price)))}`
-                : "Free"}
-              </span>
-              <button
-                onClick={handleAddToCart}
-                disabled={inCart}
-                className={`btn-cart text-sm px-4 py-2 ${
-                  inCart ? "btn-disabled" : "btn-indigo"
-                }`}
-              >
-                {inCart ? <GiCheckMark size={14} />: <FaPlus size={14} />}  {inCart ? "In Cart" : "Get Full Beat"}
-              </button>
-            </div>
+            <Button
+              size="icon"
+              onClick={() =>
+                dispatch(
+                  addItem({
+                    title: item.title,
+                    image: item.image as string,
+                    beatId: item.id,
+                    licenseId: "default",
+                    price: item.price || 0
+                  })
+                )
+              }
+              disabled={isInCart}
+              className={`${
+                isInCart
+                  ? "bg-neutral-400 dark:bg-neutral-700 text-white"
+                  : "bg-black text-white dark:bg-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200"
+              } rounded-md`}
+            >
+              <ShoppingCart className="h-4 w-4" />
+            </Button>
           </div>
-        </DialogContent>
-      </Dialog>
-    </>
+        </div>
+      </div>
+    </div>
   );
 }

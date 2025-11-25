@@ -9,7 +9,6 @@ import { AlbumSerialized, SongSerialized } from "@/actions/getItemsWithStats";
 import AlbumPlayer from "@/components/music/AlbumPlayer";
 import { Badge } from "@/components/ui/badge";
 import ShareModal from "@/components/modals/ShareModal";
-//import DownloadModal from "@/components/modals/DownloadModal";
 import { timeAgo} from "@/lib/utils";
 import HorizontalSlider from "@/components/sliders/HorizontalSlider";
 import { SliderCard } from "@/components/sliders/SliderCard";
@@ -24,6 +23,7 @@ import { handleInteractionUtil } from "@/lib/interactions";
 import { useRouter } from "next/navigation";
 import { StanButton } from "@/components/auth/StanButton";
 import type { User as UserType } from "next-auth";
+import MonetizedDownloadSheet from "@/components/modals/DownloadModal";
 
 interface AlbumClientPageProps {
   data: AlbumSerialized;
@@ -44,7 +44,7 @@ export default function AlbumClientPage({ data, relatedSongs }: AlbumClientPageP
   const [shareOpen, setShareOpen] = useState(false);
     const [downloading, setDownloading] = useState(false);
     const [ queue ] = useState<SongSerialized[]>(data.songs as SongSerialized[]);
-  //const [downloadOpen, setDownloadOpen] = useState(false);
+   const [monetizedDownloadOpen, setMonetizedDownloadOpen] = useState(false); // NEW
 
     // ✅ Download logic
   const downloadAlbum = async () => {
@@ -268,7 +268,8 @@ useEffect(() => {
               <InteractiveButtons
                 liked={liked}
                 downloading={downloading}
-                handleDownload={downloadAlbum}
+                price={25}
+                handleDownload={()=> setMonetizedDownloadOpen(true)}
                 handleInteraction={() => handleInteraction("like")}
               />
             
@@ -349,13 +350,18 @@ useEffect(() => {
         shareUrl={pageUrl}
         title={data.title}
       />
-      {/*<DownloadModal
-        data={data}
-        open={downloadOpen}
-        onClose={() => setDownloadOpen(false)}
-        fileUrl={""}
-        onConfirmDownload={() => handleInteraction("download")}
-      />*/}
+ {/* NEW: Monetized Apple-Style Download Bottom Sheet */}
+ <MonetizedDownloadSheet
+   open={monetizedDownloadOpen}
+   onClose={() => setMonetizedDownloadOpen(false)}
+   onDownload={downloadAlbum}
+   price={25}
+   coverUrl={data.coverUrl}
+   title={data.title}
+   artist={data.artist}
+   onPaidDownload={() => handleInteraction("download")}
+ />
+ 
     </main>
   );
 }

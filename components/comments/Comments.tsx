@@ -10,6 +10,7 @@ import type { CommentSerialized } from "@/actions/getItemsWithStats";
 import type { User as UserType } from "next-auth";
 import Image from "next/image";
 import { Separator } from "../ui/separator";
+import ThemedHeading from "../themed-heading";
 
 type ReactionType = "heart" | "fire" | "laugh" | "up" | "down";
 
@@ -230,9 +231,9 @@ export default function Comments({
    * ---------------------- */
   return (
     <div className="space-y-6">
-      <h3 className="w-full relative text-slate-900 text-2xl md:text-3xl font-extrabold tracking-tight mb-6">
-        <span className="relative z-10 bg-white pr-3">Comments</span>
-      </h3>
+      <ThemedHeading>
+        Comments
+      </ThemedHeading>
 
       {/* Root Composer */}
       <div className="flex gap-3 items-start">

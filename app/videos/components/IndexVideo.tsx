@@ -9,6 +9,7 @@ import { ChartRow } from "@/components/music/ChartRow";
 import { TopVideoCard } from "@/components/video/TopVideoCard";
 import { ChartItem } from "@/actions/getCharts";
 import { VideoCard } from "@/components/video/VideoCard";
+import ThemedHeading from "@/components/themed-heading";
 
 const genres = ["All", "Pop", "R&B", "Hip Hop", "Afrobeat"];
 const alphabet = ["All", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"] as const;
@@ -195,12 +196,9 @@ export default function IndexVideo({ videos }: IndexVideoProps) {
         <div className="lg:col-span-3">
           {filters.view === "chart" ? (
             <div className="space-y-4">
-              <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
-                <span className="relative z-10 bg-white capitalize pr-3">
-                  {`Top ${filters.genre} (${filters.filter.replace("-", " ")})`}
-                </span>
-                <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
-              </h3>
+              <ThemedHeading>
+                {`Top ${filters.genre} (${filters.filter.replace("-", " ")})`}
+              </ThemedHeading>
             <div className="divide-y">
               {trendingVideos.map((item) => (
                 <ChartRow
@@ -218,14 +216,11 @@ export default function IndexVideo({ videos }: IndexVideoProps) {
             </div>
           ) : (
             <>
-             <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
-                <span className="relative z-10 bg-white pr-3 capitalize">
-                  {filters.filter === "a-z"
+              <ThemedHeading>
+                {filters.filter === "a-z"
                     ? "Browse A–Z"
                     : `${filters.filter} `}
-                </span>
-                <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
-              </h3>
+              </ThemedHeading>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {filteredVideos.slice(0, visibleItems).map((item) => (
@@ -258,10 +253,9 @@ export default function IndexVideo({ videos }: IndexVideoProps) {
         {/* Sidebar */}
         <aside className="space-y-12">
           <div>
-            <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
-              <span className="relative z-10 bg-white pr-3">Top 10 Videos</span>
-              <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
-            </h3>
+              <ThemedHeading>
+                Top 10 Videos
+              </ThemedHeading>
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-1">
               {trendingVideos.map((video, idx) => (
                 <TopVideoCard

@@ -11,6 +11,7 @@ import HorizontalSlider from "./sliders/HorizontalSlider";
 import { ChartItem } from "@/actions/getCharts";
 import MusicCardSkeleton from "./skeletons/music-card-skeleton";
 import VideoCardSkeleton from "./skeletons/video-card-skeleton";
+import ThemedHeading from "./themed-heading";
 
 interface SectionProps {
   songs?: ChartItem[];
@@ -32,10 +33,9 @@ export default function LatestSection({ songs, videos, loading }: SectionProps) 
           <div className="lg:col-span-3 space-y-12">
             {/* Trending Music */}
             <div className="px-6 md:px-0">
-              <h3 className="relative text-slate-900 text-2xl md:text-3xl font-extrabold mb-6 tracking-tight">
-                <span className="relative z-10 bg-white pr-3">Trending Music</span>
-                <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
-              </h3>
+              <ThemedHeading>
+                Trending Music
+              </ThemedHeading>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6 pb-4 scrollbar-hide">
                 {isLoading
@@ -67,7 +67,9 @@ export default function LatestSection({ songs, videos, loading }: SectionProps) 
                 </motion.div>
               </div>
             </div>
-
+          <div className="bg-gray-200 h-60 flex items-center justify-center rounded-lg">
+            <span className="text-gray-500">Advertisement</span>
+          </div>
             {/* Banner Ad 
             <GoogleAd slot="1234567890" />*/}
 
@@ -108,6 +110,12 @@ export default function LatestSection({ songs, videos, loading }: SectionProps) 
 
            Sidebar Ads 
           <aside className="hidden lg:flex flex-col gap-6">
+          <div className="bg-gray-200 h-20 flex items-center justify-center rounded-lg">
+            <span className="text-gray-500">Advertisement</span>
+          </div>
+          <div className="bg-gray-200 h-60 flex items-center justify-center rounded-lg">
+            <span className="text-gray-500">Advertisement</span>
+          </div>
             
            {/* <GoogleAd slot="1234567890" />
             <GoogleAd slot="1234567890" />*/}

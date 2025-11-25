@@ -11,8 +11,10 @@ import { getSocket } from "@/lib/socketClient";
 import { TopVideoCard } from "@/components/video/TopVideoCard";
 import SkeletonList from "@/components/skeletons/skeleton-list";
 import ChartCardSkeleton from "@/components/skeletons/chart-card-skeleton";
-import { TrendingItem, TrendingLeaderboard } from "@/app/search/components/IndexSearch";
+import { TrendingItem } from "@/app/search/components/IndexSearch";
 import TopCardSkeleton from "@/components/skeletons/top-card-skeleton";
+import ThemedHeading from "@/components/themed-heading";
+import { TrendingBoard } from "@/components/stats/TrendingBoard";
 
 /* ---------------------------------- Filters ---------------------------------- */
 const genres = ["All", "Hip Hop", "Afro Pop", "Gospel", "RnB", "Dancehall"];
@@ -383,12 +385,9 @@ function ChartsPage({
             )
           ) : filters.view === "chart" ? (
             <div className="space-y-4">
-              <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
-                <span className="relative z-10 bg-white capitalize pr-3">
-                  {`Top ${filters.category} (${filters.sort.replace("-", " ")})`}
-                </span>
-                <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
-              </h3>
+              <ThemedHeading>
+                {`Top ${filters.category} (${filters.sort.replace("-", " ")})`}
+              </ThemedHeading>
 
               <div className="divide-y">
                 {charts.map((item) => (
@@ -407,15 +406,11 @@ function ChartsPage({
             </div>
           ) : (
             <>
-              <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
-                <span className="relative z-10 bg-white pr-3 capitalize">
-                  {filters.filter === "a-z"
+            <ThemedHeading>
+              {filters.filter === "a-z"
                     ? "Browse A–Z"
                     : `${filters.filter} ${filters.category}`}
-                </span>
-                <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
-              </h3>
-
+            </ThemedHeading>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {filteredCharts.slice(0, visibleItems).map((item, idx) => (
                   <ChartCard
@@ -444,13 +439,12 @@ function ChartsPage({
 
         {/* Sidebar */}
         <aside className="space-y-12">
-          <TrendingLeaderboard list={trending} />
+          <TrendingBoard list={trending} />
 
           <div>
-            <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
-              <span className="relative z-10 bg-white pr-3">Top 10 Videos</span>
-              <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
-            </h3>
+              <ThemedHeading>
+                Top 10 Videos
+              </ThemedHeading>
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-1">
               {topVideos.map((track, index) => (
                 <TopVideoCard

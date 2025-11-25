@@ -2,18 +2,26 @@
 
 import { motion } from "framer-motion";
 import { Heart, DownloadCloud } from "lucide-react";
+import { useConvertPrice } from "@/lib/store/currency-utils";
+import { getCurrencySymbol, formatNumberWithCommas } from "@/lib/utils";
+import { useSelector } from "react-redux";
+import { RootState } from "@/lib/store";
 
 export default function InteractiveButtons({
   liked,
   downloading,
+  price,
   handleInteraction,
   handleDownload,
 }: {
   liked: boolean;
   downloading: boolean;
+  price?: number;
   handleInteraction: (type: string) => void;
   handleDownload: () => void;
 }) {
+  const selectedCurrency = useSelector((state: RootState) => state.currency.selectedCurrency);
+  const convertPrice = useConvertPrice();
   return (
     <div className="italic flex flex-wrap items-center gap-3">
       <motion.button
@@ -88,7 +96,10 @@ export default function InteractiveButtons({
         </motion.div>
 
         <span className="text-sm font-medium">
-          {downloading ? "Downloading..." : "Download"}
+          {downloading ? "Downloading..." : `Download ${price
+                          ? `${getCurrencySymbol(selectedCurrency)}${formatNumberWithCommas(convertPrice(Number(price)))}`
+                          : "Free"}`
+          }
         </span>
       </motion.button>
     </div>

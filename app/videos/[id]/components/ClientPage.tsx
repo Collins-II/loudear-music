@@ -13,7 +13,6 @@ import { getSocket } from "@/lib/socketClient";
 import { VideoSerialized } from "@/actions/getItemsWithStats";
 import { timeAgo } from "@/lib/utils";
 import ShareModal from "@/components/modals/ShareModal";
-import DownloadModal from "@/components/modals/DownloadModal";
 import VideoPlayer from "@/components/video/VideoPlayer";
 import HorizontalSlider from "@/components/sliders/HorizontalSlider";
 import Comments from "@/components/comments/Comments";
@@ -27,6 +26,7 @@ import { handleInteractionUtil } from "@/lib/interactions";
 import { useRouter } from "next/navigation";
 import { StanButton } from "@/components/auth/StanButton";
 import type { User as UserType } from "next-auth";
+import MonetizedDownloadSheet from "@/components/modals/DownloadModal";
 
 interface VideoPageProps {
   data: VideoSerialized;
@@ -46,7 +46,7 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
   const [imgError, setImgError] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [downloadOpen, setDownloadOpen] = useState(false);
+  const [monetizedDownloadOpen, setMonetizedDownloadOpen] = useState(false); // NEW
 
   const pageUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/videos/${data._id}`;
 
@@ -220,21 +220,30 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
           </div>
 
           {/* Video Player */}
-            <VideoPlayer
-              id={data._id}
-              userId={userId}
-              src={data.fileUrl}
-              title={data.title}
-              thumbnail={data.coverUrl}
-              initialShares={data.shareCount}
-              initialLikes={data.likeCount}
-              initialViews={data.viewCount}
-            />
+{/* Video Player */}
+<VideoPlayer
+  id={data._id}
+  userId={userId}
+  title={data.title}
+  thumbnail={data.coverUrl}
+  // Provide multiple quality sources (auto-resolution will pick the best)
+  sources={[
+    { label: "1080p", src: data.fileUrl },
+    { label: "720p", src: data.fileUrl },
+    { label: "360p", src: data.fileUrl },
+  ]}
+  // Optional: hover thumbnails for preview on progress hover
+  //hoverThumbnails={data.hoverThumbnails || []}
+  // Optional: subtitles
+  subtitles={ []}
+/>
+
          <div className="flex items-center justify-between flex-wrap">
           <InteractiveButtons
             liked={liked}
             downloading={downloading}
-            handleDownload={handleDownload}
+            price={149}
+            handleDownload={() => setMonetizedDownloadOpen(true)}
             handleInteraction={() => handleInteraction("like")}
           />
 
@@ -293,7 +302,17 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
 
       {/* Modals */}
       <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} shareUrl={pageUrl} title={data.title} />
-      <DownloadModal data={data} open={downloadOpen} onClose={() => setDownloadOpen(false)} fileUrl={data.fileUrl} onConfirmDownload={() => handleInteraction("download")} />
+      {/* NEW: Monetized Apple-Style Download Bottom Sheet */}
+      <MonetizedDownloadSheet
+        open={monetizedDownloadOpen}
+        onClose={() => setMonetizedDownloadOpen(false)}
+        price={149}
+        coverUrl={data.coverUrl}
+        title={data.title}
+        artist={data.artist}
+        onDownload={handleDownload}
+        onPaidDownload={() => handleInteraction("download")}
+      />
     </main>
   );
 }

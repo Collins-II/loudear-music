@@ -15,7 +15,6 @@ import { SongSerialized } from "@/actions/getItemsWithStats";
 import CustomPlayer from "@/components/music/CustomPlayer";
 import { Badge } from "@/components/ui/badge";
 import ShareModal from "@/components/modals/ShareModal";
-import DownloadModal from "@/components/modals/DownloadModal";
 import { timeAgo } from "@/lib/utils";
 import HorizontalSlider from "@/components/sliders/HorizontalSlider";
 import { SliderCard } from "@/components/sliders/SliderCard";
@@ -28,6 +27,7 @@ import { handleInteractionUtil } from "@/lib/interactions";
 import { useRouter } from "next/navigation";
 import { StanButton } from "@/components/auth/StanButton";
 import type { User as UserType } from "next-auth";
+import MonetizedDownloadSheet from "@/components/modals/DownloadModal";
 
 /**
  * Design goals:
@@ -58,8 +58,8 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
   );
   const [imgError, setImgError] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [downloadOpen, setDownloadOpen] = useState(false);
-  const [downloading, setDownloading] = useState(false);
+  const [monetizedDownloadOpen, setMonetizedDownloadOpen] = useState(false); // NEW
+  const [downloading, setDownloading ] = useState(false);
 
   // socket: synchronize live counts and userLiked state
   useEffect(() => {
@@ -108,7 +108,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
   );
 
     // ✅ Download logic
-  const handleDownload = async () => {
+ const handleDownload = async () => {
     if (!data.fileUrl) return;
     setDownloading(true);
     try {
@@ -319,26 +319,27 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
               artist={data.artist}
               coverUrl={data.coverUrl}
               onDownload={() => {
-                setDownloadOpen(true);
-                handleInteraction("download");
+                setMonetizedDownloadOpen(true);
+                //handleInteraction("download");
               }}
             />
          <div className="flex items-center justify-between flex-wrap">
           <InteractiveButtons
             liked={liked}
             downloading={downloading}
-            handleDownload={handleDownload}
+            price={16.49}
+            handleDownload={() => setMonetizedDownloadOpen(true)}
             handleInteraction={() => handleInteraction("like")}
           />
             
           <ViewStats current={data.viewCount} previous={data.previousViewCount as number} />
         </div> 
 
-          {/* Description / Article */}
+        {/* Description / Article */}
           {data.description && (
           <article className="prose prose-lg dark:prose-invert max-w-none">
             <h3 className="mt-6 text-2xl md:text-3xl font-extrabold">About the track</h3>
-            <p>
+            <p className="italic">
               {data.description ??
                 "No description available. This page displays metadata, stats and community comments for the release."}
             </p>
@@ -405,6 +406,7 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
             </div>
           </div>
         </aside>
+
       </div>
 
       {/* Modals */}
@@ -414,13 +416,18 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
         shareUrl={pageUrl}
         title={data.title}
       />
-      <DownloadModal
-        data={data}
-        open={downloadOpen}
-        onClose={() => setDownloadOpen(false)}
-        fileUrl={data.fileUrl}
-        onConfirmDownload={() => handleInteraction("download")}
-      />
+{/* NEW: Monetized Apple-Style Download Bottom Sheet */}
+<MonetizedDownloadSheet
+  open={monetizedDownloadOpen}
+  onClose={() => setMonetizedDownloadOpen(false)}
+  price={16.49}
+  coverUrl={data.coverUrl}
+  title={data.title}
+  artist={data.artist}
+  onDownload={handleDownload}
+  onPaidDownload={() => handleInteraction("download")}
+/>
+
     </main>
   );
 }

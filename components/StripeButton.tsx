@@ -37,7 +37,7 @@ export default function StripeButton() {
     </svg>
   );
 
-  const handleCheckout = async () => {
+ const handleCheckout = async () => {
     if (!items.length) return alert("Your cart is empty.");
 
     setLoading(true);
@@ -90,3 +90,4 @@ export default function StripeButton() {
     </button>
   );
 }
+
