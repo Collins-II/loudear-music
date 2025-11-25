@@ -14,6 +14,7 @@ import { getSocket } from "@/lib/socketClient";
 
 import type { BeatItem } from "@/actions/getBeats";
 import TopBeatCard from "@/components/soundhub/TopBeatCard";
+import ThemedHeading from "@/components/themed-heading";
 
 const genres = ["All", "Hip Hop", "Afro Pop", "Gospel", "RnB", "Dancehall"];
 const alphabet = ["All", ..."ABCDEFGHIJKLMNOPQRSTUVWXYZ"] as const;
@@ -313,10 +314,9 @@ function BeatsPage({ initialBeats, topBeats }: { initialBeats: BeatItem[]; topBe
             )
           ) : filters.view === "chart" ? (
             <div className="space-y-4">
-              <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
-                <span className="relative z-10 bg-white capitalize pr-3">{`Top Beats (${filters.sort})`}</span>
-                <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
-              </h3>
+              <ThemedHeading>
+                {`Top Beats (${filters.sort})`}
+              </ThemedHeading>
 
               <div className="divide-y bg-white/5 rounded-lg overflow-hidden">
                 {filteredBeats.slice(0, visibleItems).map((item, i) => {
@@ -342,10 +342,9 @@ function BeatsPage({ initialBeats, topBeats }: { initialBeats: BeatItem[]; topBe
             </div>
           ) : (
             <>
-              <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
-                <span className="relative z-10 bg-white pr-3 capitalize">{filters.filter === "a-z" ? "Browse A–Z" : "Latest Beats"}</span>
-                <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
-              </h3>
+              <ThemedHeading>
+                {filters.filter === "a-z" ? "Browse A–Z" : "Latest Beats"}
+              </ThemedHeading>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-6">
                 {filteredBeats.slice(0, visibleItems).map((item) => (
@@ -376,10 +375,9 @@ function BeatsPage({ initialBeats, topBeats }: { initialBeats: BeatItem[]; topBe
         {/* Sidebar */}
         <aside className="space-y-12">
           <div>
-            <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
-              <span className="relative z-10 bg-white pr-3">Top 10 Beats</span>
-              <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
-            </h3>
+              <ThemedHeading>
+                Top 10 Beats
+              </ThemedHeading>
 
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-1">
               {topBeats.map((track, index) => (

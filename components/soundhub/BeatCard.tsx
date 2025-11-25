@@ -34,24 +34,22 @@ export default function BeatCard({ item }: Props) {
   const cartItems = useSelector((state: RootState) => state.cart.items);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [hovered, setHovered] = useState(false);
 
-  const isInCart = cartItems.some(
-    (c) => c.beatId === item.id && c.licenseId === "default"
-  );
+  const isInCart = cartItems.some(c => c.beatId === item.id && c.licenseId === "default");
 
-useEffect(() => {
-  const audio = audioRef.current; // capture stable reference
+  /* ---------------------------- SMART CLEANUP ---------------------------- */
+  useEffect(() => {
+    const audio = audioRef.current;
+    return () => {
+      if (audio) audio.pause();
+    };
+  }, []);
 
-  return () => {
-    if (audio) audio.pause();
-  };
-}, []); // safe: no dependencies needed
-
-
-  /* 🎧 TRACK PROGRESS BAR */
+  /* -------------------------- TRACK PROGRESS BAR ------------------------- */
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -69,6 +67,7 @@ useEffect(() => {
     };
   }, []);
 
+  /* ------------------------------ PLAY / PAUSE --------------------------- */
   const togglePlay = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
@@ -77,11 +76,12 @@ useEffect(() => {
       audio.pause();
       setIsPlaying(false);
     } else {
-      audio.play();
+      audio.play().catch(() => {});
       setIsPlaying(true);
     }
-  },[isPlaying]);
+  }, [isPlaying]);
 
+  /* ------------------------ HOVER OVERLAY BUTTON ------------------------- */
   const hoverPlayButton = useMemo(
     () => (
       <motion.button
@@ -110,10 +110,26 @@ useEffect(() => {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="group w-full border-b-[4px] border-black dark:border-white bg-white dark:bg-neutral-900 shadow-sm transition hover:shadow-md overflow-hidden flex"
+      className="
+        group w-full 
+        border-b-[4px] border-black dark:border-white 
+        bg-white dark:bg-neutral-900 
+        shadow-sm transition hover:shadow-md 
+        overflow-hidden 
+        flex flex-col md:flex-row
+      "
     >
-      {/* Thumbnail Section */}
-      <div className="relative w-36 sm:w-40 h-36 sm:h-40 shrink-0 overflow-hidden bg-neutral-200 dark:bg-neutral-800">
+      {/* ----------------------------- IMAGE SECTION ----------------------------- */}
+      <div
+        className="
+          relative 
+          w-full md:w-56 
+          h-40 sm:h-48 md:h-auto 
+          shrink-0 
+          overflow-hidden 
+          bg-neutral-200 dark:bg-neutral-800
+        "
+      >
         <Image
           src={item.image || "/placeholder.png"}
           alt={item.title}
@@ -136,8 +152,8 @@ useEffect(() => {
         {item.previewUrl && <audio ref={audioRef} src={item.previewUrl} />}
       </div>
 
-      {/* Information Section */}
-      <div className="flex flex-col justify-between flex-1 p-4">
+      {/* --------------------------- INFORMATION SECTION -------------------------- */}
+      <div className="flex flex-col justify-between flex-1 p-4 gap-3">
         <div>
           <div className="text-xs uppercase tracking-widest font-medium text-black/60 dark:text-white/60">
             {item.genre}
@@ -153,7 +169,7 @@ useEffect(() => {
         </div>
 
         {/* Metadata */}
-        <div className="flex flex-wrap gap-3 mt-3 text-sm text-black/70 dark:text-white/70">
+        <div className="flex flex-wrap gap-3 mt-1 text-sm text-black/70 dark:text-white/70">
           {item.bpm && (
             <div className="flex items-center gap-1">
               <Music2 className="w-4 h-4" />
@@ -168,8 +184,8 @@ useEffect(() => {
           )}
         </div>
 
-        {/* Bottom Row */}
-        <div className="mt-4 flex items-center justify-between">
+        {/* ------------------------- BOTTOM PRICE + BUTTONS ------------------------ */}
+        <div className="mt-3 flex items-center justify-between gap-3">
           <div className="text-xl font-bold text-black dark:text-white">
             {item.price
               ? `${getCurrencySymbol(selectedCurrency)}${formatNumberWithCommas(
@@ -179,19 +195,22 @@ useEffect(() => {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Play/Pause Button */}
             <Button
               size="icon"
               variant="outline"
               onClick={togglePlay}
-              className="border-black/20 dark:border-white/20 text-black dark:text-white hover:bg-black hover:text-white dark:hover:bg-white dark:hover:text-black"
+              className="
+                border-black/20 dark:border-white/20 
+                text-black dark:text-white 
+                hover:bg-black hover:text-white 
+                dark:hover:bg-white dark:hover:text-black
+              "
             >
-              {isPlaying ? (
-                <Pause className="h-4 w-4" />
-              ) : (
-                <Play className="h-4 w-4" />
-              )}
+              {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
             </Button>
 
+            {/* Add to Cart */}
             <Button
               size="icon"
               onClick={() =>
@@ -201,16 +220,18 @@ useEffect(() => {
                     image: item.image as string,
                     beatId: item.id,
                     licenseId: "default",
-                    price: item.price || 0
+                    price: item.price || 0,
                   })
                 )
               }
               disabled={isInCart}
-              className={`${
-                isInCart
+              className={`
+                rounded-md
+                ${isInCart
                   ? "bg-neutral-400 dark:bg-neutral-700 text-white"
                   : "bg-black text-white dark:bg-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200"
-              } rounded-md`}
+                }
+              `}
             >
               <ShoppingCart className="h-4 w-4" />
             </Button>

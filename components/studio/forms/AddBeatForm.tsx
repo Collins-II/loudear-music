@@ -18,6 +18,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { uploadToCloudinary } from "@/lib/helpers";
 import AudioSnippet from "@/components/soundhub/AudioSnippet";
+import AutoPricing from "@/components/auto-pricing";
 
 
 type LicenseTier = {
@@ -68,6 +69,8 @@ export default function AddBeatForm() {
       setAudioFullUrl(URL.createObjectURL(f));
     },
   });
+
+  const userFollowers = 12300; // <-- Replace later with real user data
 
   const addLicense = () =>
     setLicenseTiers((p) => [...p, { id: "", title: "", price: 0, description: "", usageRights: [] }]);
@@ -144,7 +147,21 @@ export default function AddBeatForm() {
                 <div><Label>Genre</Label><Input value={genre} onChange={(e) => setGenre(e.target.value)} /></div>
               </div>
 
-              <div><Label>Price</Label><Input type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} /></div>
+              {/* AUTO PRICING */}
+<div className="space-y-3">
+  <Label>Automatic Pricing</Label>
+
+  <AutoPricing
+    followers={userFollowers}
+    basePrice={price}
+    onPriceChange={(val) => setPrice(val)}
+  />
+
+  <p className="text-xs text-muted-foreground">
+    Final price: <span className="font-semibold">K{price}</span>
+  </p>
+ </div>
+
 
               {/* COVER */}
               <div {...coverRoot()} className="border-2 border-dashed p-4 rounded-xl text-center">

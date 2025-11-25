@@ -9,6 +9,7 @@ import { DropdownRadio } from "@/components/DropdownRadio";
 import TopCardSkeleton from "@/components/skeletons/top-card-skeleton";
 import SkeletonList from "@/components/skeletons/skeleton-list";
 import VideoCardSkeleton from "@/components/skeletons/video-card-skeleton";
+import ThemedHeading from "@/components/themed-heading";
 
 export interface Playlist {
   id: string;
@@ -254,10 +255,9 @@ useEffect(() => {
       <section className="max-w-7xl mx-auto px-6 md:px-12 py-12 grid grid-cols-1 lg:grid-cols-4 gap-12">
         {/* Main Grid */}
         <div className="lg:col-span-3">
-              <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
-                <span className="relative z-10 bg-white pr-3">Top Playlists</span>
-                <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
-              </h3>
+          <ThemedHeading>
+            Top Playlists
+          </ThemedHeading>
 
               <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6">
                 {playlists?.slice(0, visibleItems).map((p, idx) => (
@@ -287,10 +287,9 @@ useEffect(() => {
           </div>
 
           <div>
-            <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
-              <span className="relative z-10 bg-white pr-3">Top 10 Playlists</span>
-              <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
-            </h3>
+          <ThemedHeading>
+            Top 10 Playlists
+          </ThemedHeading>
             <div className="grid gap-4">
               {playlists?.slice(0, 10).map((p, i) => (
                 <div key={i} className="flex items-center gap-3">

@@ -108,8 +108,9 @@ export default function LatestSection({ songs, videos, loading }: SectionProps) 
             )}
           </div>
 
-           Sidebar Ads 
+          
           <aside className="hidden lg:flex flex-col gap-6">
+             Sidebar Ads 
           <div className="bg-gray-200 h-20 flex items-center justify-center rounded-lg">
             <span className="text-gray-500">Advertisement</span>
           </div>

@@ -6,6 +6,8 @@ import { TopPlaylist } from "@/components/playlists/TopPlaylist";
 import { Playlist } from "../../page";
 import Image from "next/image";
 import { LazySpotifyIframe } from "./LazySpotifyIframe";
+import ThemedHeading from "@/components/themed-heading";
+
 interface Track {
   id: string;
   title: string;
@@ -33,30 +35,52 @@ export default function PlaylistDetailsClient({
   playlist,
   relatedPlaylist,
 }: Props) {
+
   if (!playlist)
     return (
-      <div className="flex items-center justify-center h-screen text-xl font-bold">
+      <div className="flex items-center justify-center h-screen text-xl font-bold dark:text-white">
         Playlist not found
       </div>
     );
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-white via-gray-50 to-gray-100 text-gray-900">
+    <div
+      className="
+        min-h-screen w-full 
+        bg-gradient-to-b 
+        from-white via-gray-50 to-gray-100 
+        dark:from-[#0b0b0d] dark:via-[#0f0f13] dark:to-[#131318]
+        text-gray-900 dark:text-gray-100
+      "
+    >
       <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-10 px-4 md:px-8 lg:px-12 py-16">
-        {/* LEFT */}
+
+        {/* LEFT SIDE */}
         <div className="lg:col-span-2 pt-8">
-          <div className="bg-blue-200 h-20 flex items-center justify-center rounded-lg mb-8">
-            <span className="text-gray-500">Advertisement</span>
+
+          {/* AD SPACE */}
+          <div className="
+            bg-gray-200 dark:bg-gray-800/40 
+            backdrop-blur-md border border-gray-300/40 dark:border-gray-700/40
+            h-20 flex items-center justify-center rounded-lg mb-8 
+            text-gray-600 dark:text-gray-400
+          ">
+            Advertisement
           </div>
 
-          {/* Header */}
+          {/* HEADER */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
             className="relative flex flex-col md:flex-row items-center md:items-end gap-6"
           >
-            <div className="relative w-full h-48 md:w-64 md:h-64 rounded-xl overflow-hidden shadow-xl border border-gray-200">
+            <div className="
+              relative w-full h-48 md:w-64 md:h-64 
+              rounded-xl overflow-hidden 
+              shadow-xl border 
+              border-gray-300 dark:border-gray-700
+            ">
               <Image
                 src={playlist.image}
                 alt={playlist.title}
@@ -69,46 +93,59 @@ export default function PlaylistDetailsClient({
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
                 {playlist.title}
               </h1>
-              <p className="text-gray-600">
-                Curated by <span className="text-2xl font-medium text-black capitalize">{playlist.curator}</span>
+
+              <p className="text-gray-600 dark:text-gray-400">
+                Curated by{" "}
+                <span className="text-2xl font-medium text-black dark:text-white capitalize">
+                  {playlist.curator}
+                </span>
               </p>
+
               {playlist.description && (
-                <p className="text-gray-500">{playlist.description}</p>
+                <p className="text-gray-500 dark:text-gray-400">
+                  {playlist.description}
+                </p>
               )}
             </div>
           </motion.div>
 
-          {/* Spotify Embed Player */}
+          {/* SPOTIFY EMBED */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.8 }}
             className="mt-8"
           >
-            <LazySpotifyIframe 
-               playlistId={playlist.id?.toString()}
-               title={`${playlist.curator} - ${playlist.title}`}
-             />
+            <LazySpotifyIframe
+              playlistId={playlist.id?.toString()}
+              title={`${playlist.curator} - ${playlist.title}`}
+            />
           </motion.div>
         </div>
 
-        {/* RIGHT */}
+        {/* RIGHT SIDE */}
         <aside className="space-y-8 mt-6">
-          <div className="bg-blue-200 h-20 flex items-center justify-center rounded-lg mb-4">
-            <span className="text-gray-500">Advertisement</span>
+
+          {/* AD SPACE */}
+          <div className="
+            bg-gray-200 dark:bg-gray-800/40 
+            backdrop-blur-md border border-gray-300/40 dark:border-gray-700/40
+            h-20 flex items-center justify-center rounded-lg mb-4 
+            text-gray-600 dark:text-gray-400
+          ">
+            Advertisement
           </div>
 
+          {/* RELATED PLAYLISTS */}
           <div>
-            <h3 className="relative text-slate-900 text-xl font-bold mb-3 tracking-tight">
-              <span className="relative z-10 bg-white pr-3">
-                Related Playlists
-              </span>
-              <span className="absolute left-0 top-1/2 w-full h-[4px] bg-black -z-0"></span>
-            </h3>
+            <ThemedHeading>
+              Related Playlists
+            </ThemedHeading>
+           
             <div className="space-y-4">
               {relatedPlaylist?.map((pl, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <span className="text-2xl font-extrabold text-black">
+                  <span className="text-2xl font-extrabold text-black dark:text-white">
                     {i + 1}
                   </span>
                   <TopPlaylist

@@ -8,7 +8,7 @@ import { useState } from "react";
 import { DropdownRadio } from "@/components/DropdownRadio";
 import { CalendarFilter } from "@/components/CalenderFilter";
 import { blogPosts } from "@/data/blogPosts";
-
+import ThemedHeading from "@/components/themed-heading";
 
 const genres = ["All", "HIP HOP", "SPOTLIGHT", "FEATURES", "CHARTS", "NEW MUSIC", "AFROBEATS"];
 
@@ -16,12 +16,11 @@ export default function BlogPage() {
   const [selectedGenre, setSelectedGenre] = useState("All");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
-const clearFilters = () => {
+  const clearFilters = () => {
     setSelectedGenre("All");
     setSelectedDate(undefined);
   };
 
-  // Filter logic
   const filteredPosts = blogPosts.filter((post) => {
     const genreMatch = selectedGenre === "All" || post.category === selectedGenre;
     const dateMatch = selectedDate
@@ -30,16 +29,21 @@ const clearFilters = () => {
     return genreMatch && dateMatch;
   });
 
-  // Featured + remaining posts
   const featuredPost = filteredPosts[0];
   const mainPosts = filteredPosts.slice(1);
   const trendingPosts = blogPosts.slice(0, 4);
 
   return (
-    <section className="bg-background min-h-screen">
-      {/* Hero Header */}
-      <section className="bg-gradient-to-r from-black via-gray-900 to-black text-white pt-24 pb-12 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-start justify-between pt-10 gap-6">
+    <section className="bg-background dark:bg-[#0d0d10] min-h-screen text-gray-900 dark:text-gray-100">
+
+      {/* HERO HEADER */}
+      <section
+        className="
+          bg-gradient-to-r from-black via-gray-900 to-black text-white
+          text-white pt-24 pb-12 px-6 md:px-12
+        "
+      >
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-6 pt-10">
           <motion.h1
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -49,15 +53,17 @@ const clearFilters = () => {
             Blog
           </motion.h1>
 
-          {/* Filters */}
-          <div className="flex gap-4 flex-wrap items-center justify-start">
+          {/* FILTERS */}
+          <div className="flex gap-4 flex-wrap items-center">
             <CalendarFilter onChange={(val) => setSelectedDate(val)} />
+
             <DropdownRadio
               actionLabel="Genre"
               label="Select Genre"
               data={genres}
               onChange={(val) => setSelectedGenre(val)}
             />
+
             <Button
               variant="secondary"
               size="sm"
@@ -70,37 +76,69 @@ const clearFilters = () => {
         </div>
       </section>
 
+      {/* MAIN CONTENT */}
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-16">
-        <h1 className="relative text-3xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">
-          <span className="relative z-10 bg-white pr-3">The Magazine</span>
-          <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
-        </h1>
+
+        {/* SECTION HEADING */}
+        <ThemedHeading className="lg:text-5xl">
+          The Magazine
+        </ThemedHeading>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-10">
-          {/* Left/Main Content */}
+
+          {/* LEFT COLUMN */}
           <div className="lg:col-span-3 space-y-12">
+
             {featuredPost ? (
               <>
-                {/* Featured Hero Post */}
+                {/* FEATURED HERO POST */}
                 <motion.div
                   initial={{ y: 30, opacity: 0 }}
                   whileInView={{ y: 0, opacity: 1 }}
                   transition={{ duration: 0.6 }}
                 >
                   <Link href={`/blog/${featuredPost.id}`}>
-                    <div className="relative rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition">
+                    <div
+                      className="
+                        relative rounded-2xl overflow-hidden 
+                        shadow-lg hover:shadow-2xl transition
+                        group bg-black dark:bg-gray-900
+                      "
+                    >
                       <div className="relative h-[450px] w-full">
-                        <Image src={featuredPost.image} alt={featuredPost.title} fill className="object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent p-6 flex flex-col justify-end">
-                          <span className="bg-blue-500 text-xs px-3 py-1 rounded font-semibold">
+                        <Image
+                          src={featuredPost.image}
+                          alt={featuredPost.title}
+                          fill
+                          className="
+                            object-cover transition-transform duration-500 
+                            group-hover:scale-105
+                          "
+                        />
+                        <div
+                          className="
+                            absolute inset-0 bg-gradient-to-t 
+                            from-black/80 to-transparent 
+                            p-6 flex flex-col justify-end
+                          "
+                        >
+                          <span className="bg-blue-500 text-xs px-3 py-1 rounded font-semibold w-fit">
                             {featuredPost.category}
                           </span>
-                          <h2 className="text-3xl md:text-5xl font-bold mt-2">{featuredPost.title}</h2>
-                          <p className="text-gray-200 mt-2 line-clamp-3">{featuredPost.excerpt}</p>
+
+                          <h2 className="text-3xl md:text-5xl font-bold mt-2">
+                            {featuredPost.title}
+                          </h2>
+
+                          <p className="text-gray-200 mt-2 line-clamp-3">
+                            {featuredPost.excerpt}
+                          </p>
+
                           <p className="text-xs text-gray-400 mt-2">
                             {featuredPost.date.toDateString()} · {featuredPost.author}
                           </p>
-                          <Button size="lg" className="mt-4 w-fit bg-blue-500 hover:bg-blue-600 text-white">
+
+                          <Button className="mt-4 w-fit bg-blue-500 hover:bg-blue-600">
                             Read More
                           </Button>
                         </div>
@@ -109,11 +147,11 @@ const clearFilters = () => {
                   </Link>
                 </motion.div>
 
-                {/* Related Posts */}
-                <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
-                  <span className="relative z-10 bg-white pr-3">Related Posts</span>
-                  <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
-                </h3>
+                {/* RELATED POSTS */}
+                <ThemedHeading>
+                  Related Posts
+                </ThemedHeading>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {mainPosts.map((post) => (
                     <motion.div
@@ -123,26 +161,46 @@ const clearFilters = () => {
                       transition={{ duration: 0.5 }}
                     >
                       <Link href={`/blog/${post.id}`}>
-                        <div className="overflow-hidden border-b-[4px] border-black bg-white transition relative group">
-                           <div className="relative h-52 w-full">
-                                <Image
-                                  src={post.image}
-                                  alt={blogPosts[0].title}
-                                  fill
-                                  className="object-cover"
-                                />
-                                <div className="absolute -bottom-3 right-0 md:-bottom-4 md:right-0 bg-black text-white text-[10px] md:text-xs px-2 md:px-4 py-0.5 md:py-1 shadow-lg whitespace-nowrap">
-                                <h3 className="text-white text-2xl font-extrabold tracking-tight">
-                                  {post.category}
-                                </h3>
-                              </div>
+                        <div
+                          className="
+                            overflow-hidden border-b-[4px] border-black dark:border-white
+                            bg-white dark:bg-[#111114]
+                            relative group
+                          "
+                        >
+                          <div className="relative h-52 w-full overflow-hidden">
+                            <Image
+                              src={post.image}
+                              alt={post.title}
+                              fill
+                              className="
+                                object-cover transition-transform duration-500 
+                                group-hover:scale-110
+                              "
+                            />
+
+                            {/* Category Label */}
+                            <div className="
+                              absolute -bottom-3 right-0 
+                              md:-bottom-4 bg-black dark:bg-white 
+                              text-white dark:text-black
+                              text-[10px] md:text-xs px-3 py-1
+                              rounded-tl-lg shadow-lg
+                            ">
+                              {post.category}
                             </div>
+                          </div>
+
                           <div className="py-4 space-y-2">
-                            <p className="flex justify-start text-[11px] uppercase font-bold text-slate-500 tracking-wide">
+                            <p className="text-[11px] uppercase font-bold text-slate-500 dark:text-gray-400">
                               {post.date.toLocaleDateString()} · {post.author}
                             </p>
-                            <h3 className="text-black text-2xl md:text-4xl font-bold line-clamp-2">{post.title}</h3>
-                            <p className="text-sm text-gray-600 line-clamp-3">{post.excerpt}</p>
+                            <h3 className="text-2xl md:text-4xl font-bold line-clamp-2 text-black dark:text-white">
+                              {post.title}
+                            </h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-3">
+                              {post.excerpt}
+                            </p>
                           </div>
                         </div>
                       </Link>
@@ -151,21 +209,30 @@ const clearFilters = () => {
                 </div>
               </>
             ) : (
-              <p className="text-gray-500">No posts found for this filter.</p>
+              <p className="text-gray-500 dark:text-gray-400">No posts found for this filter.</p>
             )}
           </div>
 
-          {/* Sidebar */}
+          {/* SIDEBAR */}
           <aside className="space-y-10">
-            <h3 className="relative text-slate-900 text-2xl font-extrabold mb-6 tracking-tight">
-              <span className="relative z-10 bg-white pr-3">Trending Posts</span>
-              <span className="absolute left-0 top-1/2 w-full h-[8px] bg-black -z-0"></span>
-            </h3>
+
+            {/* TRENDING HEADER */}
+            <ThemedHeading>
+              Trending Posts
+            </ThemedHeading>
+
+            {/* TRENDING LIST */}
             <div className="grid grid-cols-1 gap-4">
               {trendingPosts.map((post) => (
                 <Link key={post.id} href={`/blog/${post.id}`}>
-                  <div className="flex gap-3 items-center cursor-pointer border-b border-gray-200 pb-3 group">
-                    <div className="relative w-20 h-14 flex-shrink-0 rounded-l-lg overflow-hidden">
+                  <div
+                    className="
+                      flex gap-3 items-center cursor-pointer 
+                      border-b border-gray-300 dark:border-gray-700 
+                      pb-3 group
+                    "
+                  >
+                    <div className="relative w-20 h-14 rounded-lg overflow-hidden">
                       <Image
                         src={post.image}
                         alt={post.title}
@@ -173,18 +240,30 @@ const clearFilters = () => {
                         className="object-cover transition-transform duration-300 group-hover:scale-110"
                       />
                     </div>
+
                     <div>
-                      <h4 className="text-black text-1xl font-bold line-clamp-2">{post.title}</h4>
-                      <p className="italic text-xs text-gray-600">{post.author}</p>
+                      <h4 className="text-black dark:text-white text-lg font-bold line-clamp-2">
+                        {post.title}
+                      </h4>
+                      <p className="italic text-xs text-gray-600 dark:text-gray-400">
+                        {post.author}
+                      </p>
                     </div>
                   </div>
                 </Link>
               ))}
             </div>
 
-            <div className="bg-gray-200 h-60 flex items-center justify-center rounded-lg">
-              <span className="text-gray-500">Advertisement</span>
+            {/* ADVERTISEMENT BOX */}
+            <div className="
+              bg-gray-200 dark:bg-gray-800/40 
+              border border-gray-300/50 dark:border-gray-700/40
+              h-60 flex items-center justify-center rounded-lg
+              text-gray-600 dark:text-gray-400
+            ">
+              Advertisement
             </div>
+
           </aside>
         </div>
       </div>
