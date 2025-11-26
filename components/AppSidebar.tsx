@@ -2,8 +2,6 @@
 
 import {
   Home,
-  Calendar,
-  Settings,
   Plus,
   Music2,
   Disc3,
@@ -13,6 +11,9 @@ import {
   Wallet,
   Layers3,
   Music3Icon,
+  DollarSign,
+  Wallet2,
+  TrendingUpDown,
 } from "lucide-react";
 
 import {
@@ -42,6 +43,7 @@ import { useSession } from "next-auth/react";
 import { NavUser } from "./nav-user";
 import AddBeatForm from "./studio/forms/AddBeatForm";
 import AddVideoForm from "./studio/forms/AddVideoForm";
+import { TbMoneybag } from "react-icons/tb";
 
 const items = [
   {
@@ -50,14 +52,24 @@ const items = [
     icon: Home,
   },
   {
-    title: "Calendar",
-    url: "/studio/calendar",
-    icon: Calendar,
+    title: "Monetization",
+    url: "/studio/dashboard/admin/monetization",
+    icon: DollarSign,
   },
   {
-    title: "Settings",
-    url: "/studio/settings",
-    icon: Settings,
+    title: "Wallet",
+    url: "/studio/dashboard/admin/wallet",
+    icon: Wallet2,
+  },
+  {
+    title: "Royalties",
+    url: "/studio/dashboard/admin/royalty-splits",
+    icon: TbMoneybag,
+  },
+    {
+    title: "Marketing",
+    url: "/studio/dashboard/admin/marketing",
+    icon: TrendingUpDown,
   },
 ];
 

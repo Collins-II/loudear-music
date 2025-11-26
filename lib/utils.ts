@@ -51,10 +51,70 @@ export const getCurrencySymbol = (currencyCode: string): string => {
   return symbols[currencyCode.toUpperCase()] || currencyCode;
 };
 
+// lib/fetcher.ts
+export const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("Failed to fetch");
+  return res.json();
+};
+
+
 
 export async function bufferFromFile(file: File): Promise<Buffer> {
   const arrayBuffer = await file.arrayBuffer();
   return Buffer.from(arrayBuffer);
+}
+
+// utils/formatCurrency.ts
+
+/**
+ * Format currency consistently across Wallet, Monetization, and Royalty Split systems.
+ *
+ * @param amount number
+ * @param currency 'ZMW' | 'USD' | 'NGN' | 'KES' | 'ZAR' etc.
+ * @param options formatting overrides
+ */
+export function formatCurrency(
+  amount: number,
+  currency: string = "USD",
+  options: {
+    locale?: string;
+    decimals?: number;
+    compact?: boolean; // 15,300 → 15.3K
+  } = {}
+) {
+  if (isNaN(amount)) return "—";
+
+  const {
+    locale = "en-US",
+    decimals = 2,
+    compact = false,
+  } = options;
+
+  // Compact mode: 12000 => "12K", 1.2M => "1.2M"
+  if (compact) {
+    return new Intl.NumberFormat(locale, {
+      notation: "compact",
+      compactDisplay: "short",
+      maximumFractionDigits: 1,
+      minimumFractionDigits: 0,
+    }).format(amount);
+  }
+
+  return new Intl.NumberFormat(locale, {
+    style: "currency",
+    currency,
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(amount);
+}
+
+export function formatMobileMoney(amount: number) {
+  if (amount < 1) return "ZK0.00";
+
+  return formatCurrency(amount, "ZMW", {
+    decimals: amount % 1 === 0 ? 0 : 2,
+  });
 }
 
 /** --- 📊 Basic Formatting --- */
