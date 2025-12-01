@@ -4,6 +4,14 @@ import mongoose, { Schema, Document, Model, Types } from "mongoose";
  * LoudEar User Interface
  * Supports both Fan and Artist profiles
  */
+
+export interface IWallet {
+  balance: number;
+  currency?: string;
+  locked?: boolean;
+  pendingPayout?: number;
+  history?: Types.ObjectId[]; // optional references to transactions
+}
 export interface IUser extends Document {
   _id: string;
   // Core info
@@ -15,6 +23,7 @@ export interface IUser extends Document {
   bio?: string;
   location?: string;
   phone?: string;
+  wallet: IWallet;
 
   // Shared music-related preferences
   genres?: string[];
@@ -45,6 +54,8 @@ export interface IUser extends Document {
     stripeAccountId?: string;
     paypalEmail?: string;
     payoutEnabled?: boolean;
+    payoutFrequency?: "daily" | "weekly" | "monthly";
+    payoutTime?: string; // e.g., "01:00"
     mobileMoney?: {
       provider?: "MTN" | "Airtel" | "Zamtel" | "Other";
       phoneNumber?: string;
@@ -91,6 +102,13 @@ const UserSchema = new Schema<IUser>(
     bio: { type: String, maxlength: 2000 },
     location: { type: String, maxlength: 200 },
     phone: { type: String, trim: true },
+   wallet: {
+    balance: { type: Number, default: 0 },
+    currency: { type: String, default: "ZMW" },
+    locked: { type: Boolean, default: false },
+    pendingPayout: { type: Number },
+    history: [{ type: Schema.Types.ObjectId, ref: "Transaction" }],
+  },
 
     genres: [{ type: String, trim: true }],
 
@@ -120,6 +138,12 @@ const UserSchema = new Schema<IUser>(
       stripeAccountId: { type: String, trim: true },
       paypalEmail: { type: String, trim: true, lowercase: true },
       payoutEnabled: { type: Boolean, default: false },
+      payoutFrequency: {
+      type: String,
+      enum: ["daily", "weekly", "monthly"],
+      default: "monthly",
+      },
+      payoutTime: { type: String}, // e.g., "01:00"
       mobileMoney: {
         provider: {
           type: String,

@@ -1,34 +1,46 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
 /**
- * Transaction / Payout record
- * Supports mobile money, PayPal, and Stripe payments
+ * Transaction / Payment event
+ * Supports Mobile Money, Stripe, PayPal (future), internal wallet & payouts
  */
 export interface ITransaction extends Document {
-  user: Types.ObjectId; // Reference to User
-  type: "payout" | "royalty" | "tip" | "purchase";
-  amount: number;
-  currency: string; // e.g. "ZMW", "USD"
-  status: "pending" | "completed" | "failed";
-  paymentMethod: "mobile_money" | "paypal" | "stripe" | "manual";
-  description?: string;
+  user: Types.ObjectId; // User who initiated or received the transaction
+  type:
+    | "payout"
+    | "royalty"
+    | "tip"
+    | "purchase"
+    | "campaign_payment"
+    | "subscription"
+    | "wallet_topup";
 
-  // Metadata for mobile money and payout tracking
-  mobileMoney?: {
-    provider?: "MTN" | "Airtel" | "Zamtel" | "Other";
-    phoneNumber?: string;
-    transactionId?: string; // from API provider
-    verified?: boolean;
+  product?: {
+    id: Types.ObjectId; // song/album/beat/video/campaign/etc
+    type: "song" | "album" | "beat" | "video" | "campaign" | "subscription";
   };
 
-  paypal?: {
-    transactionId?: string;
-    email?: string;
+  amount: number;
+  currency: string;           // "ZMW", "USD", etc.
+  status: "pending" | "completed" | "failed";
+  paymentMethod: "mobile_money" | "stripe" | "manual";
+
+  description?: string;
+
+  mobileMoney?: {
+    provider?: "MTN" | "Airtel" | "Zamtel";
+    phoneNumber?: string;
+    externalTransactionId?: string; // returned by provider
+    internalReference?: string;     // your internal TX ref
+    verified?: boolean;
+    mode?: "sandbox" | "live";
+    rawResponse?: any;              // JSON payload from provider
   };
 
   stripe?: {
     paymentIntentId?: string;
     accountId?: string;
+    rawResponse?: any;
   };
 
   createdAt: Date;
@@ -38,57 +50,85 @@ export interface ITransaction extends Document {
 const TransactionSchema = new Schema<ITransaction>(
   {
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+
     type: {
       type: String,
-      enum: ["payout", "royalty", "tip", "purchase"],
+      enum: [
+        "payout",
+        "royalty",
+        "tip",
+        "purchase",
+        "campaign_payment",
+        "subscription",
+        "wallet_topup",
+      ],
       required: true,
       index: true,
     },
+
+    product: {
+      id: { type: Schema.Types.ObjectId },
+      type: {
+        type: String,
+        enum: ["song", "album", "beat", "video", "campaign", "subscription"],
+      },
+    },
+
     amount: { type: Number, required: true, min: 0 },
     currency: { type: String, default: "ZMW" },
+
     status: {
       type: String,
       enum: ["pending", "completed", "failed"],
       default: "pending",
       index: true,
     },
+
     paymentMethod: {
       type: String,
-      enum: ["mobile_money", "paypal", "stripe", "manual"],
+      enum: ["mobile_money", "stripe", "manual"],
       required: true,
     },
+
     description: { type: String, maxlength: 500 },
 
+    // --------------------------
+    // MOBILE MONEY METADATA
+    // --------------------------
     mobileMoney: {
-      provider: { type: String, enum: ["MTN", "Airtel", "Zamtel", "Other"] },
-      phoneNumber: { type: String, trim: true },
-      transactionId: { type: String, trim: true },
+      provider: { type: String, enum: ["MTN", "Airtel", "Zamtel"] },
+      phoneNumber: { type: String },
+      externalTransactionId: { type: String },
+      internalReference: { type: String },
       verified: { type: Boolean, default: false },
+      mode: { type: String, enum: ["sandbox", "live"], default: "sandbox" },
+      rawResponse: { type: Schema.Types.Mixed },
     },
 
-    paypal: {
-      transactionId: { type: String, trim: true },
-      email: { type: String, lowercase: true, trim: true },
-    },
-
+    // -------------------
+    // STRIPE METADATA
+    // -------------------
     stripe: {
       paymentIntentId: { type: String, trim: true },
       accountId: { type: String, trim: true },
+      rawResponse: { type: Schema.Types.Mixed },
     },
   },
   { timestamps: true }
 );
 
-/** 🔍 Indexing for reports */
+/* 📈 Indexing */
 TransactionSchema.index({ user: 1, createdAt: -1 });
 TransactionSchema.index({ paymentMethod: 1, status: 1 });
+TransactionSchema.index({ "mobileMoney.provider": 1 });
+TransactionSchema.index({ "product.type": 1, "product.id": 1 });
 
-/** 🧠 Static helpers */
+/** 🔍 Helper to fetch all a user's transactions */
 TransactionSchema.statics.findUserTransactions = function (userId: Types.ObjectId) {
   return this.find({ user: userId }).sort({ createdAt: -1 });
 };
 
-/** ⚙ Prevent recompilation during hot reloads */
+/** ⚙ Prevent recompile on hot reloads */
 export const Transaction: Model<ITransaction> =
   mongoose.models?.Transaction ||
   mongoose.model<ITransaction>("Transaction", TransactionSchema);
