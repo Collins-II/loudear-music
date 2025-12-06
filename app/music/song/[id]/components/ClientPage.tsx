@@ -420,10 +420,13 @@ export default function ClientPage({ data, relatedSongs }: ClientPageProps) {
 <MonetizedDownloadSheet
   open={monetizedDownloadOpen}
   onClose={() => setMonetizedDownloadOpen(false)}
-  price={16.49}
+  price={200}
   coverUrl={data.coverUrl}
   title={data.title}
   artist={data.artist}
+  artistId={data.author._id}
+  mediaId={data._id}
+  mediaType="song"
   onDownload={handleDownload}
   onPaidDownload={() => handleInteraction("download")}
 />

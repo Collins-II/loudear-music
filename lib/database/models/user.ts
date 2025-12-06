@@ -103,13 +103,12 @@ const UserSchema = new Schema<IUser>(
     location: { type: String, maxlength: 200 },
     phone: { type: String, trim: true },
    wallet: {
-    balance: { type: Number, default: 0 },
-    currency: { type: String, default: "ZMW" },
-    locked: { type: Boolean, default: false },
-    pendingPayout: { type: Number },
-    history: [{ type: Schema.Types.ObjectId, ref: "Transaction" }],
-  },
-
+  balance: { type: Number, default: 0 },
+  currency: { type: String, default: "ZMW" },
+  locked: { type: Number, default: 0 },              // ← FIXED
+  pendingPayout: { type: Number, default: 0 },       // ← ENSURE DEFAULT
+  history: [{ type: Schema.Types.ObjectId, ref: "Transaction" }],
+    },
     genres: [{ type: String, trim: true }],
 
     // Fan side

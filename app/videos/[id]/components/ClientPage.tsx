@@ -306,10 +306,13 @@ export default function VideoPage({ data, relatedVideos }: VideoPageProps) {
       <MonetizedDownloadSheet
         open={monetizedDownloadOpen}
         onClose={() => setMonetizedDownloadOpen(false)}
-        price={149}
+        price={200}
         coverUrl={data.coverUrl}
         title={data.title}
         artist={data.artist}
+        artistId={data.author._id}
+        mediaId={data._id}
+        mediaType="video"
         onDownload={handleDownload}
         onPaidDownload={() => handleInteraction("download")}
       />

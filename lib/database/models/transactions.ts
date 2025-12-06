@@ -5,11 +5,11 @@ import mongoose, { Schema, Document, Model, Types } from "mongoose";
  * Supports Mobile Money, Stripe, PayPal (future), internal wallet & payouts
  */
 export interface ITransaction extends Document {
-  user: Types.ObjectId; // User who initiated or received the transaction
+  user?: Types.ObjectId; // User who initiated or received the transaction
   type:
     | "payout"
     | "royalty"
-    | "tip"
+    | "fee"
     | "purchase"
     | "campaign_payment"
     | "subscription"
@@ -22,7 +22,7 @@ export interface ITransaction extends Document {
 
   amount: number;
   currency: string;           // "ZMW", "USD", etc.
-  status: "pending" | "completed" | "failed";
+  status: "pending" | "completed" | "failed" | "settled"| "processing"| "holding";
   paymentMethod: "mobile_money" | "stripe" | "manual";
 
   description?: string;
@@ -49,18 +49,19 @@ export interface ITransaction extends Document {
 
 const TransactionSchema = new Schema<ITransaction>(
   {
-    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    user: { type: Schema.Types.ObjectId, ref: "User" },
 
     type: {
       type: String,
       enum: [
         "payout",
         "royalty",
-        "tip",
+        "fee",
         "purchase",
         "campaign_payment",
         "subscription",
         "wallet_topup",
+        "holding",
       ],
       required: true,
       index: true,
@@ -79,7 +80,7 @@ const TransactionSchema = new Schema<ITransaction>(
 
     status: {
       type: String,
-      enum: ["pending", "completed", "failed"],
+      enum: ["pending", "completed", "failed", "settled", "processing", "holding"],
       default: "pending",
       index: true,
     },
@@ -129,8 +130,12 @@ TransactionSchema.statics.findUserTransactions = function (userId: Types.ObjectI
 };
 
 /** ⚙ Prevent recompile on hot reloads */
+if (mongoose.models.Transaction) {
+  delete mongoose.models.Transaction;
+}
+
 export const Transaction: Model<ITransaction> =
-  mongoose.models?.Transaction ||
   mongoose.model<ITransaction>("Transaction", TransactionSchema);
 
 export default Transaction;
+

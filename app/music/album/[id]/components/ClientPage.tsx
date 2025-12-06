@@ -355,10 +355,13 @@ useEffect(() => {
    open={monetizedDownloadOpen}
    onClose={() => setMonetizedDownloadOpen(false)}
    onDownload={downloadAlbum}
-   price={25}
+   price={400}
    coverUrl={data.coverUrl}
    title={data.title}
    artist={data.artist}
+   artistId={data.author._id}
+   mediaId={data._id}
+   mediaType="album"
    onPaidDownload={() => handleInteraction("download")}
  />
  

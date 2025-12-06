@@ -3,23 +3,20 @@ import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/database";
 import { getCurrentUser } from "@/actions/getCurrentUser";
 import Transaction from "@/lib/database/models/transactions";
-import crypto from "crypto";
+import Topup from "@/lib/database/models/topup";
 import User from "@/lib/database/models/user";
+import crypto from "crypto";
 
-/**
- * Body:
- * {
- *   method: "mobile_money" | "card",
- *   provider?: "MTN" | "Airtel",
- *   phone?: string,
- *   amount: number,   // decimal amount (e.g. 10.5)
- *   currency?: string,
- *   idempotencyKey?: string
- * }
- */
+type Provider = "MTN" | "AIRTEL";
 
-// Simple provider config (sandbox) — replace with real in production
-const PROVIDER_CONFIG: any = {
+interface MobileMoneyResult {
+  ok: boolean;
+  status: number;
+  providerReference: string;
+  data: any;
+}
+
+const PROVIDER_CONFIG = {
   MTN: {
     endpoint: process.env.MTN_COLLECTION_URL,
     subscriptionKey: process.env.MTN_SUBSCRIPTION_KEY,
@@ -30,81 +27,150 @@ const PROVIDER_CONFIG: any = {
   },
 };
 
-async function mobileMoneyInitiate(provider: string, phone: string, amount: number, currency = "ZMW", idempotencyKey?: string) {
-  // NOTE: this is a sandbox/generic implementation and must be adapted per provider docs.
+async function mobileMoneyInitiate(
+  provider: Provider,
+  phone: string,
+  amount: number,
+  currency: string,
+  idempotencyKey?: string
+): Promise<MobileMoneyResult> {
   const reference = crypto.randomUUID();
-  if (provider === "MTN") {
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      "Ocp-Apim-Subscription-Key": PROVIDER_CONFIG.MTN.subscriptionKey ?? "",
-      "X-Reference-Id": reference,
+
+  try {
+    if (provider === "MTN") {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        "Ocp-Apim-Subscription-Key": PROVIDER_CONFIG.MTN.subscriptionKey ?? "",
+        "X-Reference-Id": reference,
+      };
+
+      if (idempotencyKey) headers["X-Idempotency-Key"] = idempotencyKey;
+
+      const res = await fetch(PROVIDER_CONFIG.MTN.endpoint ?? "", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          amount: String(amount),
+          currency,
+          externalId: reference,
+          payer: { partyIdType: "MSISDN", partyId: phone },
+          payerMessage: "Wallet Topup",
+          payeeNote: "LoudEar Wallet",
+        }),
+      });
+
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {}
+
+      return {
+        ok: res.ok || res.status === 202,
+        status: res.status,
+        providerReference: reference,
+        data,
+      };
+    }
+
+    if (provider === "AIRTEL") {
+      const res = await fetch(PROVIDER_CONFIG.AIRTEL.endpoint ?? "", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${PROVIDER_CONFIG.AIRTEL.apiKey ?? ""}`,
+        },
+        body: JSON.stringify({
+          amount: String(amount),
+          currency,
+          mobile: phone,
+          externalId: reference,
+          reason: "Wallet Topup",
+        }),
+      });
+
+      let data: any = {};
+      try {
+        data = await res.json();
+      } catch {}
+
+      return {
+        ok: res.ok || res.status === 202,
+        status: res.status,
+        providerReference: reference,
+        data,
+      };
+    }
+
+    throw new Error("Unsupported provider");
+  } catch (err: any) {
+    return {
+      ok: false,
+      status: 500,
+      providerReference: reference,
+      data: { error: err?.message ?? "Unknown mobile money error" },
     };
-    if (idempotencyKey) headers["X-Idempotency-Key"] = idempotencyKey;
-
-    const payload = {
-      amount: String(amount),
-      currency,
-      externalId: reference,
-      payer: { partyIdType: "MSISDN", partyId: phone },
-      payerMessage: "Wallet topup",
-      payeeNote: "LoudEar wallet topup",
-    };
-
-    const res = await fetch(PROVIDER_CONFIG.MTN.endpoint ?? "", {
-      method: "POST",
-      headers,
-      body: JSON.stringify(payload),
-    });
-
-    const status = res.status;
-    let data: any = {};
-    try { data = await res.json(); } catch {}
-    return { status, providerReference: reference, data };
   }
-
-  if (provider === "AIRTEL") {
-    const headers = { "Content-Type": "application/json", Authorization: `Bearer ${PROVIDER_CONFIG.AIRTEL.apiKey ?? ""}` };
-    const ref = reference;
-    const payload = { amount: String(amount), currency, mobile: phone, externalId: ref, reason: "Wallet topup" };
-
-    const res = await fetch(PROVIDER_CONFIG.AIRTEL.endpoint ?? "", {
-      method: "POST",
-      headers,
-      body: JSON.stringify(payload),
-    });
-
-    const status = res.status;
-    let data: any = {};
-    try { data = await res.json(); } catch {}
-    return { status, providerReference: ref, data };
-  }
-
-  throw new Error("Unsupported provider");
 }
 
 export async function POST(req: Request) {
   try {
     await connectToDatabase();
-    const user = await getCurrentUser();
-    if (!user?._id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const body = await req.json();
-    const { method, provider, phone, amount, currency = "ZMW", idempotencyKey } = body;
+    const user = await getCurrentUser();
+    if (!user?._id)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const body: {
+      method: "card" | "mobile_money";
+      provider?: Provider;
+      phone?: string;
+      amount: number;
+      currency?: string;
+      idempotencyKey?: string;
+    } = await req.json();
+
+    const {
+      method,
+      provider,
+      phone,
+      amount,
+      currency = "ZMW",
+      idempotencyKey,
+    } = body;
 
     if (!method || !amount || amount <= 0) {
-      return NextResponse.json({ error: "method and positive amount required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "method and positive amount required" },
+        { status: 400 }
+      );
     }
 
-    // idempotency protection: if idempotencyKey set, return existing tx
+    // IDEMPOTENCY CHECK
     if (idempotencyKey) {
-      const existing = await Transaction.findOne({ "metadata.idempotencyKey": idempotencyKey, user: user._id });
+      const existing = await Transaction.findOne({
+        "metadata.idempotencyKey": idempotencyKey,
+        user: user._id,
+      })
+        .lean()
+        .exec();
+
       if (existing) {
-        return NextResponse.json({ status: "duplicate", transaction: existing });
+        const topup = await Topup.findOne({
+          transactionId: existing._id,
+        })
+          .lean()
+          .exec();
+
+        return NextResponse.json({
+          status: "duplicate",
+          transaction: existing,
+          topup,
+        });
       }
     }
 
-    // create a pending transaction
-    const tx = await Transaction.create({
+    // CREATE INITIAL TRANSACTION
+    const tx: any = await Transaction.create({
       user: user._id,
       type: "wallet_topup",
       amount,
@@ -112,61 +178,103 @@ export async function POST(req: Request) {
       status: "pending",
       paymentMethod: method === "card" ? "stripe" : "mobile_money",
       description: `Wallet topup via ${method}`,
-      mobileMoney: method === "mobile_money" ? { provider: provider ?? null, phoneNumber: phone ?? null, internalReference: null, verified: false, mode: "sandbox", rawResponse: null } : undefined,
+      mobileMoney:
+        method === "mobile_money"
+          ? {
+              provider,
+              phoneNumber: phone,
+              verified: false,
+              rawResponse: null,
+            }
+          : undefined,
       metadata: { idempotencyKey },
     });
 
-     // In production: wait for provider webhook callback before crediting.
+    const topup: any = await Topup.create({
+      user: user._id,
+      amount,
+      currency,
+      provider,
+      phoneNumber: phone,
+      status: "pending",
+      transactionId: tx._id,
+    });
 
-    // credit user wallet
-    const userDoc = await User.findById(user._id);
-    if (!userDoc) return NextResponse.json({ error: "User not found" }, { status: 404 });
-
-    userDoc.wallet = userDoc.wallet || { balance: 0, currency: body.currency ?? "ZMW" };
-    userDoc.wallet.balance = Number(userDoc.wallet.balance ?? 0) + Number(body.amount);
-    userDoc.wallet.history = userDoc.wallet.history || [];
-    userDoc.wallet.history.unshift(tx._id as any); // add reference
-    await userDoc.save();
-
-
-    // For card flow: return a redirect/checkout URL (you should integrate your payment gateway)
+    // CARD FLOW
     if (method === "card") {
-      // stub response: in real code you'd create a PaymentIntent / CheckoutSession and attach tx._id
-      const checkoutUrl = `/checkout?tx=${tx._id}`; // replace with real
-      await Transaction.findByIdAndUpdate(tx._id, { $set: { "stripe.rawResponse": { checkoutUrl } } });
-      return NextResponse.json({ status: "redirect", method: "card", checkoutUrl, transactionId: tx._id });
-    }
+      const checkoutUrl = `/checkout?tx=${tx._id}`;
 
-    // For mobile_money flow: call provider initiate & persist providerReference + rawResponse
-    if (method === "mobile_money") {
-      if (!provider || !phone) return NextResponse.json({ error: "provider and phone required for mobile_money" }, { status: 400 });
-      const prov = provider.toString().toUpperCase();
-      const resp = await mobileMoneyInitiate(prov, phone, amount, currency, idempotencyKey);
-
-      const success = resp.status >= 200 && resp.status < 300 || resp.status === 202;
       await Transaction.findByIdAndUpdate(tx._id, {
         $set: {
-          status: success ? "processing" : "failed",
-          "mobileMoney.externalTransactionId": resp.providerReference,
-          "mobileMoney.internalReference": tx._id,
-          "mobileMoney.rawResponse": resp.data,
+          status: "pending",
+          stripe: { checkoutUrl },
         },
       });
 
       return NextResponse.json({
-        status: success ? "processing" : "failed",
+        status: "redirect",
+        checkoutUrl,
         transactionId: tx._id,
-        provider: prov,
+      });
+    }
+
+    // MOBILE MONEY FLOW
+    if (method === "mobile_money") {
+      if (!provider || !phone) {
+        return NextResponse.json(
+          { error: "provider and phone required" },
+          { status: 400 }
+        );
+      }
+
+      const resp = await mobileMoneyInitiate(
+        provider,
+        phone,
+        amount,
+        currency,
+        idempotencyKey
+      );
+
+      const newStatus = resp.ok ? "processing" : "failed";
+
+// TEMPORARY DIRECT CREDIT — until MTN/Airtel callback routes are implemented
+      if (resp.ok) {
+       await User.findByIdAndUpdate(user._id, {
+       $inc: { "wallet.balance": amount },
+      });
+      }
+
+
+      await Transaction.findByIdAndUpdate(tx._id, {
+        $set: {
+          status: newStatus,
+          "mobileMoney.rawResponse": resp.data,
+          "mobileMoney.externalTransactionId": resp.providerReference,
+        },
+      });
+
+      await Topup.findByIdAndUpdate(topup._id, {
+        $set: { status: newStatus, rawResponse: resp.data },
+      });
+
+      return NextResponse.json({
+        status: newStatus,
+        transactionId: tx._id,
+        topupId: topup._id,
         providerReference: resp.providerReference,
-        providerStatusCode: resp.status,
         providerData: resp.data,
       });
     }
 
-    return NextResponse.json({ error: "Unsupported topup method" }, { status: 400 });
-
+    return NextResponse.json(
+      { error: "Unsupported topup method" },
+      { status: 400 }
+    );
   } catch (err: any) {
-    console.error("[WALLET_TOPUP_ERROR]", err);
-    return NextResponse.json({ error: err?.message ?? "Server error" }, { status: 500 });
+    console.error("[TOPUP_ERROR]", err);
+    return NextResponse.json(
+      { error: err?.message ?? "Unknown server error" },
+      { status: 500 }
+    );
   }
 }

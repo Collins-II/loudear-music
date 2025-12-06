@@ -1,17 +1,16 @@
+// app/api/mobile-money/status/route.ts
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/database";
 import Transaction from "@/lib/database/models/transactions";
 
-// -------------------------------
-//   GET Handler (polling)
-// -------------------------------
+// GET handler - polling
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const txId = searchParams.get("txId");
 
   if (!txId) {
     return NextResponse.json(
-      { success: false, error: "txId query param required" },
+      { success: false, error: "txId required" },
       { status: 400 }
     );
   }
@@ -19,15 +18,13 @@ export async function GET(req: Request) {
   return handleStatusCheck(txId);
 }
 
-// -------------------------------
-//   POST Handler (optional)
-// -------------------------------
+// POST handler
 export async function POST(req: Request) {
   const { txId } = await req.json();
 
   if (!txId) {
     return NextResponse.json(
-      { success: false, error: "txId body param required" },
+      { success: false, error: "txId required" },
       { status: 400 }
     );
   }
@@ -35,9 +32,7 @@ export async function POST(req: Request) {
   return handleStatusCheck(txId);
 }
 
-// -------------------------------
-//   Main Status Logic (shared)
-// -------------------------------
+// Shared logic
 async function handleStatusCheck(txId: string) {
   try {
     await connectToDatabase();
@@ -51,19 +46,14 @@ async function handleStatusCheck(txId: string) {
       );
     }
 
-    // -------------------------------
-    //   Sandbox: Mock provider polling
-    // -------------------------------
+    // Mock provider polling
     const providerStatus = Math.random() > 0.4 ? "SUCCESS" : "PENDING";
 
     if (providerStatus === "SUCCESS" && tx.status !== "completed") {
       tx.status = "completed";
 
-      // FIX: initialize mobileMoney if missing
       if (!tx.mobileMoney) {
-        tx.mobileMoney = {
-          verified: true,
-        } as any;
+        tx.mobileMoney = { verified: true } as any;
       } else {
         tx.mobileMoney.verified = true;
       }
@@ -81,7 +71,7 @@ async function handleStatusCheck(txId: string) {
       status: tx.status, // pending | completed | failed
     });
   } catch (err) {
-    console.error("STATUS ERROR:", err);
+    console.log("STATUS ERROR:", err);
     return NextResponse.json(
       { success: false, error: "Status lookup failed" },
       { status: 500 }

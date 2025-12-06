@@ -8,7 +8,7 @@ amount: { type: Number, required: true },
 currency: { type: String, default: "ZMW" },
 provider: String,
 phoneNumber: String,
-status: { type: String, enum: ["pending", "success", "failed"], default: "pending" },
+status: { type: String, enum: ["pending", "success", "failed", "processing"], default: "pending" },
 transactionId: String,
 rawResponse: Schema.Types.Mixed,
 }, { timestamps: true });
