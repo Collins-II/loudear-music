@@ -1,111 +1,175 @@
 // server.mts
 import { createServer } from "http";
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import next from "next";
 import { CommentSerialized, ReactionType } from "./actions/getItemsWithStats";
 
+/* --------------------------------------------------
+   🧠 Global Socket.IO Instance (prevents duplicates)
+---------------------------------------------------*/
 declare global {
   var io: Server | undefined;
 }
 
+/* --------------------------------------------------
+   🛠 Setup Next.js + HTTP Server
+---------------------------------------------------*/
 const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
-  const httpServer = createServer((req, res) => {
-    handle(req, res);
-  });
+  const httpServer = createServer((req, res) => handle(req, res));
 
-  const io = new Server(httpServer, {
-    cors: { origin: "*" },
-  });
+  /* --------------------------------------------------
+     ⚡ Create Socket.IO server (Singleton safe)
+  ---------------------------------------------------*/
+  const io =
+    globalThis.io ??
+    new Server(httpServer, {
+      cors: { origin: "*" },
+      pingInterval: 25000, // reduces zombie connections
+      pingTimeout: 15000,
+      maxHttpBufferSize: 1e6,
+      connectionStateRecovery: {}, // allows users to reconnect safely
+    });
 
   globalThis.io = io;
 
-  io.on("connection", (socket) => {
-    console.log("✅ User connected:", socket.id);
+  /* --------------------------------------------------
+     📌 Logging helper
+  ---------------------------------------------------*/
+  const log = (...msg: any[]) =>
+    console.log(`[${new Date().toISOString()}]`, ...msg);
 
+  /* --------------------------------------------------
+     🛡 Safe Emit Wrapper (prevents crash)
+  ---------------------------------------------------*/
+  const safeEmit = (room: string, event: string, data: any) => {
+    try {
+      io.to(room).emit(event, data);
+    } catch (err) {
+      console.error(`❌ Emit error on ${event} to ${room}:`, err);
+    }
+  };
+
+  /* --------------------------------------------------
+     🔥 Handle Socket Connection
+  ---------------------------------------------------*/
+  io.on("connection", (socket: Socket) => {
+    log(`🔌 ${socket.id} connected`);
+
+    /* --------------------------------------------------
+       📍 Join Rooms
+    ---------------------------------------------------*/
     socket.on("join", (room: string) => {
       socket.join(room);
-      console.log(`📥 User ${socket.id} joined room ${room}`);
+      log(`📥 ${socket.id} joined room ${room}`);
     });
 
-    // 🔹 Broadcast new comments
+    /* --------------------------------------------------
+       📍 Leave Rooms
+    ---------------------------------------------------*/
+    socket.on("leave", (room: string) => {
+      socket.leave(room);
+      log(`📤 ${socket.id} left room ${room}`);
+    });
+
+    /* --------------------------------------------------
+       📝 Comments (new, replies)
+    ---------------------------------------------------*/
     socket.on(
       "comment:new",
       (payload: { room: string; comment: CommentSerialized; parent?: string }) => {
-        io.to(payload.room).emit("comment:new", payload);
+        safeEmit(payload.room, "comment:new", payload);
       }
     );
 
-    // 🔹 Broadcast reactions
+    /* --------------------------------------------------
+       ❤️ Reactions
+    ---------------------------------------------------*/
     socket.on(
       "comment:reaction",
-      (payload: { room: string; commentId: string; reactions: Record<ReactionType, number> }) => {
-        io.to(payload.room).emit("comment:reaction", payload);
+      (payload: {
+        room: string;
+        commentId: string;
+        reactions: Record<ReactionType, number>;
+      }) => {
+        safeEmit(payload.room, "comment:reaction", payload);
       }
     );
 
-    // 🔹 Broadcast media updates
-    socket.on(
-      "media:create",
-      (payload: { type: "song" | "album" | "video"; data: any }) => {
-        console.log(`🎵 Media created: ${payload.type} -> ${payload.data.title}`);
-        io.emit("media:create", payload);
-      }
-    );
+    /* --------------------------------------------------
+       🎵 Media Events (Song / Album / Video)
+    ---------------------------------------------------*/
+    const MEDIA_EVENTS = ["media:create", "media:update", "media:delete"] as const;
 
-    socket.on(
-      "media:update",
-      (payload: { type: "song" | "album" | "video"; data: any }) => {
-        console.log(`🎵 Media updated: ${payload.type} -> ${payload.data.title}`);
-        io.emit("media:update", payload);
-      }
-    );
+    MEDIA_EVENTS.forEach((evt) => {
+      socket.on(evt, (payload) => {
+        log(`🎶 ${evt} → ${payload.type} (${payload?.data?.title || payload?.id})`);
+        io.emit(evt, payload);
+      });
+    });
 
-    socket.on(
-      "media:delete",
-      (payload: { type: "song" | "album" | "video"; id: string }) => {
-        console.log(`🎵 Media deleted: ${payload.type} -> ${payload.id}`);
-        io.emit("media:delete", payload);
-      }
-    );
-
-    // Category update
+    /* --------------------------------------------------
+       📊 Charts
+    ---------------------------------------------------*/
     socket.on("charts:update:category", (payload) => {
-      console.log(`📊 Category update -> ${payload.category}`);
+      log(`📊 Category update: ${payload.category}`);
       io.emit("charts:update:category", payload);
     });
 
-    // Item update
     socket.on("charts:update:item", (payload) => {
-      console.log(`📊 Item update -> ${payload.id} → pos ${payload.newPos}`);
+      log(`📈 Item update [${payload.id}] -> ${payload.newPos}`);
       io.emit("charts:update:item", payload);
     });
 
-  // 🧡 Handle real-time stan updates
-  socket.on("stan:update", (payload) => {
-    const { artistId, stanCount, userHasStanned } = payload
-    io.to(`artist:${artistId}`).emit("stan:update", {
-      artistId,
-      stanCount,
-      userHasStanned,
-    })
-  })
+    /* --------------------------------------------------
+       ✨ Real-time Stan Updates
+    ---------------------------------------------------*/
+    socket.on(
+      "stan:update",
+      (payload: {
+        artistId: string;
+        stanCount: number;
+        userHasStanned: boolean;
+      }) => {
+        safeEmit(`artist:${payload.artistId}`, "stan:update", payload);
+      }
+    );
 
+    /* --------------------------------------------------
+       ❤️ Live Notifications (Global & User-specific)
+    ---------------------------------------------------*/
+    socket.on(
+      "notify:global",
+      (message: string) => io.emit("notify:global", { message })
+    );
 
-    socket.on("leave", (room: string) => {
-      socket.leave(room);
-      console.log(`📤 User ${socket.id} left room ${room}`);
-    });
+    socket.on(
+      "notify:user",
+      (payload: { userId: string; message: string }) => {
+        safeEmit(`user:${payload.userId}`, "notify:user", payload);
+      }
+    );
 
+    /* --------------------------------------------------
+       🔄 Heartbeat (keeps stale clients alive)
+    ---------------------------------------------------*/
+    socket.on("ping:client", () => socket.emit("ping:server"));
+
+    /* --------------------------------------------------
+       ❌ Disconnect Cleanup
+    ---------------------------------------------------*/
     socket.on("disconnect", () => {
-      console.log("❌ User disconnected:", socket.id);
+      log(`❌ ${socket.id} disconnected`);
     });
   });
 
-  httpServer.listen(3000, () => {
-    console.log("🚀 Server running on http://localhost:3000");
-  });
+  /* --------------------------------------------------
+     🚀 Boot the Server
+  ---------------------------------------------------*/
+  httpServer.listen(3000, () =>
+    log("🚀 Server running at http://localhost:3000")
+  );
 });

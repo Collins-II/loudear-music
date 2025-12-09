@@ -160,7 +160,7 @@ export function TopRecordsBoard({
                         href={href}
                         className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 hover:text-indigo-300 transition"
                       >
-                        Open <ArrowRight size={12} />
+                        <span className="hidden sm:inline">Open</span> <ArrowRight size={12} />
                       </Link>
                     </div>
                   </div>

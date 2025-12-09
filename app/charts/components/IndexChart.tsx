@@ -14,7 +14,7 @@ import ChartCardSkeleton from "@/components/skeletons/chart-card-skeleton";
 import { TrendingItem } from "@/app/search/components/IndexSearch";
 import TopCardSkeleton from "@/components/skeletons/top-card-skeleton";
 import ThemedHeading from "@/components/themed-heading";
-import { TrendingBoard } from "@/components/stats/TrendingBoard";
+import { TopRecordsBoard } from "@/components/analytics/TopRecords";
 
 /* ---------------------------------- Filters ---------------------------------- */
 const genres = ["All", "Hip Hop", "Afro Pop", "Gospel", "RnB", "Dancehall"];
@@ -152,10 +152,12 @@ function ChartsPage({
 
    /* 🧠 Fetch trending */
     useEffect(() => {
+      setLoading(true);
       fetch("/api/trending/global?limit=6")
         .then((r) => (r.ok ? r.json() : Promise.reject()))
         .then((data) => setTrending(data.items || []))
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => setLoading(false));
     }, []);
 
   /* --- Fetch charts on category/sort change --- */
@@ -369,7 +371,7 @@ function ChartsPage({
       </section>
 
       {/* Content */}
-      <section className="max-w-7xl mx-auto px-6 md:px-12 py-12 grid grid-cols-1 lg:grid-cols-4 gap-12">
+      <section className="max-w-7xl mx-auto px-6 xl:px-0 py-12 grid grid-cols-1 lg:grid-cols-4 gap-12">
         {/* Main */}
         <div className="lg:col-span-3">
           {loading ? (
@@ -439,7 +441,7 @@ function ChartsPage({
 
         {/* Sidebar */}
         <aside className="space-y-12">
-          <TrendingBoard list={trending} />
+          <TopRecordsBoard list={trending} loading={loading} />
 
           <div>
               <ThemedHeading>

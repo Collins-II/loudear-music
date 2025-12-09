@@ -77,7 +77,7 @@ export default function BlogPage() {
       </section>
 
       {/* MAIN CONTENT */}
-      <div className="max-w-7xl mx-auto px-6 md:px-12 py-16">
+      <div className="max-w-7xl mx-auto px-6 xl:px-0 py-16">
 
         {/* SECTION HEADING */}
         <ThemedHeading className="lg:text-5xl">

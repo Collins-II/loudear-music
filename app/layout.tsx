@@ -9,6 +9,7 @@ import Script from "next/script";
 import GoogleProvider from "@/lib/provider/google_provider";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import { getCurrentUser } from "@/actions/getCurrentUser";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,7 +31,7 @@ export const metadata: Metadata = {
 
   applicationName: "LoudEar",
   manifest: "/manifest.json",
-  themeColor: "#ff0050",
+  themeColor: "#161616",
 
   icons: {
     icon: [
@@ -42,7 +43,7 @@ export const metadata: Metadata = {
       {
         rel: "mask-icon",
         url: "/assets/logo/logo-blu.jpg",
-        color: "#ff0050",
+        color: "#161616",
       },
       {
         rel: "manifest",
@@ -78,10 +79,11 @@ export const metadata: Metadata = {
 };
 
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const adsenseId = process.env.NEXT_PUBLIC_GOOGLE_ADSENSE_ID;
+   const session = await getCurrentUser();
 
   return (
     <html lang="en" className="scroll-smooth" suppressHydrationWarning>
@@ -99,6 +101,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white text-white`}
       >
+                {/* Inject USER ID into window */}
+        <Script id="user-id">
+          {`
+            window.__USER_ID__ = "${session?._id ?? ""}";
+          `}
+        </Script>
         {/* Top loader */}
         <Toaster />
         <NextTopLoader color="#fff" showSpinner={false} />

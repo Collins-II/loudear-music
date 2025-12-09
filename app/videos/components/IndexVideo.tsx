@@ -191,7 +191,7 @@ export default function IndexVideo({ videos }: IndexVideoProps) {
       </section>
 
       {/* Content */}
-      <section className="max-w-7xl mx-auto px-6 md:px-12 py-12 grid grid-cols-1 lg:grid-cols-4 gap-12">
+      <section className="max-w-7xl mx-auto px-6 xl:px-0 py-12 grid grid-cols-1 lg:grid-cols-4 gap-12">
         {/* Main */}
         <div className="lg:col-span-3">
           {filters.view === "chart" ? (
