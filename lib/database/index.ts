@@ -1,7 +1,9 @@
 // lib/database/index.ts
 import mongoose from "mongoose";
+import dns from "node:dns/promises"; 
+dns.setServers(["1.1.1.1", "1.0.0.1"]);
 
-const MONGODB_URL = process.env.MONGODB_URL || "mongodb+srv://actscloud28:556088@cluster0.9nkkkej.mongodb.net/loudear_portal?retryWrites=true&w=majority";
+const MONGODB_URL = process.env.MONGODB_URL!;
 
 interface MongooseGlobal {
   conn: typeof mongoose | null;

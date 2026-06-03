@@ -1,62 +1,124 @@
 // models/Beat.ts
-import mongoose, { Document, Model, Schema } from "mongoose";
 
-export type LicenseTier = {
-  id: string;           // e.g. "basic", "pro", "exclusive"
-  title: string;        // "Basic License"
-  price: number;        // price in smallest currency unit (cents) or use floats in ZMW
+import { Schema, Document, models, model, Types } from "mongoose";
+import "./comment"; // Ensure comment virtuals work
+
+export interface ILicenseTier {
+  id: string;                // "basic", "pro", "exclusive"
+  title: string;             // "Basic License"
+  price: number;             // ZMW or your currency
   description?: string;
-  usageRights: string[]; // human readable bullet points
-};
-
-export interface IBeat extends Document {
-  _id: string;
-  title: string;
-  producer: mongoose.Types.ObjectId | string;
-  image?: string;
-  audioUrl: string;        // hosted audio (preview or full)
-  audioSnippet: string;
-  bpm?: number;
-  key?: string;
-  genre?: string;
-  price?: number;             // default price (optional)
-  licenseTiers?: LicenseTier[];
-  published: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  stats?: {
-    plays: number;
-    purchases: number;
-    downloads: number;
-  };
+  usageRights: string[];
+  fileUrl?: string;          // downloadable asset for this tier
 }
 
-const LicenseTierSchema = new Schema<LicenseTier>({
-  id: { type: String, required: true },
-  title: { type: String, required: true },
-  price: { type: Number, required: true }, // in cents or ZMW unit depending on your app
-  description: { type: String },
-  usageRights: [{ type: String }],
+export interface IBeat extends Document {
+  author: Types.ObjectId;            // Producer (User)
+  title: string;
+  producerName?: string;             // Optional display fallback
+  genre?: string;
+  description?: string;
+  tags?: string[];
+
+  bpm?: number;
+  key?: string;
+
+  image?: string;                    // beat cover
+  fileUrl: string;                   // full beat file
+  previewUrl?: string;               // short preview
+
+  licenseTiers: ILicenseTier[];
+
+  visibility: "public" | "private" | "unlisted";
+
+  // Engagement
+  likes: Types.ObjectId[];
+  shares: Types.ObjectId[];
+  downloads: Types.ObjectId[];
+  views: Types.ObjectId[];
+
+  createdAt: Date;
+  updatedAt: Date;
+
+  // Virtuals
+  commentCount?: number;
+  latestComments?: unknown[];
+}
+
+const LicenseTierSchema = new Schema<ILicenseTier>(
+  {
+    id: { type: String, required: true, trim: true },
+    title: { type: String, required: true, trim: true },
+    price: { type: Number, required: true },
+    description: { type: String, trim: true },
+    fileUrl: { type: String, trim: true },
+    usageRights: [{ type: String, trim: true }],
+  },
+  { _id: false }
+);
+
+const BeatSchema = new Schema<IBeat>(
+  {
+    author: { type: Schema.Types.ObjectId, ref: "User", required: true },
+
+    title: { type: String, required: true, trim: true },
+    producerName: { type: String, trim: true },
+
+    genre: { type: String, trim: true },
+    description: { type: String, trim: true },
+    tags: [{ type: String, trim: true }],
+
+    bpm: { type: Number },
+    key: { type: String, trim: true },
+
+    image: { type: String, trim: true },
+    fileUrl: { type: String, required: true },
+    previewUrl: { type: String, trim: true },
+
+    licenseTiers: {
+      type: [LicenseTierSchema],
+      default: [],
+    },
+
+    visibility: {
+      type: String,
+      enum: ["public", "private", "unlisted"],
+      default: "private",
+    },
+
+    // Engagement
+    likes: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    shares: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    downloads: [{ type: Schema.Types.ObjectId, ref: "User" }],
+    views: [{ type: Schema.Types.ObjectId, ref: "User" }],
+  },
+  { timestamps: true }
+);
+
+/* ------------------------------------------------------------------ */
+/* VIRTUALS (comments) */
+/* ------------------------------------------------------------------ */
+
+BeatSchema.virtual("commentCount", {
+  ref: "Comment",
+  localField: "_id",
+  foreignField: "targetId",
+  count: true,
+  match: { targetModel: "Beat" },
 });
 
-const BeatSchema = new Schema<IBeat>({
-  title: { type: String, required: true, trim: true },
-  producer: { type: Schema.Types.ObjectId, ref: "User", required: true },
-  image: { type: String },
-  audioUrl: { type: String, required: true },
-  audioSnippet: { type: String, required: true },
-  bpm: { type: Number },
-  key: { type: String },
-  genre: { type: String },
-  price: { type: Number },
-  licenseTiers: { type: [LicenseTierSchema], default: [] },
-  published: { type: Boolean, default: false },
-  stats: {
-    plays: { type: Number, default: 0 },
-    purchases: { type: Number, default: 0 },
-    downloads: { type: Number, default: 0 },
-  },
-}, { timestamps: true });
+BeatSchema.virtual("latestComments", {
+  ref: "Comment",
+  localField: "_id",
+  foreignField: "targetId",
+  justOne: false,
+  match: { targetModel: "Beat", parent: null },
+  options: { sort: { createdAt: -1 }, limit: 5 },
+});
 
-const Beat: Model<IBeat> = mongoose.models?.Beat || mongoose.model<IBeat>("Beat", BeatSchema);
+// Output virtuals
+BeatSchema.set("toObject", { virtuals: true });
+BeatSchema.set("toJSON", { virtuals: true });
+
+export const Beat = models?.Beat || model<IBeat>("Beat", BeatSchema);
 export default Beat;

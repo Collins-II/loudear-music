@@ -10,6 +10,7 @@ import { addItem } from "@/lib/store/cartSlice";
 import { useConvertPrice } from "@/lib/store/currency-utils";
 import { getCurrencySymbol, formatNumberWithCommas } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 interface BeatItem {
   id: string;
@@ -108,8 +109,8 @@ export default function BeatCard({ item }: Props) {
 
   return (
     <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      //onMouseEnter={() => setHovered(true)}
+      //onMouseLeave={() => setHovered(false)}
       className="
         group w-full 
         border-b-[4px] border-black dark:border-white 
@@ -119,6 +120,7 @@ export default function BeatCard({ item }: Props) {
         flex flex-col md:flex-row
       "
     >
+     
       {/* ----------------------------- IMAGE SECTION ----------------------------- */}
       <div
         className="
@@ -130,12 +132,14 @@ export default function BeatCard({ item }: Props) {
           bg-neutral-200 dark:bg-neutral-800
         "
       >
+         <Link href={`/sound-hub/${item.id}`} className="">
         <Image
           src={item.image || "/placeholder.png"}
           alt={item.title}
           fill
           className="object-cover"
         />
+        </Link>
 
         {/* Progress Bar */}
         <div className="absolute bottom-0 left-0 w-full h-1 bg-black/20 dark:bg-white/20">
@@ -147,10 +151,11 @@ export default function BeatCard({ item }: Props) {
         </div>
 
         {/* Hover Play Button */}
-        {hovered && hoverPlayButton}
+        {hovered}
 
         {item.previewUrl && <audio ref={audioRef} src={item.previewUrl} />}
       </div>
+      
 
       {/* --------------------------- INFORMATION SECTION -------------------------- */}
       <div className="flex flex-col justify-between flex-1 p-4 gap-3">

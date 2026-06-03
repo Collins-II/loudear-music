@@ -4,7 +4,7 @@ import { ViewAnalytics } from "./database/models/viewsAnalytics";
 /**
  * Fetch total and previous week view counts for an item
  */
-export async function getViewCounts(itemId: string, model: "Song" | "Album" | "Video") {
+export async function getViewCounts(itemId: string, model: "Song" | "Album" | "Video" | "Beat") {
   if (!Types.ObjectId.isValid(itemId)) throw new Error("Invalid ObjectId");
   
   const analytics = await ViewAnalytics.find({

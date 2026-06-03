@@ -11,12 +11,13 @@ import { updateChartHistory } from "@/lib/update-chart-history";
 import dayjs from "dayjs";
 import isoWeek from "dayjs/plugin/isoWeek";
 import User from "@/lib/database/models/user";
+import Beat from "@/lib/database/models/beat";
 dayjs.extend(isoWeek);
 
 /* ------------------------------------------------------------------ */
 /* TYPES */
 /* ------------------------------------------------------------------ */
-export type ItemType = "Song" | "Album" | "Video";
+export type ItemType = "Song" | "Album" | "Video" | "Beat";
 type InteractionType = "view" | "like" | "download" | "share" | "unlike";
 export type ReactionType = "heart" | "fire" | "laugh" | "up" | "down";
 
@@ -152,6 +153,30 @@ export interface VideoSerialized extends BaseSerialized {
   releaseDate?: string | null;
 }
 
+export interface LicenseTier {
+  name: string;       // e.g. "MP3 Lease"
+  price: number;      // number only
+  fileUrl: string;    // downloadable asset
+  perks?: string[];   // optional perks list
+}
+
+export interface BeatSerialized extends BaseSerialized {
+  bpm: number | null;
+  key: string | null;
+  producerName: string;
+  fileUrl: string;
+  audioUrl: string;
+  audioSnippet: string;
+  licenses: LicenseTier[];
+  releaseDate?: string | null;
+  trendingPosition?: number | null;
+  chartPosition?: number | null;
+  trendingScore?: number | null;
+  chartHistory?: ChartHistoryEntry[];
+  previousViewCount?: number;
+}
+
+
 /* ------------------------------------------------------------------ */
 /* SERIALIZE ITEM */
 /* ------------------------------------------------------------------ */
@@ -164,7 +189,9 @@ export async function serializeItem<T extends ItemType>(
     ? SongSerialized
     : T extends "Album"
     ? AlbumSerialized
-    : VideoSerialized | null
+    : T extends "Video"
+    ? VideoSerialized :
+    BeatSerialized | null
 > {
   if (!doc) return null as any;
 
@@ -228,6 +255,20 @@ export async function serializeItem<T extends ItemType>(
     return { ...base, songs } as any;
   }
 
+  if (type === "Beat") {
+  return {
+    ...base,
+    bpm: doc.bpm ?? null,
+    key: doc.key ?? null,
+    producer: doc.producer ?? null,
+    fileUrl: doc.fileUrl ?? "",
+    previewUrl: doc.previewUrl ?? null,
+    licenses: Array.isArray(doc.licenses) ? doc.licenses : [],
+    releaseDate: doc.releaseDate ?? null,
+  } as any;
+}
+
+
   return {
     ...base,
     fileUrl: doc.videoUrl ?? doc.fileUrl ?? "",
@@ -249,6 +290,11 @@ export const serializeVideo = async (doc: unknown): Promise<VideoSerialized | nu
   return serializeItem(doc as Record<string, any>, "Video") as Promise<VideoSerialized | null>;
 };
 
+export const serializeBeat = async (doc: unknown): Promise<BeatSerialized> => {
+  return serializeItem(doc as Record<string, any>, "Beat") as Promise<BeatSerialized>;
+};
+
+
 /* ------------------------------------------------------------------ */
 /* INTERACTIONS + ANALYTICS */
 /* ------------------------------------------------------------------ */
@@ -261,7 +307,15 @@ export async function incrementInteraction(
   if (!Types.ObjectId.isValid(id)) throw new Error("Invalid ObjectId");
   await connectToDatabase();
 
-  const Model = model === "Song" ? Song : model === "Album" ? Album : Video;
+  const Model =
+  model === "Song"
+    ? Song
+    : model === "Album"
+    ? Album
+    : model === "Video"
+    ? Video
+    : Beat; // NEW
+
   const fieldMap: Record<Exclude<InteractionType, "unlike">, keyof IInteractionDoc> = {
     view: "views",
     like: "likes",
@@ -308,7 +362,15 @@ export async function getItemWithStats(model: ItemType, id: string) {
     if (!Types.ObjectId.isValid(id)) throw new Error("Invalid ObjectId");
     await connectToDatabase();
 
-    const Model = model === "Song" ? Song : model === "Album" ? Album : Video;
+    const Model =
+  model === "Song"
+    ? Song
+    : model === "Album"
+    ? Album
+    : model === "Video"
+    ? Video
+    : Beat;
+
 
     let query = Model.findById(id).populate({
       path: "author",
@@ -320,6 +382,7 @@ export async function getItemWithStats(model: ItemType, id: string) {
         select: "_id title artist coverUrl fileUrl views likes downloads shares genre releaseDate",
       });
     }
+
 
     const doc = await query.lean<Record<string, any>>();
     if (!doc) return null;
@@ -431,7 +494,7 @@ if (doc.author?._id) {
 const serialized = (await serializeItem(
   { ...doc, commentCount, latestComments, author: { ...doc.author, stanCount } },
   model
-)) as SongSerialized | AlbumSerialized | VideoSerialized;
+)) as SongSerialized | AlbumSerialized | VideoSerialized | BeatSerialized;
 
 
     return {
@@ -453,6 +516,7 @@ const serialized = (await serializeItem(
 /* ------------------------------------------------------------------ */
 /* SHORTCUTS */
 /* ------------------------------------------------------------------ */
+export const getBeatWithStats = (id: string) => getItemWithStats("Beat", id);
 export const getSongWithStats = (id: string) => getItemWithStats("Song", id);
 export const getAlbumWithStats = (id: string) => getItemWithStats("Album", id);
 export const getVideoWithStats = (id: string) => getItemWithStats("Video", id);

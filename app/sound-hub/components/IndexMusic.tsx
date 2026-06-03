@@ -347,7 +347,7 @@ function BeatsPage({ initialBeats, topBeats }: { initialBeats: BeatItem[]; topBe
               </ThemedHeading>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-6">
-                {filteredBeats.slice(0, visibleItems).map((item) => (
+                {topBeats.slice(0, visibleItems).map((item) => (
                   <BeatCard
                     key={item._id}
                     item={{

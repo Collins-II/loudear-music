@@ -96,6 +96,8 @@ export default async function RootLayout({
           src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseId}`}
           crossOrigin="anonymous"
         />
+        <Script src="https://yourcdn.com/ads.js" />  {/* ✅ AdCloud AdSense */}
+
       </head>
 
       <body

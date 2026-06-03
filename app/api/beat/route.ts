@@ -25,7 +25,7 @@ export async function GET(req: Request) {
 
     const beats = await Beat.find(query)
       .populate({
-        path: "producer",
+        path: "author",
         select: "_id name image stageName",
       })
       .limit(limit);
